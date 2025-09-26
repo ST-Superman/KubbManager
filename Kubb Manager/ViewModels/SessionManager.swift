@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import UIKit
 
 @MainActor
 class SessionManager: ObservableObject {
@@ -19,8 +20,58 @@ class SessionManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
+        // Listen for CloudKit data changes
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("cloudKitDataChanged"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("🔄 CloudKit data changed - reloading incomplete session")
+            Task {
+                await self?.loadIncompleteSession()
+            }
+        }
+        
+        // Listen for CloudKit data cleared to reset current session
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("cloudKitDataCleared"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("🗑️ CloudKit data cleared - resetting current session")
+            // Ensure we're on the main thread for @Published property updates
+            Task { @MainActor in
+                self?.currentSession = nil
+                self?.isSessionActive = false
+            }
+        }
+        
+        // Listen for app becoming active to check for updates
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("📱 App became active - checking for session updates")
+            Task {
+                await self?.loadIncompleteSession()
+            }
+        }
+        
         Task {
             await loadIncompleteSession()
+        }
+    }
+    
+    deinit {
+        // Remove notification observers first
+        NotificationCenter.default.removeObserver(self)
+        
+        // Save session if active
+        Task { @MainActor [weak self] in
+            if self?.isSessionActive == true {
+                await self?.saveSession()
+            }
         }
     }
     
@@ -38,6 +89,9 @@ class SessionManager: ObservableObject {
             try await cloudKitManager.saveSession(newSession)
             isLoading = false
         } catch {
+            // Reset session if CloudKit save failed - this prevents blank session UI
+            currentSession = nil
+            isSessionActive = false
             errorMessage = cloudKitManager.handleCloudKitError(error)
             isLoading = false
         }
@@ -196,6 +250,13 @@ class SessionManager: ObservableObject {
         return currentSession?.isIncomplete ?? false
     }
     
+    // MARK: - CloudKit Sync Methods
+    
+    func refreshSessionFromCloudKit() async {
+        print("🔄 Refreshing session state from CloudKit...")
+        await loadIncompleteSession()
+    }
+    
     // MARK: - Private Methods
     
     private func saveSession() async {
@@ -224,15 +285,6 @@ class SessionManager: ObservableObject {
         if isSessionActive {
             Task {
                 await saveSession()
-            }
-        }
-    }
-    
-    deinit {
-        // Save on deinit if session is active
-        Task { @MainActor [weak self] in
-            if self?.isSessionActive == true {
-                await self?.saveSession()
             }
         }
     }

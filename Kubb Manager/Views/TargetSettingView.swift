@@ -106,8 +106,15 @@ struct TargetSettingView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .sheet(isPresented: $showingSession) {
-            if sessionManager.isSessionActive {
+            if sessionManager.isSessionActive || sessionManager.currentSession != nil {
                 PracticeView()
+            } else {
+                // Fallback to loading state if session is not active but sheet is displayed
+                VStack {
+                    ProgressView("Setting up session...")
+                        .padding()
+                    Spacer()
+                }
             }
         }
         .alert("Error", isPresented: $showingError) {
@@ -138,8 +145,14 @@ struct TargetSettingView: View {
         Task {
             await sessionManager.startNewSession(target: target)
             
-            if sessionManager.isSessionActive {
-                showingSession = true
+            // Use @MainActor to ensure we check sessionActive on the main thread
+            // and keep the UI state synchronized
+            await MainActor.run {
+                // Always attempt to show session if we started creation
+                // Additional checks added in the sheet itself to handle edge cases
+                if sessionManager.currentSession != nil || sessionManager.isSessionActive {
+                    showingSession = true
+                }
             }
         }
     }

@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import UIKit
 
 @MainActor
 class HistoryManager: ObservableObject {
@@ -18,9 +19,48 @@ class HistoryManager: ObservableObject {
     private let cloudKitManager = CloudKitManager.shared
     
     init() {
+        // Listen for CloudKit data cleared notification
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("cloudKitDataCleared"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task {
+                await self?.refreshSessions()
+            }
+        }
+        
+        // Listen for CloudKit data changes from other devices
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("cloudKitDataChanged"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("🔄 CloudKit data changed notification received - refreshing sessions")
+            Task {
+                await self?.refreshSessions()
+            }
+        }
+        
+        // Listen for app becoming active to check for updates
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("📱 App became active - checking for CloudKit updates")
+            Task {
+                await self?.refreshSessions()
+            }
+        }
+        
         Task {
             await loadSessions()
         }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Data Loading
@@ -31,7 +71,13 @@ class HistoryManager: ObservableObject {
         
         do {
             let fetchedSessions = try await cloudKitManager.fetchSessions()
-            sessions = deduplicateSessions(fetchedSessions)
+            let deduplicatedSessions = deduplicateSessions(fetchedSessions)
+            
+            // Filter out incomplete sessions from completed sessions list
+            // Only show sessions that are NOT incomplete (completed/past sessions only)
+            sessions = deduplicatedSessions.filter { !$0.isIncomplete }
+            
+            print("🔍 Loaded \(sessions.count) completed sessions (filtered out incomplete sessions)")
             isLoading = false
         } catch {
             errorMessage = cloudKitManager.handleCloudKitError(error)
@@ -45,7 +91,13 @@ class HistoryManager: ObservableObject {
         
         do {
             let fetchedSessions = try await cloudKitManager.fetchSessions()
-            sessions = deduplicateSessions(fetchedSessions)
+            let deduplicatedSessions = deduplicateSessions(fetchedSessions)
+            
+            // Filter out incomplete sessions from completed sessions list
+            // Only show sessions that are NOT incomplete (completed/past sessions only)
+            sessions = deduplicatedSessions.filter { !$0.isIncomplete }
+            
+            print("🔄 Refreshed \(sessions.count) completed sessions (filtered out incomplete sessions)")
             isRefreshing = false
         } catch {
             errorMessage = cloudKitManager.handleCloudKitError(error)

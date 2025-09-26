@@ -8,6 +8,14 @@
 import Foundation
 import CloudKit
 import Combine
+import UIKit
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let cloudKitDataCleared = Notification.Name("cloudKitDataCleared")
+    static let cloudKitDataChanged = Notification.Name("cloudKitDataChanged")
+}
 
 @MainActor
 class CloudKitManager: ObservableObject {
@@ -21,6 +29,10 @@ class CloudKitManager: ObservableObject {
     @Published var isSignedIn: Bool = false
     @Published var syncStatus: SyncStatus = .idle
     
+    // Subscription management for real-time sync
+    private var subscriptions: [CKSubscription] = []
+    private var hasSetUpSubscriptions = false
+    
     enum SyncStatus {
         case idle
         case syncing
@@ -31,6 +43,18 @@ class CloudKitManager: ObservableObject {
     private init() {
         container = CKContainer(identifier: "iCloud.ST-Superman.Kubb-Manager")
         privateDatabase = container.privateCloudDatabase
+        
+        // Listen for app becoming active to refresh CloudKit data
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task {
+                await self?.checkAccountStatus()
+                await self?.setupCloudKitSubscriptions()
+            }
+        }
         
         Task {
             await checkAccountStatus()
@@ -47,10 +71,14 @@ class CloudKitManager: ObservableObject {
             
             print("CloudKit account status: \(accountStatus.rawValue), isSignedIn: \(isSignedIn)")
             
-            // If we just signed in, try to sync local data to CloudKit
+            // If we just signed in, try to sync local data to CloudKit and set up subscriptions
             if !wasSignedIn && isSignedIn {
                 print("User just signed in, syncing local data to CloudKit...")
                 await syncLocalDataToCloudKit()
+                await setupCloudKitSubscriptions()
+            } else if isSignedIn {
+                // Already signed in, just refresh subscriptions
+                await setupCloudKitSubscriptions()
             }
         } catch {
             print("Error checking account status: \(error)")
@@ -62,6 +90,81 @@ class CloudKitManager: ObservableObject {
     func refreshAccountStatus() async {
         print("Refreshing CloudKit account status...")
         await checkAccountStatus()
+    }
+    
+    // MARK: - CloudKit Subscriptions
+    
+    func setupCloudKitSubscriptions() async {
+        guard isSignedIn else {
+            print("Not signed in to iCloud, cannot set up subscriptions")
+            return
+        }
+        
+        // Avoid duplicate subscriptions
+        if hasSetUpSubscriptions {
+            print("CloudKit subscriptions already set up, skipping")
+            return
+        }
+        
+        print("Setting up CloudKit subscriptions for real-time sync...")
+        
+        do {
+            // Create a subscription that triggers when any PracticeSession record changes
+            let predicate = NSPredicate(value: true)
+            let subscriptionID = CKSubscription.ID("PracticeSessionChanges")
+            let subscription = CKQuerySubscription(
+                recordType: PracticeSession.recordType,
+                predicate: predicate,
+                subscriptionID: subscriptionID,
+                options: [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
+            )
+            
+            let notificationInfo = CKSubscription.NotificationInfo()
+            notificationInfo.alertBody = "Practice session updated"
+            notificationInfo.soundName = "default"
+            subscription.notificationInfo = notificationInfo
+            
+            let savedSubscription = try await privateDatabase.save(subscription)
+            print("✅ CloudKit subscription created successfully with ID: \(savedSubscription.subscriptionID)")
+            
+            subscriptions.append(subscription)
+            hasSetUpSubscriptions = true
+            
+        } catch let error as CKError {
+            print("❌ Failed to set up CloudKit subscription: \(error)")
+            if error.code == .serverRejectedRequest {
+                print("This subscription may already exist")
+            }
+        } catch {
+            print("❌ Failed to set up CloudKit subscription: \(error)")
+        }
+    }
+    
+    private func handleCloudKitChange() async {
+        print("CloudKit data changed, triggering refresh...")
+        
+        // Post notification for UI to refresh
+        NotificationCenter.default.post(
+            name: Notification.Name("cloudKitDataChanged"),
+            object: nil
+        )
+        
+        // Also fetch any new data for validation
+        do {
+            let sessions = try await fetchSessions()
+            print("✅ Fetched \(sessions.count) sessions after CloudKit change")
+            
+            // Also explicitly check for incomplete sessions to notify SessionManager
+            if let _ = try await fetchIncompleteSession() {
+                print("🔄 CloudKit change detected incomplete session")
+            }
+        } catch {
+            print("❌ Failed to refresh data after CloudKit change: \(error)")
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Data Sync
@@ -140,36 +243,141 @@ class CloudKitManager: ObservableObject {
             return 
         }
         
-        print("Clearing all CloudKit data...")
+        print("🧹 Starting comprehensive CloudKit data clearing...")
         
+        var totalDeleted = 0
+        var seenRecordIds = Set<String>()
+        
+        // Approach 1: Try comprehensive field-based queries
+        let queriesToTry = [
+            "createdAt >= %@",  // All records since beginning of time
+            "target > 0",       // All sessions with targets
+            "1 == 1"           // All records (if available)
+        ]
+        
+        for queryString in queriesToTry {
+            do {
+                let predicate: NSPredicate
+                if queryString == "createdAt >= %@" {
+                    predicate = NSPredicate(format: queryString, Date(timeIntervalSince1970: 0) as NSDate)
+                } else {
+                    predicate = NSPredicate(format: queryString)
+                }
+                
+                let query = CKQuery(recordType: PracticeSession.recordType, predicate: predicate)
+                let (matchResults, _) = try await privateDatabase.records(matching: query)
+                
+                print("Found \(matchResults.count) records with query: \(queryString)")
+                
+                for (recordID, result) in matchResults {
+                    // Avoid deleting the same record twice
+                    let recordIdString = recordID.recordName
+                    if seenRecordIds.contains(recordIdString) {
+                        print("⚠️ Skipping duplicate record ID: \(recordIdString)")
+                        continue
+                    }
+                    seenRecordIds.insert(recordIdString)
+                    
+                    switch result {
+                    case .success:
+                        do {
+                            let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                            print("✅ Deleted record: \(recordIdString)")
+                            totalDeleted += 1
+                        } catch {
+                            print("❌ Failed to delete record \(recordIdString): \(error)")
+                        }
+                    case .failure(let error):
+                        print("❌ Error processing record: \(error)")
+                    }
+                }
+            } catch {
+                print("⚠️ Query '\(queryString)' failed: \(error)")
+            }
+        }
+        
+        // Approach 2: Try the backup method with isComplete queries
         do {
-            // Try to fetch and delete all records
-            let query = CKQuery(recordType: PracticeSession.recordType, predicate: NSPredicate(value: true))
-            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            let queries = [
+                NSPredicate(format: "isComplete == 1"),  // completed sessions
+                NSPredicate(format: "isComplete == 0"),  // incomplete sessions  
+                NSPredicate(value: true)                // all sessions
+            ]
             
-            print("Found \(matchResults.count) records to delete")
-            
-            for (recordID, result) in matchResults {
-                switch result {
-                case .success:
-                    let _ = try await privateDatabase.deleteRecord(withID: recordID)
-                    print("Deleted record: \(recordID)")
-                case .failure(let error):
-                    print("Error deleting record: \(error)")
+            for predicate in queries {
+                let query = CKQuery(recordType: PracticeSession.recordType, predicate: predicate)
+                let (matchResults, _) = try await privateDatabase.records(matching: query)
+                
+                for (recordID, result) in matchResults {
+                    let recordIdString = recordID.recordName
+                    if seenRecordIds.contains(recordIdString) {
+                        continue
+                    }
+                    seenRecordIds.insert(recordIdString)
+                    
+                    switch result {
+                    case .success:
+                        do {
+                            let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                            print("✅ Deleted session record: \(recordIdString)")
+                            totalDeleted += 1
+                        } catch {
+                            print("❌ Failed to delete session record \(recordIdString): \(error)")
+                        }
+                    case .failure(let error):
+                        print("❌ Error processing session record: \(error)")
+                    }
                 }
             }
+        } catch {
+            print("❌ Backup predicate queries failed: \(error)")
+        }
+        
+        print("🎉 CloudKit clearing completed - deleted \(totalDeleted) total records")
+        print("📊 Total saved record IDs: \(seenRecordIds.count)")
+        
+        // Sanity check - Fetch any remaining records
+        do {
+            let remainingQuery = CKQuery(recordType: PracticeSession.recordType, predicate: NSPredicate(value: true))
+            let (remainingResults, _) = try await privateDatabase.records(matching: remainingQuery)
+            print("🔍 Remaining records after clearing: \(remainingResults.count)")
             
-            print("All CloudKit data cleared successfully")
-        } catch let error as CKError {
-            if error.code == .invalidArguments {
-                print("❌ Cannot query CloudKit - this confirms the recordName issue")
-                print("   The query itself is failing due to recordName not being queryable")
-            } else {
-                print("Error clearing CloudKit data: \(error)")
+            if remainingResults.count > 0 {
+                print("⚠️ WARNING: Not all records were deleted. Remaining records:")
+                for (recordID, result) in remainingResults {
+                    switch result {
+                    case .success(let record):
+                        let modificationDate = record.modificationDate?.description ?? "unknown"
+                        let sessionId = record["sessionId"] as? String ?? "missing"
+                        print("  - Record ID: \(recordID.recordName)")
+                        print("    SessionID: \(sessionId)")
+                        print("    Modified: \(modificationDate)")
+                    case .failure(let error):
+                        print("  - Error fetching record: \(error)")
+                    }
+                }
             }
         } catch {
-            print("Error clearing CloudKit data: \(error)")
+            print("ℹ️ Could not verify complete clearing due to \(error)")
         }
+        
+        // Also clear local storage for complete wipe
+        print("🧹 Clearing local storage data...")
+        localStorage.clearAllData()
+        print("✅ Local storage cleared")
+        
+        // The SessionManager also holds the currentSession @Published.
+        // We do not directly call SessionManager here as circular dependency issue.
+        // We rely on the cloudKitDataCleared notification to reset SessionManager too
+        // The notification generated below is the clean signal.
+        
+        // Always post notification to clear UI state even if no CloudKit deletions occurred 
+        NotificationCenter.default.post(
+            name: Notification.Name("cloudKitDataCleared"),
+            object: nil
+        )
+        
+        print("✅ CloudKit data clearing operation completed")
     }
     
     func removeDuplicateCloudKitRecords() async {
@@ -395,29 +603,78 @@ class CloudKitManager: ObservableObject {
         do {
             // Check if record already exists in CloudKit
             if let existingRecord = try await findRecordBySessionId(session.id) {
-                // Update existing record
-                existingRecord["date"] = session.date
-                existingRecord["target"] = Int64(session.target)
-                existingRecord["totalKubbs"] = Int64(session.totalKubbs)
-                existingRecord["totalBatons"] = Int64(session.totalBatons)
-                existingRecord["startTime"] = session.startTime
-                existingRecord["endTime"] = session.endTime
-                existingRecord["isComplete"] = session.isComplete ? 1 : 0
-                existingRecord["modifiedAt"] = session.modifiedAt
+                // Get the current CloudKit data for conflict resolution
+                let cloudkitSession = PracticeSession(from: existingRecord)
                 
-                // Update rounds as JSON string
-                if let roundsData = try? JSONEncoder().encode(session.rounds),
-                   let roundsString = String(data: roundsData, encoding: .utf8) {
-                    existingRecord["rounds"] = roundsString
+                // Only update if the local session is newer or has valuable advances
+                if let remoteSession = cloudkitSession {
+                    let shouldUpdate = session.modifiedAt > remoteSession.modifiedAt ||
+                                      (session.totalKubbs > remoteSession.totalKubbs && session.totalBatons > remoteSession.totalBatons)
+                    
+                    if shouldUpdate {
+                        print("✅ Local session data is newer/more advanced, updating CloudKit")
+                        // Update existing record
+                        existingRecord["date"] = session.date
+                        existingRecord["target"] = Int64(session.target)
+                        existingRecord["totalKubbs"] = Int64(session.totalKubbs)
+                        existingRecord["totalBatons"] = Int64(session.totalBatons)
+                        existingRecord["startTime"] = session.startTime
+                        existingRecord["endTime"] = session.endTime
+                        existingRecord["isComplete"] = session.isComplete ? 1 : 0
+                        existingRecord["modifiedAt"] = session.modifiedAt
+                        
+                        // Update rounds as JSON string
+                        if let roundsData = try? JSONEncoder().encode(session.rounds),
+                           let roundsString = String(data: roundsData, encoding: .utf8) {
+                            existingRecord["rounds"] = roundsString
+                        }
+                        
+                        let _ = try await privateDatabase.save(existingRecord)
+                        print("Updated existing CloudKit record for session \(session.id) with local advancement")
+                        
+                        // Notify other components of the session update immediately
+                        NotificationCenter.default.post(
+                            name: Notification.Name("cloudKitDataChanged"),
+                            object: nil
+                        )
+                    } else {
+                        print("⚠️ CloudKit session is newer/identical - not overwriting (CloudKit: \(remoteSession.totalKubbs)/\(session.totalKubbs), Local: \(session.totalKubbs))")
+                        // Don't overwrite newer cloudKit data with older local data
+                    }
+                } else {
+                    // Unable to parse the existing record, error prone update
+                    print("⚠️ Could not parse existing CloudKit session - updating anyway")
+                    existingRecord["totalKubbs"] = Int64(session.totalKubbs)
+                    existingRecord["totalBatons"] = Int64(session.totalBatons)
+                    existingRecord["isComplete"] = session.isComplete ? 1 : 0
+                    existingRecord["modifiedAt"] = session.modifiedAt
+                    
+                    // Update rounds as JSON string
+                    if let roundsData = try? JSONEncoder().encode(session.rounds),
+                       let roundsString = String(data: roundsData, encoding: .utf8) {
+                        existingRecord["rounds"] = roundsString
+                    }
+                    
+                    let _ = try await privateDatabase.save(existingRecord)
+                    print("Force-updated existing CloudKit record due to parse error")
+                    
+                    // Notify other components of the session update immediately
+                    NotificationCenter.default.post(
+                        name: Notification.Name("cloudKitDataChanged"),
+                        object: nil
+                    )
                 }
-                
-                let _ = try await privateDatabase.save(existingRecord)
-                print("Updated existing CloudKit record for session \(session.id)")
             } else {
                 // Create new record
                 let record = session.toCKRecord()
                 let _ = try await privateDatabase.save(record)
                 print("Created new CloudKit record for session \(session.id)")
+                
+                // Notify other components of the session update immediately
+                NotificationCenter.default.post(
+                    name: Notification.Name("cloudKitDataChanged"),
+                    object: nil
+                )
             }
             
             syncStatus = .success
@@ -611,19 +868,32 @@ class CloudKitManager: ObservableObject {
             
             let (matchResults, _) = try await privateDatabase.records(matching: query)
             
-            for (_, result) in matchResults {
+            print("Found \(matchResults.count) records matching isComplete == 0")
+            
+            // Try to keep the most recent incomplete session based on modifiedAt
+            var candidateSessions: [PracticeSession] = []
+            
+            for (recordID, result) in matchResults {
                 switch result {
                 case .success(let record):
                     if let session = PracticeSession(from: record), session.isIncomplete {
-                        print("✅ Found incomplete session in CloudKit")
-                        return session
+                        print("Found an incomplete session: \(recordID) with \(session.totalKubbs)/\(session.target)")
+                        candidateSessions.append(session)
                     }
                 case .failure(let error):
                     print("Error fetching incomplete session: \(error)")
                 }
             }
             
-            print("No incomplete session found in CloudKit")
+            // Sort by modification date and pick the most recent
+            let sortedSessions = candidateSessions.sorted { $0.modifiedAt > $1.modifiedAt }
+            
+            if let latest = sortedSessions.first {
+                print("✅ Returning latest incomplete session: \(latest.id) (Kubbs: \(latest.totalKubbs)/\(latest.target), Modified: \(latest.modifiedAt))")
+                return latest
+            }
+            
+            print("No incomplete sessions qualified for today")
             return nil
             
         } catch {
@@ -837,6 +1107,8 @@ extension CKAccountStatus {
             return "Restricted"
         case .couldNotDetermine:
             return "Could Not Determine"
+        case .temporarilyUnavailable:
+            return "Temporarily Unavailable"
         @unknown default:
             return "Unknown"
         }
