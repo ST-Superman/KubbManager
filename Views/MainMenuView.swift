@@ -249,6 +249,27 @@ struct OptionsView: View {
                     Text("Customize the app's appearance and feedback preferences.")
                 }
                 
+                // 8 Meters Section
+                Section {
+                    HStack {
+                        Text("8 Meter Accuracy target")
+                        Spacer()
+                        Text("\(Int(settingsManager.chartTargetAccuracy * 100))%")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Slider(value: $settingsManager.chartTargetAccuracy, in: 0.1...1.0, step: 0.05)
+                        Text("Set the target accuracy shown as a line on charts")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } header: {
+                    Text("8 Meters")
+                } footer: {
+                    Text("Configure chart visualization settings.")
+                }
+                
                 // Cloud Sync Section
                 Section {
                     Toggle("Enable Cloud Sync", isOn: $settingsManager.cloudSyncEnabled)

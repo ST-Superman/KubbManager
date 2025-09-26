@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var showingTargetSetting = false
     @State private var cloudKitManager = CloudKitManager.shared
     @StateObject private var settingsManager = SettingsManager.shared
+    @StateObject private var historyManager = HistoryManager()
     
     var body: some View {
         ScrollView {
@@ -40,9 +41,6 @@ struct HomeView: View {
                     )
                 }
                 
-                // Quick Stats
-                QuickStatsView()
-                    .environmentObject(sessionManager)
                 
                 // Recent Activity
                 RecentActivityView()
@@ -582,6 +580,7 @@ struct IncompleteSessionPracticeView: View {
         }
     }
 }
+
 
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

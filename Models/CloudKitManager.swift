@@ -140,10 +140,10 @@ class CloudKitManager: ObservableObject {
             return 
         }
         
-        print("Clearing all CloudKit data...")
+        print("Clearing all CloudKit data and local data...")
         
         do {
-            // Try to fetch and delete all records
+            // Try to fetch and delete all CloudKit records
             let query = CKQuery(recordType: PracticeSession.recordType, predicate: NSPredicate(value: true))
             let (matchResults, _) = try await privateDatabase.records(matching: query)
             
@@ -170,6 +170,10 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("Error clearing CloudKit data: \(error)")
         }
+        
+        // Always clear local data regardless of CloudKit status
+        localStorage.clearAllData()
+        print("Local data cleared successfully")
     }
     
     func removeDuplicateCloudKitRecords() async {
@@ -837,6 +841,8 @@ extension CKAccountStatus {
             return "Restricted"
         case .couldNotDetermine:
             return "Could Not Determine"
+        case .temporarilyUnavailable:
+            return "Temporarily Unavailable"
         @unknown default:
             return "Unknown"
         }

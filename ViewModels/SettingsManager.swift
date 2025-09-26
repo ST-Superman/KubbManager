@@ -74,6 +74,13 @@ class SettingsManager: ObservableObject {
         }
     }
     
+    // MARK: - Chart Settings
+    @Published var chartTargetAccuracy: Double {
+        didSet {
+            UserDefaults.standard.set(chartTargetAccuracy, forKey: "chartTargetAccuracy")
+        }
+    }
+    
     enum ColorSchemeOption: String, CaseIterable {
         case system = "system"
         case light = "light"
@@ -109,6 +116,9 @@ class SettingsManager: ObservableObject {
         // Default reminder time to 6 PM
         let defaultTime = Calendar.current.date(bySettingHour: 18, minute: 0, second: 0, of: Date()) ?? Date()
         self.reminderTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date ?? defaultTime
+        
+        // Chart Settings
+        self.chartTargetAccuracy = UserDefaults.standard.object(forKey: "chartTargetAccuracy") == nil ? 0.5 : UserDefaults.standard.double(forKey: "chartTargetAccuracy")
     }
     
     // MARK: - Helper Methods
