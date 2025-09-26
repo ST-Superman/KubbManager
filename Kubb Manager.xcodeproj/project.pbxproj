@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4CCE1B952E82DEF80045735D /* Kubb Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kubb Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -85,6 +86,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4C5FD0B42E871A7E0079A805 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		4CCE1B8C2E82DEF80045735D = {
 			isa = PBXGroup;
 			children = (
@@ -211,6 +219,12 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4CCE1B962E82DEF80045735D /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 4C5FD0B42E871A7E0079A805 /* Products */;
+					ProjectRef = 4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				4CCE1B942E82DEF80045735D /* Kubb Manager */,
