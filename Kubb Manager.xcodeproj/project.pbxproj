@@ -30,22 +30,9 @@
 		4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4CCE1BBB2E82DEFA0045735D /* Exceptions for "Kubb Manager" folder in "Kubb Manager" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 4CCE1B942E82DEF80045735D /* Kubb Manager */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4CCE1B972E82DEF80045735D /* Kubb Manager */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				4CCE1BBB2E82DEFA0045735D /* Exceptions for "Kubb Manager" folder in "Kubb Manager" target */,
-			);
 			path = "Kubb Manager";
 			sourceTree = "<group>";
 		};
