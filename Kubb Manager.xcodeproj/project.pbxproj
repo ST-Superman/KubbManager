@@ -25,7 +25,6 @@
 
 /* Begin PBXFileReference section */
 		4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
-		4C5FD1B32E871E300079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4CCE1B952E82DEF80045735D /* Kubb Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kubb Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,13 +74,6 @@
 
 /* Begin PBXGroup section */
 		4C5FD0B42E871A7E0079A805 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		4C5FD1B52E871E300079A805 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -219,10 +211,6 @@
 					ProductGroup = 4C5FD0B42E871A7E0079A805 /* Products */;
 					ProjectRef = 4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */;
 				},
-				{
-					ProductGroup = 4C5FD1B52E871E300079A805 /* Products */;
-					ProjectRef = 4C5FD1B32E871E300079A805 /* Kubb Manager.xcodeproj */;
-				},
 			);
 			projectRoot = "";
 			targets = (
@@ -300,7 +288,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "Kubb Manager/Kubb_Manager.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Kubb_Manager.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = KU56QJD48N;
@@ -329,7 +317,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "Kubb Manager/Kubb_Manager.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Kubb_Manager.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = KU56QJD48N;
