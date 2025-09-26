@@ -1,0 +1,579 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		4CCE1BAA2E82DEFA0045735D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CCE1B8D2E82DEF80045735D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4CCE1B942E82DEF80045735D;
+			remoteInfo = "Kubb Manager";
+		};
+		4CCE1BB42E82DEFA0045735D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CCE1B8D2E82DEF80045735D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4CCE1B942E82DEF80045735D;
+			remoteInfo = "Kubb Manager";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
+		4CCE1B952E82DEF80045735D /* Kubb Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kubb Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		4CCE1B972E82DEF80045735D /* Kubb Manager */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Kubb Manager";
+			sourceTree = "<group>";
+		};
+		4CCE1BAC2E82DEFA0045735D /* Kubb ManagerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Kubb ManagerTests";
+			sourceTree = "<group>";
+		};
+		4CCE1BB62E82DEFA0045735D /* Kubb ManagerUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Kubb ManagerUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4CCE1B922E82DEF80045735D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CCE1BA62E82DEFA0045735D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CCE1BB02E82DEFA0045735D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4C5FD0B42E871A7E0079A805 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4CCE1B8C2E82DEF80045735D = {
+			isa = PBXGroup;
+			children = (
+				4CCE1B972E82DEF80045735D /* Kubb Manager */,
+				4CCE1BAC2E82DEFA0045735D /* Kubb ManagerTests */,
+				4CCE1BB62E82DEFA0045735D /* Kubb ManagerUITests */,
+				4CCE1B962E82DEF80045735D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4CCE1B962E82DEF80045735D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4CCE1B952E82DEF80045735D /* Kubb Manager.app */,
+				4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */,
+				4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4CCE1B942E82DEF80045735D /* Kubb Manager */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CCE1BBC2E82DEFA0045735D /* Build configuration list for PBXNativeTarget "Kubb Manager" */;
+			buildPhases = (
+				4CCE1B912E82DEF80045735D /* Sources */,
+				4CCE1B922E82DEF80045735D /* Frameworks */,
+				4CCE1B932E82DEF80045735D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4CCE1B972E82DEF80045735D /* Kubb Manager */,
+			);
+			name = "Kubb Manager";
+			packageProductDependencies = (
+			);
+			productName = "Kubb Manager";
+			productReference = 4CCE1B952E82DEF80045735D /* Kubb Manager.app */;
+			productType = "com.apple.product-type.application";
+		};
+		4CCE1BA82E82DEFA0045735D /* Kubb ManagerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CCE1BC12E82DEFA0045735D /* Build configuration list for PBXNativeTarget "Kubb ManagerTests" */;
+			buildPhases = (
+				4CCE1BA52E82DEFA0045735D /* Sources */,
+				4CCE1BA62E82DEFA0045735D /* Frameworks */,
+				4CCE1BA72E82DEFA0045735D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4CCE1BAB2E82DEFA0045735D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4CCE1BAC2E82DEFA0045735D /* Kubb ManagerTests */,
+			);
+			name = "Kubb ManagerTests";
+			packageProductDependencies = (
+			);
+			productName = "Kubb ManagerTests";
+			productReference = 4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		4CCE1BB22E82DEFA0045735D /* Kubb ManagerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CCE1BC42E82DEFA0045735D /* Build configuration list for PBXNativeTarget "Kubb ManagerUITests" */;
+			buildPhases = (
+				4CCE1BAF2E82DEFA0045735D /* Sources */,
+				4CCE1BB02E82DEFA0045735D /* Frameworks */,
+				4CCE1BB12E82DEFA0045735D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4CCE1BB52E82DEFA0045735D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4CCE1BB62E82DEFA0045735D /* Kubb ManagerUITests */,
+			);
+			name = "Kubb ManagerUITests";
+			packageProductDependencies = (
+			);
+			productName = "Kubb ManagerUITests";
+			productReference = 4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4CCE1B8D2E82DEF80045735D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					4CCE1B942E82DEF80045735D = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					4CCE1BA82E82DEFA0045735D = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 4CCE1B942E82DEF80045735D;
+					};
+					4CCE1BB22E82DEFA0045735D = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 4CCE1B942E82DEF80045735D;
+					};
+				};
+			};
+			buildConfigurationList = 4CCE1B902E82DEF80045735D /* Build configuration list for PBXProject "Kubb Manager" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 4CCE1B8C2E82DEF80045735D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 4CCE1B962E82DEF80045735D /* Products */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 4C5FD0B42E871A7E0079A805 /* Products */;
+					ProjectRef = 4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				4CCE1B942E82DEF80045735D /* Kubb Manager */,
+				4CCE1BA82E82DEFA0045735D /* Kubb ManagerTests */,
+				4CCE1BB22E82DEFA0045735D /* Kubb ManagerUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4CCE1B932E82DEF80045735D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CCE1BA72E82DEFA0045735D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CCE1BB12E82DEFA0045735D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4CCE1B912E82DEF80045735D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CCE1BA52E82DEFA0045735D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CCE1BAF2E82DEFA0045735D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4CCE1BAB2E82DEFA0045735D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4CCE1B942E82DEF80045735D /* Kubb Manager */;
+			targetProxy = 4CCE1BAA2E82DEFA0045735D /* PBXContainerItemProxy */;
+		};
+		4CCE1BB52E82DEFA0045735D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4CCE1B942E82DEF80045735D /* Kubb Manager */;
+			targetProxy = 4CCE1BB42E82DEFA0045735D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		4CCE1BBD2E82DEFA0045735D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Kubb_Manager.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4CCE1BBE2E82DEFA0045735D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Kubb_Manager.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4CCE1BBF2E82DEFA0045735D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		4CCE1BC02E82DEFA0045735D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		4CCE1BC22E82DEFA0045735D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-ManagerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Kubb Manager.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Kubb Manager";
+			};
+			name = Debug;
+		};
+		4CCE1BC32E82DEFA0045735D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-ManagerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Kubb Manager.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Kubb Manager";
+			};
+			name = Release;
+		};
+		4CCE1BC52E82DEFA0045735D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-ManagerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Kubb Manager";
+			};
+			name = Debug;
+		};
+		4CCE1BC62E82DEFA0045735D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-ManagerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Kubb Manager";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4CCE1B902E82DEF80045735D /* Build configuration list for PBXProject "Kubb Manager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4CCE1BBF2E82DEFA0045735D /* Debug */,
+				4CCE1BC02E82DEFA0045735D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4CCE1BBC2E82DEFA0045735D /* Build configuration list for PBXNativeTarget "Kubb Manager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4CCE1BBD2E82DEFA0045735D /* Debug */,
+				4CCE1BBE2E82DEFA0045735D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4CCE1BC12E82DEFA0045735D /* Build configuration list for PBXNativeTarget "Kubb ManagerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4CCE1BC22E82DEFA0045735D /* Debug */,
+				4CCE1BC32E82DEFA0045735D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4CCE1BC42E82DEFA0045735D /* Build configuration list for PBXNativeTarget "Kubb ManagerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4CCE1BC52E82DEFA0045735D /* Debug */,
+				4CCE1BC62E82DEFA0045735D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4CCE1B8D2E82DEF80045735D /* Project object */;
+}
