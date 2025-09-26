@@ -33,7 +33,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4CCE1B972E82DEF80045735D /* Kubb Manager */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ".";
+			path = "Kubb Manager";
 			sourceTree = "<group>";
 		};
 		4CCE1BAC2E82DEFA0045735D /* Kubb ManagerTests */ = {

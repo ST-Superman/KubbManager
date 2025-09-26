@@ -122,6 +122,48 @@ Provides access to historical session data, statistics calculation, and data exp
 #### CloudKitManager
 Handles all CloudKit operations including sync, conflict resolution, and duplicate detection.
 
+## CloudKit Setup
+
+### 1. Apple Developer Portal Configuration
+
+1. Log in to the [Apple Developer Portal](https://developer.apple.com/account/)
+2. Navigate to **Certificates, Identifiers & Profiles**
+3. Select **Identifiers** and find your app identifier
+4. Enable **CloudKit** capability
+5. Go to **CloudKit Dashboard** and select your container: `iCloud.ST-Superman.Kubb-Manager`
+
+### 2. CloudKit Schema Setup
+
+In the CloudKit Dashboard, create the following record types:
+
+#### PracticeSession Record Type
+- **sessionId**: String (Indexed, Queryable)
+- **date**: Date (Indexed, Queryable)
+- **target**: Int64 (Indexed, Queryable)
+- **totalKubbs**: Int64 (Indexed, Queryable)
+- **totalBatons**: Int64 (Indexed, Queryable)
+- **startTime**: Date (Indexed, Queryable)
+- **endTime**: Date
+- **isComplete**: Int64 (Indexed, Queryable)
+- **createdAt**: Date (Indexed, Queryable)
+- **modifiedAt**: Date (Indexed, Queryable)
+- **rounds**: String (JSON data)
+
+#### Round Record Type (Optional - stored as JSON in PracticeSession)
+- **roundId**: String
+- **sessionReference**: Reference to PracticeSession
+- **roundNumber**: Int64
+- **kubbStates**: String (JSON array of 6 booleans)
+- **batonsUsed**: Int64
+- **isComplete**: Int64
+
+### 3. Xcode Project Configuration
+
+The project is already configured with:
+- CloudKit capability enabled in entitlements
+- Container identifier: `iCloud.ST-Superman.Kubb-Manager`
+- Proper CloudKit imports and setup
+
 ## 🔧 Configuration
 
 ### CloudKit Setup
@@ -147,6 +189,30 @@ Enable debug tools in settings to access:
 - CloudKit connection testing
 - Data cleanup utilities
 - Sync status monitoring
+
+## CloudKit Troubleshooting
+
+### Common Issues
+
+1. **"Not Authenticated" Error**
+   - Ensure user is signed in to iCloud
+   - Check CloudKit capability is enabled
+
+2. **"Container Not Found" Error**
+   - Verify container identifier matches in entitlements
+   - Ensure container exists in CloudKit Dashboard
+
+3. **Sync Issues**
+   - Check network connectivity
+   - Verify CloudKit schema matches code expectations
+   - Check Apple Developer Portal for service status
+
+### Development Tips
+
+- Use CloudKit Dashboard to monitor record creation
+- Test with multiple devices for sync verification
+- Check console logs for CloudKit operation details
+- Use development environment for testing, production for release
 
 ## 📱 Screenshots
 
