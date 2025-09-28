@@ -173,8 +173,8 @@ struct BaseballKubbStartView: View {
                             }
                             .buttonStyle(SecondaryButtonStyle())
                             
-                            Button("Complete Game") {
-                                sessionManager.completeGame()
+                            Button("Abandon Game") {
+                                sessionManager.abandonGame()
                             }
                             .buttonStyle(PrimaryButtonStyle())
                         }

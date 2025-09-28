@@ -60,10 +60,10 @@ class BaseballKubbSessionManager: ObservableObject {
         currentSession = incompleteSession
     }
     
-    func completeGame() {
+    func abandonGame() {
         guard var session = currentSession else { return }
         
-        print("🏁 Completing Baseball Kubb game: \(session.id)")
+        print("🚫 Abandoning Baseball Kubb game: \(session.id)")
         
         session.isComplete = true
         session.modifiedAt = Date()
