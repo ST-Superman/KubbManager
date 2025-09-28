@@ -139,6 +139,52 @@ struct BaseballKubbStartView: View {
             Spacer()
             
             VStack(spacing: 24) {
+                // Show incomplete game option if available
+                if let incompleteSession = sessionManager.incompleteSession {
+                    VStack(spacing: 16) {
+                        Text("Game in Progress")
+                            .font(.headline)
+                            .foregroundColor(.orange)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("\(incompleteSession.awayTeam) vs \(incompleteSession.homeTeam)")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text("Inning \(incompleteSession.currentInning) - \(incompleteSession.isTop ? "Top" : "Bottom")")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Score: \(incompleteSession.awayScore) - \(incompleteSession.homeScore)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Last played: \(incompleteSession.modifiedAt, style: .relative) ago")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        
+                        HStack(spacing: 12) {
+                            Button("Resume Game") {
+                                sessionManager.resumeIncompleteGame()
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                            
+                            Button("Complete Game") {
+                                sessionManager.completeGame()
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    Divider()
+                        .padding(.horizontal)
+                }
+                
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Away Team")
@@ -175,7 +221,7 @@ struct BaseballKubbStartView: View {
                 Button(action: startGame) {
                     HStack {
                         Image(systemName: "play.fill")
-                        Text("Start Game")
+                        Text("Start New Game")
                     }
                     .font(.headline)
                     .foregroundColor(.white)

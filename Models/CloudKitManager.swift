@@ -999,6 +999,39 @@ class CloudKitManager: ObservableObject {
         }
     }
     
+    func fetchIncompleteBaseballKubbSession() async throws -> BaseballKubbSession? {
+        guard isSignedIn else {
+            print("❌ Not signed in to iCloud")
+            return nil
+        }
+        
+        do {
+            let predicate = NSPredicate(format: "isComplete == 0")
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "modifiedAt", ascending: false)]
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    if let session = BaseballKubbSession(from: record), !session.isComplete {
+                        print("✅ Found incomplete Baseball Kubb session in CloudKit: \(session.id)")
+                        return session
+                    }
+                case .failure(let error):
+                    print("Error fetching incomplete Baseball Kubb session: \(error)")
+                }
+            }
+            
+            print("❌ No incomplete Baseball Kubb sessions found in CloudKit")
+            return nil
+        } catch {
+            print("❌ Error fetching incomplete Baseball Kubb sessions: \(error)")
+            throw error
+        }
+    }
+    
     private func findBaseballKubbRecordBySessionId(_ sessionId: String) async throws -> CKRecord? {
         do {
             let predicate = NSPredicate(format: "sessionId == %@", sessionId)

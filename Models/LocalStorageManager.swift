@@ -144,6 +144,11 @@ class LocalStorageManager: ObservableObject {
         return sessions.first
     }
     
+    func loadIncompleteBaseballKubbSession() -> BaseballKubbSession? {
+        let sessions = loadBaseballKubbSessions()
+        return sessions.first { !$0.isComplete }
+    }
+    
     private func saveBaseballKubbSessions(_ sessions: [BaseballKubbSession]) {
         do {
             let data = try JSONEncoder().encode(sessions)

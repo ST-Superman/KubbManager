@@ -12,6 +12,7 @@ import Combine
 class BaseballKubbSessionManager: ObservableObject {
     @Published var currentSession: BaseballKubbSession?
     @Published var lastSession: BaseballKubbSession?
+    @Published var incompleteSession: BaseballKubbSession?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
@@ -22,6 +23,7 @@ class BaseballKubbSessionManager: ObservableObject {
     init() {
         Task {
             await loadLastSession()
+            await loadIncompleteSession()
         }
     }
     
@@ -49,6 +51,33 @@ class BaseballKubbSessionManager: ObservableObject {
         
         print("🔄 Resuming last Baseball Kubb game: \(lastSession.id)")
         currentSession = lastSession
+    }
+    
+    func resumeIncompleteGame() {
+        guard let incompleteSession = incompleteSession else { return }
+        
+        print("🔄 Resuming incomplete Baseball Kubb game: \(incompleteSession.id)")
+        currentSession = incompleteSession
+    }
+    
+    func completeGame() {
+        guard var session = currentSession else { return }
+        
+        print("🏁 Completing Baseball Kubb game: \(session.id)")
+        
+        session.isComplete = true
+        session.modifiedAt = Date()
+        currentSession = session
+        lastSession = session
+        incompleteSession = nil
+        
+        // Save to local storage
+        localStorage.saveBaseballKubbSession(session)
+        
+        // Save to CloudKit
+        Task {
+            await saveSessionToCloudKit(session)
+        }
     }
     
     func endGame() {
@@ -212,6 +241,35 @@ class BaseballKubbSessionManager: ObservableObject {
             print("❌ Failed to load last session: \(error)")
             errorMessage = "Failed to load last session: \(error.localizedDescription)"
             isLoading = false
+        }
+    }
+    
+    private func loadIncompleteSession() async {
+        do {
+            // Load from local storage first
+            if let localSession = localStorage.loadIncompleteBaseballKubbSession() {
+                incompleteSession = localSession
+                print("📱 Loaded incomplete session from local storage: \(localSession.id)")
+            }
+            
+            // Try to load from CloudKit
+            if let cloudSession = try await cloudKitManager.fetchIncompleteBaseballKubbSession() {
+                // If we have both, use the more recent one
+                if let localSession = incompleteSession {
+                    if cloudSession.modifiedAt > localSession.modifiedAt {
+                        incompleteSession = cloudSession
+                        localStorage.saveBaseballKubbSession(cloudSession)
+                        print("☁️ Updated with newer incomplete CloudKit session: \(cloudSession.id)")
+                    }
+                } else {
+                    incompleteSession = cloudSession
+                    localStorage.saveBaseballKubbSession(cloudSession)
+                    print("☁️ Loaded incomplete session from CloudKit: \(cloudSession.id)")
+                }
+            }
+        } catch {
+            print("❌ Failed to load incomplete session: \(error)")
+            errorMessage = "Failed to load incomplete session: \(error.localizedDescription)"
         }
     }
     
