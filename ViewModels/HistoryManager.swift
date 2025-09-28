@@ -251,13 +251,9 @@ class HistoryManager: ObservableObject {
     }
     
     private func cleanupCloudKitDuplicates(for sessionId: String, keepSession: PracticeSession) async {
-        do {
-            // Use the existing CloudKit cleanup function which handles the query properly
-            await cloudKitManager.removeDuplicateCloudKitRecords()
-            print("🧹 Triggered CloudKit duplicate cleanup for session \(sessionId)")
-        } catch {
-            print("❌ Error cleaning up CloudKit duplicates for session \(sessionId): \(error)")
-        }
+        // Use the existing CloudKit cleanup function which handles the query properly
+        await cloudKitManager.removeDuplicateCloudKitRecords()
+        print("🧹 Triggered CloudKit duplicate cleanup for session \(sessionId)")
     }
     
 }
