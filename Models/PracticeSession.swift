@@ -25,7 +25,10 @@ struct PracticeSession: Identifiable, Codable {
          date: Date = Date(), 
          target: Int, 
          startTime: Date = Date()) {
-        self.id = id
+        // Validate and ensure unique ID
+        let validatedId = Self.validateAndGenerateUniqueId(id)
+        
+        self.id = validatedId
         self.date = date
         self.target = target
         self.totalKubbs = 0
@@ -36,6 +39,25 @@ struct PracticeSession: Identifiable, Codable {
         self.rounds = []
         self.createdAt = Date()
         self.modifiedAt = Date()
+        
+        print("🆔 Created new PracticeSession with ID: \(validatedId)")
+        print("   - Date: \(date)")
+        print("   - Target: \(target)")
+        print("   - StartTime: \(startTime)")
+    }
+    
+    // MARK: - ID Validation
+    
+    private static func validateAndGenerateUniqueId(_ providedId: String) -> String {
+        // Check if the provided ID is valid UUID format
+        if UUID(uuidString: providedId) != nil {
+            print("✅ Using provided valid UUID: \(providedId)")
+            return providedId
+        } else {
+            let newId = UUID().uuidString
+            print("⚠️ Invalid UUID provided (\(providedId)), generated new UUID: \(newId)")
+            return newId
+        }
     }
     
     // MARK: - CloudKit Integration

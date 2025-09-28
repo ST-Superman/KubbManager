@@ -216,16 +216,85 @@ struct RecentTrendsChart: View {
     @EnvironmentObject private var historyManager: HistoryManager
     @State private var selectedPeriod: ChartPeriod = .week
     @State private var chartData: [ChartDataPoint] = []
-    @State private var selectedDataPoint: ChartDataPoint?
-    @State private var showingTooltip = false
-    @State private var tooltipLocation = CGPoint.zero
-    @State private var chartBounds = CGRect.zero
     
     private var settingsManager = SettingsManager.shared
     
     private var recentAccuracy: String {
         guard let mostRecent = chartData.last else { return "No data" }
         return "\(String(format: "%.1f%%", mostRecent.accuracy * 100))"
+    }
+    
+    private var changeFromLastSession: String {
+        guard chartData.count >= 2 else { return "No comparison" }
+        let current = chartData.last!.accuracy
+        let previous = chartData[chartData.count - 2].accuracy
+        let change = current - previous
+        let changePercent = change * 100
+        
+        if change > 0 {
+            return "+\(String(format: "%.1f%%", changePercent))"
+        } else if change < 0 {
+            return "\(String(format: "%.1f%%", changePercent))"
+        } else {
+            return "0.0%"
+        }
+    }
+    
+    private var comparisonToTarget: String {
+        guard let mostRecent = chartData.last else { return "No data" }
+        let current = mostRecent.accuracy
+        let target = settingsManager.chartTargetAccuracy
+        let difference = current - target
+        let differencePercent = difference * 100
+        
+        if difference > 0 {
+            return "+\(String(format: "%.1f%%", differencePercent))"
+        } else if difference < 0 {
+            return "\(String(format: "%.1f%%", differencePercent))"
+        } else {
+            return "On target"
+        }
+    }
+    
+    private var changeFromLastSessionColor: Color {
+        guard chartData.count >= 2 else { return .secondary }
+        let current = chartData.last!.accuracy
+        let previous = chartData[chartData.count - 2].accuracy
+        let change = current - previous
+        
+        if change > 0 {
+            return .green
+        } else if change < 0 {
+            return .red
+        } else {
+            return .blue
+        }
+    }
+    
+    private var comparisonToTargetColor: Color {
+        guard let mostRecent = chartData.last else { return .secondary }
+        let current = mostRecent.accuracy
+        let target = settingsManager.chartTargetAccuracy
+        let difference = current - target
+        
+        if difference > 0 {
+            return .green
+        } else if difference < 0 {
+            return .red
+        } else {
+            return .blue
+        }
+    }
+    
+    private func formattedDate(_ date: Date?) -> String {
+        guard let date = date else { return "" }
+        let formatter = DateFormatter()
+        if Calendar.current.isDate(date, equalTo: Date(), toGranularity: .day) {
+            return "Today"
+        } else {
+            formatter.dateStyle = .short
+            return formatter.string(from: date)
+        }
     }
     
     enum ChartPeriod: String, CaseIterable {
@@ -241,14 +310,43 @@ struct RecentTrendsChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Accuracy Trend")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     
-                    Text("Most Recent: \(recentAccuracy)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    // Three summary values
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Most Recent")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(recentAccuracy)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("vs Last Session")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(changeFromLastSession)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(changeFromLastSessionColor)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("vs Target")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(comparisonToTarget)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(comparisonToTargetColor)
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -277,39 +375,80 @@ struct RecentTrendsChart: View {
                 .background(Color(.systemGray5))
                 .cornerRadius(8)
             } else {
-                ZStack {
-                    EnhancedChartView(
+                VStack(spacing: 8) {
+                    SparkLineChartView(
                         chartData: chartData,
-                        selectedDataPoint: $selectedDataPoint,
-                        showingTooltip: $showingTooltip,
-                        tooltipLocation: $tooltipLocation,
-                        chartBounds: $chartBounds,
                         targetAccuracy: settingsManager.chartTargetAccuracy
                     )
-                    .frame(height: 200)
-                    .padding(.vertical, 8)
+                    .frame(height: 120)
                     
-                    // Tooltip overlay
-                    if showingTooltip, let dataPoint = selectedDataPoint {
-                        TooltipView(
-                            dataPoint: dataPoint,
-                            location: tooltipLocation,
-                            chartBounds: chartBounds
-                        )
-                        .zIndex(1)
-                        .onTapGesture {
-                            showingTooltip = false
-                            selectedDataPoint = nil
+                    // Date labels
+                    if !chartData.isEmpty {
+                        HStack {
+                            Text(formattedDate(chartData.first?.date))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            if chartData.count > 2 {
+                                Text(formattedDate(chartData[chartData.count / 2].date))
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Text(formattedDate(chartData.last?.date))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 8)
+                    }
+                    
+                    // Legend
+                    HStack(spacing: 16) {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 6, height: 6)
+                            Text("Improving")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 6, height: 6)
+                            Text("Declining")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 6, height: 6)
+                            Text("Stable")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 4) {
+                            Rectangle()
+                                .fill(Color.green)
+                                .frame(width: 12, height: 2)
+                            Text("Trend")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
                         }
                     }
+                    .padding(.horizontal, 8)
                 }
-                .onTapGesture {
-                    // Tap outside to dismiss tooltip
-                    if showingTooltip {
-                        showingTooltip = false
-                        selectedDataPoint = nil
-                    }
-                }
+                .padding(.vertical, 8)
             }
         }
         .onAppear {
@@ -346,6 +485,287 @@ struct RecentTrendsChart: View {
                 batons: session.totalBatons
             )
         }
+    }
+}
+
+// MARK: - Spark Line Chart
+struct SparkLineChartView: View {
+    let chartData: [ChartDataPoint]
+    let targetAccuracy: Double
+    @State private var animationProgress: CGFloat = 0
+    
+    // Dynamic Y-axis scaling based on data range
+    private var dataMin: Double {
+        guard !chartData.isEmpty else { return 0.0 }
+        let minValue = chartData.map { $0.accuracy }.min() ?? 0.0
+        // Add 5% padding below minimum
+        return max(0.0, minValue - (minValue * 0.05))
+    }
+    
+    private var dataMax: Double {
+        guard !chartData.isEmpty else { return 1.0 }
+        let maxValue = chartData.map { $0.accuracy }.max() ?? 1.0
+        // Add 5% padding above maximum
+        return min(1.0, maxValue + (maxValue * 0.05))
+    }
+    
+    private var dataRange: Double {
+        return dataMax - dataMin
+    }
+    
+    // Calculate moving average for smoother trend visualization
+    private var movingAverageData: [Double] {
+        guard chartData.count >= 3 else { return chartData.map { $0.accuracy } }
+        
+        var smoothed: [Double] = []
+        for i in 0..<chartData.count {
+            let start = max(0, i - 1)
+            let end = min(chartData.count - 1, i + 1)
+            let window = chartData[start...end]
+            let average = window.map { $0.accuracy }.reduce(0, +) / Double(window.count)
+            smoothed.append(average)
+        }
+        return smoothed
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let height = geometry.size.height
+            
+            ZStack {
+                // Background with subtle grid
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(.systemGray6))
+                
+                if chartData.count > 1 {
+                    // Target line (subtle)
+                    targetLine(width: width, height: height)
+                    
+                    // Area fill under the curve for better trend visualization
+                    areaFill(width: width, height: height)
+                    
+                    // Moving average line (smooth trend)
+                    movingAverageLine(width: width, height: height)
+                    
+                    // Main data points with trend indicators
+                    dataPoints(width: width, height: height)
+                    
+                    // Current value indicator
+                    currentValueIndicator(width: width, height: height)
+                    
+                    // Y-axis labels showing data range
+                    yAxisLabels(width: width, height: height)
+                } else if chartData.count == 1 {
+                    // Single data point - show as a dot
+                    singleDataPoint(width: width, height: height)
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.2)) {
+                animationProgress = 1.0
+            }
+        }
+    }
+    
+    private func targetLine(width: CGFloat, height: CGFloat) -> some View {
+        Path { path in
+            // Scale target line to fit within data range
+            let normalizedTarget = (targetAccuracy - dataMin) / dataRange
+            let y = height * (1 - CGFloat(normalizedTarget))
+            path.move(to: CGPoint(x: 0, y: y))
+            path.addLine(to: CGPoint(x: width, y: y))
+        }
+        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+    }
+    
+    private func areaFill(width: CGFloat, height: CGFloat) -> some View {
+        Path { path in
+            guard !chartData.isEmpty else { return }
+            
+            // Start from bottom of data range
+            let firstX = 0.0
+            let bottomY = height * (1 - CGFloat((0 - dataMin) / dataRange))
+            path.move(to: CGPoint(x: firstX, y: bottomY))
+            
+            // Draw line to first data point
+            let firstDataPoint = chartData[0]
+            let firstDataX = width * CGFloat(0) / CGFloat(max(chartData.count - 1, 1)) * animationProgress
+            let normalizedFirstY = (firstDataPoint.accuracy - dataMin) / dataRange
+            let firstDataY = height * (1 - CGFloat(normalizedFirstY))
+            path.addLine(to: CGPoint(x: firstDataX, y: firstDataY))
+            
+            // Draw curve through all data points
+            for (index, dataPoint) in chartData.enumerated() {
+                let x = width * CGFloat(index) / CGFloat(max(chartData.count - 1, 1)) * animationProgress
+                let normalizedY = (dataPoint.accuracy - dataMin) / dataRange
+                let y = height * (1 - CGFloat(normalizedY))
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+            
+            // Close the path back to bottom
+            let lastX = width * animationProgress
+            path.addLine(to: CGPoint(x: lastX, y: bottomY))
+            path.closeSubpath()
+        }
+        .fill(
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.blue.opacity(0.3),
+                    Color.blue.opacity(0.1),
+                    Color.clear
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+    
+    private func movingAverageLine(width: CGFloat, height: CGFloat) -> some View {
+        Path { path in
+            guard movingAverageData.count > 1 else { return }
+            
+            var isFirst = true
+            for (index, accuracy) in movingAverageData.enumerated() {
+                let x = width * CGFloat(index) / CGFloat(max(movingAverageData.count - 1, 1)) * animationProgress
+                let normalizedY = (accuracy - dataMin) / dataRange
+                let y = height * (1 - CGFloat(normalizedY))
+                
+                if isFirst {
+                    path.move(to: CGPoint(x: x, y: y))
+                    isFirst = false
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+        }
+        .stroke(
+            LinearGradient(
+                gradient: Gradient(colors: [.green, .green.opacity(0.7)]),
+                startPoint: .leading,
+                endPoint: .trailing
+            ),
+            lineWidth: 2
+        )
+        .shadow(color: .green.opacity(0.3), radius: 1, x: 0, y: 0)
+    }
+    
+    private func dataPoints(width: CGFloat, height: CGFloat) -> some View {
+        ForEach(Array(chartData.enumerated()), id: \.offset) { index, dataPoint in
+            let x = width * CGFloat(index) / CGFloat(max(chartData.count - 1, 1)) * animationProgress
+            let normalizedY = (dataPoint.accuracy - dataMin) / dataRange
+            let y = height * (1 - CGFloat(normalizedY))
+            
+            // Determine color based on trend
+            let color = getTrendColor(for: index)
+            
+            Circle()
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [color, color.opacity(0.7)]),
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 3
+                    )
+                )
+                .frame(width: 6, height: 6)
+                .position(x: x, y: y)
+                .shadow(color: color.opacity(0.4), radius: 2, x: 0, y: 0)
+                .scaleEffect(animationProgress)
+                .opacity(animationProgress)
+        }
+    }
+    
+    private func getTrendColor(for index: Int) -> Color {
+        guard index > 0 else { return .blue }
+        
+        let current = chartData[index].accuracy
+        let previous = chartData[index - 1].accuracy
+        
+        if current > previous {
+            return .green // Improving
+        } else if current < previous {
+            return .red // Declining
+        } else {
+            return .blue // Stable
+        }
+    }
+    
+    private func currentValueIndicator(width: CGFloat, height: CGFloat) -> some View {
+        guard let lastDataPoint = chartData.last else { return AnyView(EmptyView()) }
+        
+        let x = width * animationProgress
+        let normalizedY = (lastDataPoint.accuracy - dataMin) / dataRange
+        let y = height * (1 - CGFloat(normalizedY))
+        
+        return AnyView(
+            ZStack {
+                // Outer ring
+                Circle()
+                    .stroke(Color.blue, lineWidth: 2)
+                    .frame(width: 12, height: 12)
+                    .position(x: x, y: y)
+                    .scaleEffect(animationProgress)
+                    .opacity(animationProgress)
+                
+                // Inner dot
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 6, height: 6)
+                    .position(x: x, y: y)
+                    .scaleEffect(animationProgress)
+                    .opacity(animationProgress)
+            }
+            .shadow(color: .blue.opacity(0.6), radius: 4, x: 0, y: 0)
+        )
+    }
+    
+    private func yAxisLabels(width: CGFloat, height: CGFloat) -> some View {
+        VStack {
+            // Top label (max value)
+            HStack {
+                Spacer()
+                Text("\(String(format: "%.1f%%", dataMax * 100))")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.trailing, 8)
+            }
+            
+            Spacer()
+            
+            // Bottom label (min value)
+            HStack {
+                Spacer()
+                Text("\(String(format: "%.1f%%", dataMin * 100))")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.trailing, 8)
+            }
+        }
+        .frame(width: width, height: height)
+    }
+    
+    private func singleDataPoint(width: CGFloat, height: CGFloat) -> some View {
+        let dataPoint = chartData[0]
+        let x = width / 2
+        let normalizedY = (dataPoint.accuracy - dataMin) / dataRange
+        let y = height * (1 - CGFloat(normalizedY))
+        
+        return Circle()
+            .fill(
+                RadialGradient(
+                    gradient: Gradient(colors: [.blue, .blue.opacity(0.7)]),
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: 4
+                )
+            )
+            .frame(width: 8, height: 8)
+            .position(x: x, y: y)
+            .shadow(color: .blue.opacity(0.4), radius: 2, x: 0, y: 0)
+            .scaleEffect(animationProgress)
+            .opacity(animationProgress)
     }
 }
 

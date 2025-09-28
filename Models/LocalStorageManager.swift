@@ -107,6 +107,52 @@ class LocalStorageManager: ObservableObject {
         return try? JSONEncoder().encode(sessions)
     }
     
+    // MARK: - Baseball Kubb Sessions
+    
+    func saveBaseballKubbSession(_ session: BaseballKubbSession) {
+        var sessions = loadBaseballKubbSessions()
+        
+        // Update existing session or add new one
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            sessions[index] = session
+        } else {
+            sessions.append(session)
+        }
+        
+        // Sort by creation date (newest first)
+        sessions.sort { $0.createdAt > $1.createdAt }
+        
+        saveBaseballKubbSessions(sessions)
+    }
+    
+    func loadBaseballKubbSessions() -> [BaseballKubbSession] {
+        guard let data = userDefaults.data(forKey: "BaseballKubbSessions") else {
+            return []
+        }
+        
+        do {
+            let sessions = try JSONDecoder().decode([BaseballKubbSession].self, from: data)
+            return sessions
+        } catch {
+            print("Error loading Baseball Kubb sessions from local storage: \(error)")
+            return []
+        }
+    }
+    
+    func loadLastBaseballKubbSession() -> BaseballKubbSession? {
+        let sessions = loadBaseballKubbSessions()
+        return sessions.first
+    }
+    
+    private func saveBaseballKubbSessions(_ sessions: [BaseballKubbSession]) {
+        do {
+            let data = try JSONEncoder().encode(sessions)
+            userDefaults.set(data, forKey: "BaseballKubbSessions")
+        } catch {
+            print("Error saving Baseball Kubb sessions to local storage: \(error)")
+        }
+    }
+    
     func importData(_ data: Data) -> Bool {
         do {
             let sessions = try JSONDecoder().decode([PracticeSession].self, from: data)

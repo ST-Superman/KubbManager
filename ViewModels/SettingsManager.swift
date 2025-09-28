@@ -117,7 +117,7 @@ class SettingsManager: ObservableObject {
         let defaultTime = Calendar.current.date(bySettingHour: 18, minute: 0, second: 0, of: Date()) ?? Date()
         self.reminderTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date ?? defaultTime
         
-        // Chart Settings
+        // Chart Settings - Default to 50%
         self.chartTargetAccuracy = UserDefaults.standard.object(forKey: "chartTargetAccuracy") == nil ? 0.5 : UserDefaults.standard.double(forKey: "chartTargetAccuracy")
     }
     

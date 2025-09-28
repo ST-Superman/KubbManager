@@ -10,6 +10,7 @@ import SwiftUI
 struct MainMenuView: View {
     @State private var selectedMode: TrainingMode?
     @State private var showingEightMeterTraining = false
+    @State private var showingBaseballKubb = false
     @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
     
@@ -31,6 +32,8 @@ struct MainMenuView: View {
                                     selectedMode = mode
                                     if mode == .eightMeter {
                                         showingEightMeterTraining = true
+                                    } else if mode == .baseballKubb {
+                                        showingBaseballKubb = true
                                     }
                                 }
                             }
@@ -52,6 +55,9 @@ struct MainMenuView: View {
         }
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
             EightMeterTrainingView()
+        }
+        .fullScreenCover(isPresented: $showingBaseballKubb) {
+            BaseballKubbView()
         }
         .sheet(isPresented: $showingOptions) {
             OptionsView()
@@ -93,6 +99,11 @@ struct TrainingModeButton: View {
                 // Icon
                 if mode == .eightMeter {
                     Image("kubb_crosshair")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 60)
+                } else if mode == .baseballKubb {
+                    Image("baseball_kubb")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 60, height: 60)

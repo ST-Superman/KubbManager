@@ -13,6 +13,7 @@ struct PracticeView: View {
     @State private var showingEndSessionAlert = false
     @State private var showingResetRoundAlert = false
     @State private var showingTargetReachedAlert = false
+    @State private var hasShownTargetReachedAlert = false
     
     private let hapticSuccess = UINotificationFeedbackGenerator()
     private let hapticError = UINotificationFeedbackGenerator()
@@ -75,7 +76,11 @@ struct PracticeView: View {
             Text("Are you sure you want to reset the current round? This will clear all progress for this round.")
         }
         .alert("Target Reached!", isPresented: $showingTargetReachedAlert) {
-            Button("Continue Practice") { }
+            Button("Continue Practice") {
+                // User chooses to continue - just dismiss the alert
+                // Session remains active and they can continue logging rounds
+                hasShownTargetReachedAlert = true
+            }
             Button("End Session") {
                 Task {
                     await sessionManager.completeSession()
@@ -83,10 +88,10 @@ struct PracticeView: View {
                 }
             }
         } message: {
-            Text("Congratulations! You've reached your target of \(sessionManager.target) kubbs! 🎉")
+            Text("Congratulations! You've reached your target of \(sessionManager.target) kubbs! 🎉\n\nWould you like to continue practicing or end your session?")
         }
         .onChange(of: sessionManager.isTargetReached) { _, isReached in
-            if isReached {
+            if isReached && !hasShownTargetReachedAlert {
                 hapticSuccess.notificationOccurred(.success)
                 showingTargetReachedAlert = true
             }

@@ -581,7 +581,6 @@ struct IncompleteSessionPracticeView: View {
     }
 }
 
-
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -595,7 +594,6 @@ struct PrimaryButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
-
 
 #Preview {
     HomeView(selectedTab: .constant(0))

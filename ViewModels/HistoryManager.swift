@@ -212,6 +212,7 @@ class HistoryManager: ObservableObject {
         let groupedSessions = Dictionary(grouping: sessions) { $0.id }
         
         var deduplicatedSessions: [PracticeSession] = []
+        var hasDuplicates = false
         
         for (_, sessionGroup) in groupedSessions {
             if sessionGroup.count == 1 {
@@ -220,12 +221,26 @@ class HistoryManager: ObservableObject {
             } else {
                 // Multiple sessions with same ID - keep the most recent one
                 print("⚠️ Found \(sessionGroup.count) duplicate sessions with ID: \(sessionGroup[0].id)")
+                hasDuplicates = true
                 
                 // Sort by modifiedAt date (newest first) and take the first one
                 let sortedSessions = sessionGroup.sorted { $0.modifiedAt > $1.modifiedAt }
                 deduplicatedSessions.append(sortedSessions[0])
                 
                 print("✅ Kept session with modifiedAt: \(sortedSessions[0].modifiedAt)")
+                
+                // Clean up CloudKit duplicates for this session ID
+                Task {
+                    await cleanupCloudKitDuplicates(for: sessionGroup[0].id, keepSession: sortedSessions[0])
+                }
+            }
+        }
+        
+        // If we found duplicates, trigger an immediate CloudKit cleanup
+        if hasDuplicates {
+            print("🧹 Duplicates detected - triggering immediate CloudKit cleanup...")
+            Task {
+                await cloudKitManager.removeDuplicateCloudKitRecords()
             }
         }
         
@@ -234,4 +249,15 @@ class HistoryManager: ObservableObject {
         
         return deduplicatedSessions
     }
+    
+    private func cleanupCloudKitDuplicates(for sessionId: String, keepSession: PracticeSession) async {
+        do {
+            // Use the existing CloudKit cleanup function which handles the query properly
+            await cloudKitManager.removeDuplicateCloudKitRecords()
+            print("🧹 Triggered CloudKit duplicate cleanup for session \(sessionId)")
+        } catch {
+            print("❌ Error cleaning up CloudKit duplicates for session \(sessionId): \(error)")
+        }
+    }
+    
 }
