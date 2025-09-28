@@ -826,6 +826,59 @@ struct BaseballKubbScoreboardTable: View {
     }
 }
 
+struct BaseballKubbHalfSummaryView: View {
+    @ObservedObject var sessionManager: BaseballKubbSessionManager
+    @Binding var showingHalfSummary: Bool
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                Text("Half Inning Complete")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                // Baseball-style scoreboard
+                if let session = sessionManager.currentSession, !session.scoreboardData.isEmpty {
+                    BaseballKubbScoreboardTable(session: session)
+                }
+                
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Runs Scored:")
+                        Spacer()
+                        Text("\(sessionManager.currentSession?.halfInningRuns ?? 0)")
+                            .fontWeight(.bold)
+                    }
+                    
+                    HStack {
+                        Text("Kings Hit:")
+                        Spacer()
+                        Text("\(sessionManager.currentSession?.halfInningKings ?? 0)")
+                            .fontWeight(.bold)
+                    }
+                    
+                    HStack {
+                        Text("Batons Used:")
+                        Spacer()
+                        Text("\(sessionManager.currentSession?.batonCount ?? 0)")
+                            .fontWeight(.bold)
+                    }
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                
+                Button("Next Half") {
+                    sessionManager.nextHalf()
+                    showingHalfSummary = false
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
+            .padding()
+        }
+    }
+}
+
 struct CircularButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
