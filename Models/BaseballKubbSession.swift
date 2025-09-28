@@ -75,6 +75,31 @@ struct BaseballKubbSession: Identifiable, Codable {
         return isTop ? awayBaselineKubbs : homeBaselineKubbs
     }
     
+    // MARK: - Scoreboard Data
+    
+    var scoreboardData: [(awayRuns: Int, awayKings: Int, homeRuns: Int, homeKings: Int)] {
+        var data: [(awayRuns: Int, awayKings: Int, homeRuns: Int, homeKings: Int)] = []
+        
+        // Process each half-inning from history
+        for (index, halfInning) in halfInningHistory.enumerated() {
+            let nextHalfInning = index < halfInningHistory.count - 1 ? halfInningHistory[index + 1] : nil
+            
+            if halfInning.isTop {
+                // Top half - away team scored
+                let awayRuns = nextHalfInning?.awayScore ?? awayScore - halfInning.awayScore
+                let awayKings = nextHalfInning?.awayKings ?? awayKings - halfInning.awayKings
+                data.append((awayRuns: awayRuns, awayKings: awayKings, homeRuns: 0, homeKings: 0))
+            } else {
+                // Bottom half - home team scored
+                let homeRuns = nextHalfInning?.homeScore ?? homeScore - halfInning.homeScore
+                let homeKings = nextHalfInning?.homeKings ?? homeKings - halfInning.homeKings
+                data.append((awayRuns: 0, awayKings: 0, homeRuns: homeRuns, homeKings: homeKings))
+            }
+        }
+        
+        return data
+    }
+    
     var batonLimit: Int {
         return currentInning == 9 ? 999 : 6
     }

@@ -700,6 +700,132 @@ struct BaseballKubbHitModalView: View {
     }
 }
 
+struct BaseballKubbScoreboardTable: View {
+    let session: BaseballKubbSession
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(spacing: 0) {
+                Text("Team")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                
+                ForEach(1...9, id: \.self) { inning in
+                    Text("\(inning)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                
+                Text("Total")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                
+                Text("Kings")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+            }
+            .background(Color(.systemGray5))
+            
+            // Away team row
+            HStack(spacing: 0) {
+                Text(session.awayTeam)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                
+                ForEach(1...9, id: \.self) { inning in
+                    let halfInningIndex = (inning - 1) * 2 // Top half
+                    let data = halfInningIndex < session.scoreboardData.count ? session.scoreboardData[halfInningIndex] : (awayRuns: 0, awayKings: 0, homeRuns: 0, homeKings: 0)
+                    
+                    Text(formatScore(runs: data.awayRuns, kings: data.awayKings))
+                        .font(.caption)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                
+                Text("\(session.awayScore)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                
+                Text("\(session.awayKings)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+            }
+            .background(Color(.systemGray6))
+            
+            // Home team row
+            HStack(spacing: 0) {
+                Text(session.homeTeam)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                
+                ForEach(1...9, id: \.self) { inning in
+                    let halfInningIndex = (inning - 1) * 2 + 1 // Bottom half
+                    let data = halfInningIndex < session.scoreboardData.count ? session.scoreboardData[halfInningIndex] : (awayRuns: 0, awayKings: 0, homeRuns: 0, homeKings: 0)
+                    
+                    Text(formatScore(runs: data.homeRuns, kings: data.homeKings))
+                        .font(.caption)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                
+                Text("\(session.homeScore)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                
+                Text("\(session.homeKings)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+            }
+            .background(Color(.systemBackground))
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+        .cornerRadius(8)
+    }
+    
+    private func formatScore(runs: Int, kings: Int) -> String {
+        if runs == 0 {
+            return "0"
+        } else if kings > 0 {
+            return "\(runs)(K)"
+        } else {
+            return "\(runs)"
+        }
+    }
+}
+
 struct CircularButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -715,51 +841,6 @@ struct CircularButtonStyle: ButtonStyle {
 }
 
 
-struct BaseballKubbHalfSummaryView: View {
-    @ObservedObject var sessionManager: BaseballKubbSessionManager
-    @Binding var showingHalfSummary: Bool
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("Half Inning Complete")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            VStack(spacing: 16) {
-                HStack {
-                    Text("Runs Scored:")
-                    Spacer()
-                    Text("\(sessionManager.currentSession?.halfInningRuns ?? 0)")
-                        .fontWeight(.bold)
-                }
-                
-                HStack {
-                    Text("Kings Hit:")
-                    Spacer()
-                    Text("\(sessionManager.currentSession?.halfInningKings ?? 0)")
-                        .fontWeight(.bold)
-                }
-                
-                HStack {
-                    Text("Batons Used:")
-                    Spacer()
-                    Text("\(sessionManager.currentSession?.batonCount ?? 0)")
-                        .fontWeight(.bold)
-                }
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            
-            Button("Next Half") {
-                sessionManager.nextHalf()
-                showingHalfSummary = false
-            }
-            .buttonStyle(PrimaryButtonStyle())
-        }
-        .padding()
-    }
-}
 
 struct BaseballKubbGameEndView: View {
     @ObservedObject var sessionManager: BaseballKubbSessionManager
