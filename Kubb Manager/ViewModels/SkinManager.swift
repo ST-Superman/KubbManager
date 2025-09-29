@@ -238,18 +238,9 @@ class SkinManager: ObservableObject {
     }
 }
 
-// MARK: - Skin Unlock Notifications
+// MARK: - Skin Package Management
 
 extension SkinManager {
-    func notifySkinUnlocked(_ skin: KubbSkin) {
-        // This could trigger a notification or celebration animation
-        // For now, we'll just update the UI
-        objectWillChange.send()
-    }
-}
-
-    // MARK: - Skin Package Management
-    
     func selectSkinPackage(_ packageId: String) {
         // Find skins that belong to this package (same base ID)
         let packageSkins = availableSkins.filter { skin in
@@ -284,17 +275,28 @@ extension SkinManager {
         // For example: "classic_blue" from "classic_blue", "wooden_classic" from "wooden_classic", etc.
         return skinId
     }
-    
-    // MARK: - Integration with Existing Systems
-    
-    extension SkinManager {
-        func checkSkinsAfterSession() async {
-            // Call this after each training session to check for new unlocks
-            await checkAndUnlockSkins()
-        }
-        
-        func checkSkinsAfterAchievement(_ achievementId: String) async {
-            // Call this when an achievement is completed
-            await checkAndUnlockSkins()
-        }
+}
+
+// MARK: - Skin Unlock Notifications
+
+extension SkinManager {
+    func notifySkinUnlocked(_ skin: KubbSkin) {
+        // This could trigger a notification or celebration animation
+        // For now, we'll just update the UI
+        objectWillChange.send()
     }
+}
+
+// MARK: - Integration with Existing Systems
+
+extension SkinManager {
+    func checkSkinsAfterSession() async {
+        // Call this after each training session to check for new unlocks
+        await checkAndUnlockSkins()
+    }
+    
+    func checkSkinsAfterAchievement(_ achievementId: String) async {
+        // Call this when an achievement is completed
+        await checkAndUnlockSkins()
+    }
+}
