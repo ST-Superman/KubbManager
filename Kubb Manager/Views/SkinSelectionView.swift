@@ -94,12 +94,10 @@ struct SkinSelectionView: View {
                 ], spacing: 16) {
                     ForEach(skinsForCurrentCategory, id: \.id) { skin in
                         SkinCard(skin: skin) {
-                            if skin.isUnlocked {
-                                if selectedCategory == .classic || selectedCategory == .modern {
-                                    skinManager.selectKubbSkin(skin)
-                                } else {
-                                    skinManager.selectKingSkin(skin)
-                                }
+                            if selectedCategory == .classic || selectedCategory == .modern {
+                                skinManager.selectKubbSkin(skin)
+                            } else {
+                                skinManager.selectKingSkin(skin)
                             }
                         }
                     }
@@ -107,7 +105,7 @@ struct SkinSelectionView: View {
             } header: {
                 Text("Available Skins")
             } footer: {
-                Text("Tap on unlocked skins to select them. Complete achievements to unlock new skins!")
+                Text("Tap on skins to select them. All skins are available!")
             }
         }
         .navigationTitle("Kubb Skins")
@@ -153,7 +151,7 @@ struct SkinCard: View {
                 VStack(spacing: 4) {
                     Text(skin.name)
                         .font(.headline)
-                        .foregroundColor(skin.isUnlocked ? .primary : .secondary)
+                        .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                     
                     Text(skin.description)
@@ -161,45 +159,19 @@ struct SkinCard: View {
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
-                    
-                    if !skin.isUnlocked {
-                        Text(skin.unlockRequirement)
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                    }
-                }
-                
-                // Unlock Status
-                HStack {
-                    if skin.isUnlocked {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text("Unlocked")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    } else {
-                        Image(systemName: "lock.fill")
-                            .foregroundColor(.orange)
-                        Text("Locked")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    }
                 }
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(skin.isUnlocked ? Color(.systemBackground) : Color(.systemGray6))
+                    .fill(Color(.systemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(skin.isUnlocked ? Color.blue : Color.clear, lineWidth: 2)
+                            .stroke(Color.blue, lineWidth: 2)
                     )
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(!skin.isUnlocked)
     }
 }
 
@@ -232,7 +204,7 @@ struct SkinPickerView: View {
                 
                 // Skins List
                 Section {
-                    ForEach(unlockedSkinsForCategory, id: \.id) { skin in
+                    ForEach(availableSkinsForCategory, id: \.id) { skin in
                         HStack {
                             SkinPreview(skin: skin, size: 40)
                             
@@ -259,11 +231,7 @@ struct SkinPickerView: View {
                         }
                     }
                 } header: {
-                    Text("Unlocked Skins")
-                } footer: {
-                    if unlockedSkinsForCategory.isEmpty {
-                        Text("No skins unlocked in this category yet. Complete achievements to unlock new skins!")
-                    }
+                    Text("Available Skins")
                 }
             }
             .navigationTitle(title)
@@ -278,8 +246,8 @@ struct SkinPickerView: View {
         }
     }
     
-    private var unlockedSkinsForCategory: [KubbSkin] {
-        return skinManager.unlockedSkinsForCategory(selectedCategory)
+    private var availableSkinsForCategory: [KubbSkin] {
+        return skinManager.skinsForCategory(selectedCategory)
     }
 }
 

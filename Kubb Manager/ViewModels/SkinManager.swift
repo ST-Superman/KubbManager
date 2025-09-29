@@ -27,8 +27,8 @@ class SkinManager: ObservableObject {
         // Initialize with default skins
         self.availableSkins = KubbSkin.defaultSkins
         
-        // Unlock all default skins
-        self.unlockedSkins = Set(KubbSkin.defaultSkins.filter { $0.isDefault && $0.isUnlocked }.map { $0.id })
+        // Unlock all skins by default (achievements disabled)
+        self.unlockedSkins = Set(KubbSkin.defaultSkins.map { $0.id })
         
         // Initialize with default skins first
         self.selectedKubbSkin = KubbSkin.defaultSkins.first!
@@ -52,13 +52,11 @@ class SkinManager: ObservableObject {
     // MARK: - Skin Selection
     
     func selectKubbSkin(_ skin: KubbSkin) {
-        guard skin.isUnlocked else { return }
         selectedKubbSkin = skin
         saveSelectedSkin(skin, for: selectedKubbSkinKey)
     }
     
     func selectKingSkin(_ skin: KubbSkin) {
-        guard skin.isUnlocked else { return }
         selectedKingSkin = skin
         saveSelectedSkin(skin, for: selectedKingSkinKey)
     }
@@ -72,35 +70,21 @@ class SkinManager: ObservableObject {
     }
     
     func isSkinUnlocked(_ skinId: String) -> Bool {
-        return unlockedSkins.contains(skinId)
+        // All skins are now unlocked by default
+        return true
     }
     
     func checkAndUnlockSkins() async {
-        // This method should be called when achievements are completed
-        // or when certain conditions are met
-        for skin in availableSkins {
-            if !skin.isUnlocked {
-                let shouldUnlock = await shouldUnlockSkin(skin)
-                if shouldUnlock {
-                    unlockSkin(skin.id)
-                }
-            }
-        }
+        // DISABLED: All skins are now unlocked by default
+        // No achievement or premium unlock checking needed
+        // This method is kept for compatibility but does nothing
+        return
     }
     
     private func shouldUnlockSkin(_ skin: KubbSkin) async -> Bool {
-        switch skin.unlockType {
-        case .defaultSkin:
-            return true
-        case .achievement:
-            return await checkAchievementRequirement(skin.unlockRequirement)
-        case .purchase:
-            return false // Would be handled by in-app purchase system
-        case .level:
-            return checkLevelRequirement(skin.unlockRequirement)
-        case .special:
-            return checkSpecialRequirement(skin.unlockRequirement)
-        }
+        // DISABLED: All skins are now unlocked by default
+        // Always return true since all skins should be available
+        return true
     }
     
     private func checkAchievementRequirement(_ requirement: String) async -> Bool {
@@ -200,7 +184,7 @@ class SkinManager: ObservableObject {
                 category: skin.category,
                 unlockType: skin.unlockType,
                 unlockRequirement: skin.unlockRequirement,
-                isUnlocked: isSkinUnlocked(skin.id),
+                isUnlocked: true, // All skins are now unlocked by default
                 isDefault: skin.isDefault,
                 kubbColor: skin.kubbColor,
                 kubbAccentColor: skin.kubbAccentColor,
@@ -243,7 +227,8 @@ class SkinManager: ObservableObject {
     func resetToDefaults() {
         selectedKubbSkin = KubbSkin.defaultSkins.first!
         selectedKingSkin = KubbSkin.defaultSkins.first!
-        unlockedSkins = Set(["classic_blue"])
+        // All skins are now unlocked by default
+        unlockedSkins = Set(KubbSkin.defaultSkins.map { $0.id })
         
         saveSelectedSkin(selectedKubbSkin, for: selectedKubbSkinKey)
         saveSelectedSkin(selectedKingSkin, for: selectedKingSkinKey)

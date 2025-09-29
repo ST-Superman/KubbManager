@@ -190,7 +190,7 @@ extension KubbSkin {
         KubbSkin(
             id: "classic_blue",
             name: "Classic Blue",
-            description: "The traditional blue kubb pieces",
+            description: "Traditional blue kubb pieces",
             category: .classic,
             unlockType: .defaultSkin,
             unlockRequirement: "Default skin",
@@ -202,14 +202,16 @@ extension KubbSkin {
             previewImageName: "classic_blue_preview"
         ),
         
-        // Wooden Theme
+        // Wooden Classic
         KubbSkin(
             id: "wooden_classic",
             name: "Wooden Classic",
             description: "Natural wood finish for authentic feel",
             category: .classic,
-            unlockType: .achievement,
-            unlockRequirement: "Complete 10 practice sessions",
+            unlockType: .defaultSkin,
+            unlockRequirement: "Default skin",
+            isUnlocked: true,
+            isDefault: true,
             kubbColor: SkinColor(red: 0.6, green: 0.4, blue: 0.2),
             kubbAccentColor: SkinColor(red: 0.8, green: 0.6, blue: 0.4),
             kingColor: SkinColor(red: 0.7, green: 0.5, blue: 0.3),
@@ -219,168 +221,14 @@ extension KubbSkin {
             previewImageName: "wooden_classic_preview"
         ),
         
-        // Modern Gradient
-        KubbSkin(
-            id: "modern_gradient",
-            name: "Modern Gradient",
-            description: "Sleek gradient design for modern players",
-            category: .modern,
-            unlockType: .achievement,
-            unlockRequirement: "Achieve 80% accuracy in 8-meter training",
-            kubbColor: SkinColor(red: 0.2, green: 0.6, blue: 0.9),
-            kubbAccentColor: SkinColor(red: 0.0, green: 0.8, blue: 1.0),
-            kingColor: SkinColor(red: 0.8, green: 0.2, blue: 0.6),
-            kingAccentColor: SkinColor(red: 1.0, green: 0.4, blue: 0.8),
-            pattern: .gradient,
-            iconName: "hexagon.fill",
-            previewImageName: "modern_gradient_preview"
-        ),
-        
-        // Fantasy Crystal
-        KubbSkin(
-            id: "fantasy_crystal",
-            name: "Crystal Fantasy",
-            description: "Magical crystal pieces that sparkle",
-            category: .fantasy,
-            unlockType: .achievement,
-            unlockRequirement: "Hit 100 king kubbs",
-            kubbColor: SkinColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 0.8),
-            kubbAccentColor: SkinColor(red: 1.0, green: 1.0, blue: 1.0),
-            kingColor: SkinColor(red: 1.0, green: 0.8, blue: 1.0, alpha: 0.9),
-            kingAccentColor: SkinColor(red: 1.0, green: 1.0, blue: 1.0),
-            texture: .glass,
-            iconName: "sparkles",
-            previewImageName: "fantasy_crystal_preview"
-        ),
-        
-        // Sports Team Colors
-        KubbSkin(
-            id: "sports_team",
-            name: "Team Colors",
-            description: "Show your team spirit",
-            category: .sports,
-            unlockType: .achievement,
-            unlockRequirement: "Win 5 baseball kubb games",
-            kubbColor: SkinColor(red: 1.0, green: 0.3, blue: 0.0),
-            kubbAccentColor: SkinColor(red: 1.0, green: 0.6, blue: 0.0),
-            kingColor: SkinColor(red: 0.0, green: 0.0, blue: 0.0),
-            kingAccentColor: SkinColor(red: 1.0, green: 1.0, blue: 1.0),
-            pattern: .stripes,
-            iconName: "sportscourt.fill",
-            previewImageName: "sports_team_preview"
-        ),
-        
-        // Seasonal Autumn
-        KubbSkin(
-            id: "autumn_leaves",
-            name: "Autumn Leaves",
-            description: "Warm autumn colors for fall training",
-            category: .seasonal,
-            unlockType: .achievement,
-            unlockRequirement: "Train for 30 consecutive days",
-            kubbColor: SkinColor(red: 0.8, green: 0.4, blue: 0.0),
-            kubbAccentColor: SkinColor(red: 1.0, green: 0.6, blue: 0.0),
-            kingColor: SkinColor(red: 0.6, green: 0.2, blue: 0.0),
-            kingAccentColor: SkinColor(red: 0.8, green: 0.4, blue: 0.0),
-            pattern: .dots,
-            iconName: "leaf.fill",
-            previewImageName: "autumn_leaves_preview"
-        ),
-        
-        // Premium Gold
-        KubbSkin(
-            id: "premium_gold",
-            name: "Golden Premium",
-            description: "Luxurious gold finish for champions",
-            category: .premium,
-            unlockType: .purchase,
-            unlockRequirement: "Available for purchase",
-            kubbColor: SkinColor(red: 1.0, green: 0.8, blue: 0.0),
-            kubbAccentColor: SkinColor(red: 1.0, green: 1.0, blue: 0.5),
-            kingColor: SkinColor(red: 1.0, green: 0.6, blue: 0.0),
-            kingAccentColor: SkinColor(red: 1.0, green: 0.9, blue: 0.3),
-            texture: .metal,
-            iconName: "star.fill",
-            previewImageName: "premium_gold_preview"
-        ),
-        
-        // Neon Cyber (Example of new skin)
-        KubbSkin(
-            id: "neon_cyber",
-            name: "Neon Cyber",
-            description: "Futuristic neon glow for tech-savvy players",
-            category: .modern,
-            unlockType: .achievement,
-            unlockRequirement: "Achieve 90% accuracy in 5 consecutive sessions",
-            kubbColor: SkinColor(red: 0.0, green: 1.0, blue: 0.5),
-            kubbAccentColor: SkinColor(red: 0.0, green: 1.0, blue: 1.0),
-            kingColor: SkinColor(red: 1.0, green: 0.0, blue: 1.0),
-            kingAccentColor: SkinColor(red: 1.0, green: 1.0, blue: 1.0),
-            texture: .glass,
-            pattern: .gradient,
-            iconName: "hexagon.fill",
-            previewImageName: "neon_cyber_preview"
-        ),
-        // Swedish kubb
-        KubbSkin(
-            id: "swedish_kubb",
-            name: "Swedish Kubb",
-            description: "Swedish kubb pieces",
-            category: .classic,
-            unlockType: .defaultSkin,
-            unlockRequirement: "Default skin",
-            isUnlocked: true,
-            isDefault: true,
-            kubbColor: SkinColor(red: 0.0, green: 0.5, blue: 1.0),
-            kingColor: SkinColor(red: 0.5, green: 0.0, blue: 0.8),
-            iconName: "rectangle.fill",
-            previewImageName: "swedish_kubb_preview"
-        ),
-        
-        // Wooden Kubb (Image-based)
-        KubbSkin(
-            id: "wooden_kubb_image",
-            name: "Wooden Kubb",
-            description: "Authentic wooden kubb pieces with natural grain",
-            category: .classic,
-            unlockType: .achievement,
-            unlockRequirement: "Complete 5 practice sessions",
-            kubbColor: SkinColor(red: 0.6, green: 0.4, blue: 0.2),
-            kingColor: SkinColor(red: 0.7, green: 0.5, blue: 0.3),
-            kubbImageName: "wooden_kubb",
-            kingImageName: "wooden_king",
-            kubbImageScale: 1.0,
-            kingImageScale: 1.2,
-            iconName: "tree.fill",
-            previewImageName: "wooden_kubb_preview"
-        ),
-        
-        // Marble Kubb (Image-based)
-        KubbSkin(
-            id: "marble_kubb",
-            name: "Marble Kubb",
-            description: "Elegant marble kubb pieces with natural veining",
-            category: .premium,
-            unlockType: .achievement,
-            unlockRequirement: "Achieve 85% accuracy in 10 sessions",
-            kubbColor: SkinColor(red: 0.9, green: 0.9, blue: 0.9),
-            kingColor: SkinColor(red: 0.8, green: 0.8, blue: 0.8),
-            kubbImageName: "marble_kubb",
-            kingImageName: "marble_king",
-            kubbImageScale: 1.0,
-            kingImageScale: 1.3,
-            iconName: "star.fill",
-            previewImageName: "marble_kubb_preview"
-        ),
-        
-        // Swedish .png
+        // Swedish Kubb PNG
         KubbSkin(
             id: "swedish_kubb_png",
-            name: "Swedish Kubb too",
+            name: "Swedish Kubb",
             description: "Authentic Swedish kubb pieces",
             category: .classic,
             unlockType: .defaultSkin,
-            unlockRequirement: "free",
+            unlockRequirement: "Default skin",
             isUnlocked: true,
             isDefault: true,
             kubbColor: SkinColor(red: 0.2, green: 0.1, blue: 0.0),
@@ -391,25 +239,44 @@ extension KubbSkin {
             kingImageScale: 1.2,
             iconName: "flag.se",
             previewImageName: "swedish_kubb_preview"
-        ),
-        
-        // Viking Kubb (Image-based)
-        KubbSkin(
-            id: "viking_kubb",
-            name: "Viking Kubb",
-            description: "Ancient Viking-style kubb pieces with runes",
-            category: .fantasy,
-            unlockType: .achievement,
-            unlockRequirement: "Hit 50 king kubbs",
-            kubbColor: SkinColor(red: 0.4, green: 0.2, blue: 0.1),
-            kingColor: SkinColor(red: 0.6, green: 0.3, blue: 0.2),
-            kubbImageName: "viking_kubb",
-            kingImageName: "viking_king",
-            kubbImageScale: 1.0,
-            kingImageScale: 1.4,
-            iconName: "sparkles",
-            previewImageName: "viking_kubb_preview"
         )
+        
+        /*
+         * SAMPLE SKIN CODE FOR FUTURE REFERENCE:
+         * 
+         * To add a new skin, follow this pattern:
+         * 
+         * KubbSkin(
+         *     id: "unique_skin_id",                    // Unique identifier
+         *     name: "Display Name",                    // Name shown in UI
+         *     description: "Skin description",         // Description shown in UI
+         *     category: .classic,                      // Category for grouping
+         *     unlockType: .defaultSkin,                // Always use .defaultSkin for free skins
+         *     unlockRequirement: "Default skin",       // Always use this text for free skins
+         *     isUnlocked: true,                        // Always true for free skins
+         *     isDefault: true,                         // Always true for free skins
+         *     kubbColor: SkinColor(red: 0.0, green: 0.5, blue: 1.0),     // Base color for kubb pieces
+         *     kubbAccentColor: SkinColor(red: 0.0, green: 0.8, blue: 1.0), // Optional accent color
+         *     kingColor: SkinColor(red: 0.5, green: 0.0, blue: 0.8),      // Base color for king piece
+         *     kingAccentColor: SkinColor(red: 0.7, green: 0.0, blue: 1.0), // Optional accent color
+         *     texture: .wood,                          // Optional texture (wood, glass, metal)
+         *     pattern: .gradient,                      // Optional pattern (gradient, stripes, dots)
+         *     kubbImageName: "image_name",             // Optional: use custom image instead of colors
+         *     kingImageName: "king_image_name",        // Optional: use custom image for king
+         *     kubbImageScale: 1.0,                     // Scale for kubb image (1.0 = normal)
+         *     kingImageScale: 1.2,                     // Scale for king image (1.0 = normal)
+         *     iconName: "system.icon.name",            // SF Symbol icon name for UI
+         *     previewImageName: "preview_image_name"   // Optional preview image
+         * ),
+         * 
+         * NOTES:
+         * - All skins are now free and unlocked by default
+         * - Use unlockType: .defaultSkin and isUnlocked: true, isDefault: true
+         * - You can use either colors OR images, not both for the same piece
+         * - If using images, set kubbImageName and/or kingImageName
+         * - If using colors, set kubbColor and/or kingColor (and optional accents)
+         * - Icon name should be a valid SF Symbol (e.g., "star.fill", "tree.fill")
+         */
         
     ]
 }
