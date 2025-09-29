@@ -50,13 +50,21 @@ struct EightMeterTrainingView: View {
                         .tag(1)
                 }
                 
+                // Stats Tab
+                StatsView()
+                    .tabItem {
+                        Image(systemName: "chart.line.uptrend.xyaxis.circle")
+                        Text("Stats")
+                    }
+                    .tag(2)
+                
                 // History Tab
                 HistoryView()
                     .tabItem {
                         Image(systemName: "clock.arrow.circlepath")
                         Text("History")
                     }
-                    .tag(2)
+                    .tag(3)
                 
                 // Tutorial Tab
                 TutorialOverviewView()
@@ -64,7 +72,7 @@ struct EightMeterTrainingView: View {
                         Image(systemName: "questionmark.circle")
                         Text("Tutorial")
                     }
-                    .tag(3)
+                    .tag(4)
             }
             .navigationTitle("8 Meter Training")
             .navigationBarTitleDisplayMode(.inline)

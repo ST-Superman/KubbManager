@@ -13,6 +13,7 @@ struct PracticeView: View {
     @State private var showingEndSessionAlert = false
     @State private var showingResetRoundAlert = false
     @State private var showingTargetReachedAlert = false
+    @State private var hasShownTargetReachedAlert = false
     
     private let hapticSuccess = UINotificationFeedbackGenerator()
     private let hapticError = UINotificationFeedbackGenerator()
@@ -75,7 +76,11 @@ struct PracticeView: View {
             Text("Are you sure you want to reset the current round? This will clear all progress for this round.")
         }
         .alert("Target Reached!", isPresented: $showingTargetReachedAlert) {
-            Button("Continue Practice") { }
+            Button("Continue Practice") {
+                // User chooses to continue - just dismiss the alert
+                // Session remains active and they can continue logging rounds
+                hasShownTargetReachedAlert = true
+            }
             Button("End Session") {
                 Task {
                     await sessionManager.completeSession()
@@ -83,10 +88,10 @@ struct PracticeView: View {
                 }
             }
         } message: {
-            Text("Congratulations! You've reached your target of \(sessionManager.target) kubbs! 🎉")
+            Text("Congratulations! You've reached your target of \(sessionManager.target) kubbs! 🎉\n\nWould you like to continue practicing or end your session?")
         }
         .onChange(of: sessionManager.isTargetReached) { _, isReached in
-            if isReached {
+            if isReached && !hasShownTargetReachedAlert {
                 hapticSuccess.notificationOccurred(.success)
                 showingTargetReachedAlert = true
             }
@@ -198,6 +203,7 @@ struct StatisticItem: View {
 
 struct KubbGridSection: View {
     @EnvironmentObject private var sessionManager: SessionManager
+    @StateObject private var skinManager = SkinManager.shared
     
     var body: some View {
         VStack(spacing: 16) {
@@ -210,7 +216,8 @@ struct KubbGridSection: View {
                     ForEach(0..<5, id: \.self) { index in
                         KubbView(
                             number: index + 1,
-                            isKnockedDown: sessionManager.currentRound?.kubbState(at: index) ?? false
+                            isKnockedDown: sessionManager.currentRound?.kubbState(at: index) ?? false,
+                            skin: skinManager.selectedKubbSkin
                         )
                     }
                 }
@@ -218,7 +225,8 @@ struct KubbGridSection: View {
                 // Second line: King kubb (only shown when all 5 are hit)
                 if let currentRound = sessionManager.currentRound, currentRound.hits >= 5 {
                     KingKubbView(
-                        isKnockedDown: currentRound.kingThrowsCount > 0 && currentRound.kingHits > 0
+                        isKnockedDown: currentRound.kingThrowsCount > 0 && currentRound.kingHits > 0,
+                        skin: skinManager.selectedKingSkin
                     )
                 }
             }
@@ -298,31 +306,52 @@ struct KubbGridSection: View {
 struct KubbView: View {
     let number: Int
     let isKnockedDown: Bool
+    let skin: KubbSkin?
     @State private var animationOffset: CGFloat = 0
     @State private var animationRotation: Double = 0
     
+    init(number: Int, isKnockedDown: Bool, skin: KubbSkin? = nil) {
+        self.number = number
+        self.isKnockedDown = isKnockedDown
+        self.skin = skin
+    }
+    
     var body: some View {
         ZStack {
-            // Kubb base (rectangular box)
-            RoundedRectangle(cornerRadius: 4)
-                .fill(isKnockedDown ? Color.green : Color.blue)
-                .frame(width: 20, height: 50)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.white, lineWidth: 1)
-                )
-                .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
-                .offset(y: isKnockedDown ? animationOffset : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            if let kubbImageName = skin?.kubbImageName {
+                // Image-based kubb
+                Image(kubbImageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 50)
+                    .scaleEffect(skin?.kubbImageScale ?? 1.0)
+                    .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
+                    .offset(y: isKnockedDown ? animationOffset : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            } else {
+                // Color-based kubb (original implementation)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(kubbColor)
+                    .frame(width: 20, height: 50)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(accentColor, lineWidth: 1)
+                    )
+                    .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
+                    .offset(y: isKnockedDown ? animationOffset : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            }
             
-            // Kubb number
-            Text("\(number)")
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
-                .offset(y: isKnockedDown ? animationOffset : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            // Kubb number (only show for color-based kubbs or if no image)
+            if skin?.kubbImageName == nil {
+                Text("\(number)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
+                    .offset(y: isKnockedDown ? animationOffset : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            }
         }
         .frame(width: 60, height: 60)
         .onChange(of: isKnockedDown) { _, newValue in
@@ -341,35 +370,65 @@ struct KubbView: View {
         .accessibilityLabel("Kubb \(number), \(isKnockedDown ? "knocked down" : "standing")")
         .accessibilityHint("Kubb number \(number) in the practice round")
     }
+    
+    private var kubbColor: Color {
+        if isKnockedDown {
+            return Color.green
+        } else {
+            return skin?.kubbColor.color ?? Color.blue
+        }
+    }
+    
+    private var accentColor: Color {
+        return skin?.kubbAccentColor?.color ?? Color.white
+    }
 }
 
 struct KingKubbView: View {
     let isKnockedDown: Bool
+    let skin: KubbSkin?
     @State private var animationOffset: CGFloat = 0
     @State private var animationRotation: Double = 0
     
+    init(isKnockedDown: Bool, skin: KubbSkin? = nil) {
+        self.isKnockedDown = isKnockedDown
+        self.skin = skin
+    }
+    
     var body: some View {
         ZStack {
-            // King kubb base (rectangular box - twice the size)
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isKnockedDown ? Color.green : Color.purple)
-                .frame(width: 40, height: 100)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white, lineWidth: 2)
-                )
-                .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
-                .offset(y: isKnockedDown ? animationOffset : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
-            
-            // King crown icon
-            Image(systemName: "crown.fill")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
-                .offset(y: isKnockedDown ? animationOffset : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            if let kingImageName = skin?.kingImageName {
+                // Image-based king
+                Image(kingImageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 40, height: 100)
+                    .scaleEffect(skin?.kingImageScale ?? 1.0)
+                    .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
+                    .offset(y: isKnockedDown ? animationOffset : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            } else {
+                // Color-based king (original implementation)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(kingColor)
+                    .frame(width: 40, height: 100)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(accentColor, lineWidth: 2)
+                    )
+                    .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
+                    .offset(y: isKnockedDown ? animationOffset : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+                
+                // King crown icon (only for color-based kings)
+                Image(systemName: "crown.fill")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
+                    .offset(y: isKnockedDown ? animationOffset : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+            }
         }
         .frame(width: 120, height: 120)
         .onChange(of: isKnockedDown) { _, newValue in
@@ -387,6 +446,18 @@ struct KingKubbView: View {
         }
         .accessibilityLabel("King kubb, \(isKnockedDown ? "knocked down" : "standing")")
         .accessibilityHint("King kubb - available for king throw")
+    }
+    
+    private var kingColor: Color {
+        if isKnockedDown {
+            return Color.green
+        } else {
+            return skin?.kingColor.color ?? Color.purple
+        }
+    }
+    
+    private var accentColor: Color {
+        return skin?.kingAccentColor?.color ?? Color.white
     }
 }
 

@@ -140,10 +140,10 @@ class CloudKitManager: ObservableObject {
             return 
         }
         
-        print("Clearing all CloudKit data...")
+        print("Clearing all CloudKit data and local data...")
         
         do {
-            // Try to fetch and delete all records
+            // Try to fetch and delete all CloudKit records
             let query = CKQuery(recordType: PracticeSession.recordType, predicate: NSPredicate(value: true))
             let (matchResults, _) = try await privateDatabase.records(matching: query)
             
@@ -170,6 +170,10 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("Error clearing CloudKit data: \(error)")
         }
+        
+        // Always clear local data regardless of CloudKit status
+        localStorage.clearAllData()
+        print("Local data cleared successfully")
     }
     
     func removeDuplicateCloudKitRecords() async {
@@ -206,7 +210,7 @@ class CloudKitManager: ObservableObject {
             var duplicatesRemoved = 0
             for (sessionId, records) in sessionIdToRecords {
                 if records.count > 1 {
-                    print("Found \(records.count) duplicate records for session \(sessionId)")
+                    print("⚠️ Found \(records.count) duplicate records for session \(sessionId)")
                     
                     // Sort by modifiedAt (keep the newest)
                     let sortedRecords = records.sorted { record1, record2 in
@@ -214,6 +218,8 @@ class CloudKitManager: ObservableObject {
                         let date2 = record2["modifiedAt"] as? Date ?? Date.distantPast
                         return date1 > date2
                     }
+                    
+                    print("✅ Keeping newest record with modifiedAt: \(sortedRecords[0]["modifiedAt"] as? Date ?? Date.distantPast)")
                     
                     // Keep the first (newest) record, delete the rest
                     for i in 1..<sortedRecords.count {
@@ -392,9 +398,19 @@ class CloudKitManager: ObservableObject {
         // Always save to local storage first
         localStorage.saveSession(session)
         
+        // Add comprehensive logging
+        print("🔄 Starting CloudKit save for session \(session.id)")
+        print("   - Date: \(session.date)")
+        print("   - Target: \(session.target)")
+        print("   - ModifiedAt: \(session.modifiedAt)")
+        
         do {
-            // Check if record already exists in CloudKit
-            if let existingRecord = try await findRecordBySessionId(session.id) {
+            // Enhanced duplicate check with retry logic
+            let existingRecord = try await findRecordBySessionIdWithRetry(session.id)
+            
+            if let existingRecord = existingRecord {
+                print("📝 Found existing CloudKit record for session \(session.id)")
+                
                 // Update existing record
                 existingRecord["date"] = session.date
                 existingRecord["target"] = Int64(session.target)
@@ -412,12 +428,22 @@ class CloudKitManager: ObservableObject {
                 }
                 
                 let _ = try await privateDatabase.save(existingRecord)
-                print("Updated existing CloudKit record for session \(session.id)")
+                print("✅ Updated existing CloudKit record for session \(session.id)")
             } else {
+                print("🆕 No existing record found, creating new CloudKit record for session \(session.id)")
+                
+                // Double-check for duplicates before creating
+                let duplicateCheck = try await findRecordBySessionIdWithRetry(session.id)
+                if duplicateCheck != nil {
+                    print("⚠️ Duplicate found during creation attempt - updating instead")
+                    // Recursively call saveSession to handle the update
+                    return try await saveSession(session)
+                }
+                
                 // Create new record
                 let record = session.toCKRecord()
                 let _ = try await privateDatabase.save(record)
-                print("Created new CloudKit record for session \(session.id)")
+                print("✅ Created new CloudKit record for session \(session.id)")
             }
             
             syncStatus = .success
@@ -770,7 +796,7 @@ class CloudKitManager: ObservableObject {
     
     // MARK: - Helper Methods
     
-    private func findRecordBySessionId(_ sessionId: String) async throws -> CKRecord? {
+    func findRecordBySessionId(_ sessionId: String) async throws -> CKRecord? {
         do {
             let predicate = NSPredicate(format: "sessionId == %@", sessionId)
             let query = CKQuery(recordType: PracticeSession.recordType, predicate: predicate)
@@ -796,6 +822,285 @@ class CloudKitManager: ObservableObject {
                 throw error
             }
         }
+    }
+    
+    private func findRecordBySessionIdWithRetry(_ sessionId: String, maxRetries: Int = 3) async throws -> CKRecord? {
+        for attempt in 1...maxRetries {
+            do {
+                print("🔍 Attempting to find record by sessionId \(sessionId) (attempt \(attempt)/\(maxRetries))")
+                let result = try await findRecordBySessionId(sessionId)
+                
+                if result != nil {
+                    print("✅ Found record on attempt \(attempt)")
+                } else {
+                    print("❌ No record found on attempt \(attempt)")
+                }
+                
+                return result
+            } catch {
+                print("⚠️ Attempt \(attempt) failed: \(error)")
+                
+                if attempt == maxRetries {
+                    print("❌ All \(maxRetries) attempts failed, throwing error")
+                    throw error
+                }
+                
+                // Wait before retry (exponential backoff)
+                let delay = Double(attempt * attempt) * 0.5
+                print("⏳ Waiting \(delay) seconds before retry...")
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Baseball Kubb Sessions
+    
+    func saveBaseballKubbSession(_ session: BaseballKubbSession) async throws {
+        syncStatus = .syncing
+        
+        // Always save to local storage first
+        localStorage.saveBaseballKubbSession(session)
+        
+        // Add comprehensive logging
+        print("🔄 Starting CloudKit save for Baseball Kubb session \(session.id)")
+        print("   - Date: \(session.date)")
+        print("   - Away Score: \(session.awayScore)")
+        print("   - Home Score: \(session.homeScore)")
+        print("   - ModifiedAt: \(session.modifiedAt)")
+        
+        do {
+            // Enhanced duplicate check with retry logic
+            let existingRecord = try await findBaseballKubbRecordBySessionIdWithRetry(session.id)
+            
+            if let existingRecord = existingRecord {
+                print("📝 Found existing CloudKit record for Baseball Kubb session \(session.id)")
+                
+                // Update existing record
+                existingRecord["date"] = session.date
+                existingRecord["awayTeam"] = session.awayTeam
+                existingRecord["homeTeam"] = session.homeTeam
+                existingRecord["currentInning"] = Int64(session.currentInning)
+                existingRecord["isTop"] = session.isTop ? 1 : 0
+                existingRecord["awayScore"] = Int64(session.awayScore)
+                existingRecord["homeScore"] = Int64(session.homeScore)
+                existingRecord["awayKings"] = Int64(session.awayKings)
+                existingRecord["homeKings"] = Int64(session.homeKings)
+                existingRecord["fieldKubbs"] = Int64(session.fieldKubbs)
+                existingRecord["fieldKubbsAtStartOfHalf"] = Int64(session.fieldKubbsAtStartOfHalf)
+                existingRecord["awayBaselineKubbs"] = Int64(session.awayBaselineKubbs)
+                existingRecord["homeBaselineKubbs"] = Int64(session.homeBaselineKubbs)
+                existingRecord["batonCount"] = Int64(session.batonCount)
+                existingRecord["missCount"] = Int64(session.missCount)
+                existingRecord["halfInningRuns"] = Int64(session.halfInningRuns)
+                existingRecord["halfInningKings"] = Int64(session.halfInningKings)
+                existingRecord["runsAfterKingHit"] = Int64(session.runsAfterKingHit)
+                existingRecord["gameOver"] = session.gameOver ? 1 : 0
+                existingRecord["isComplete"] = session.isComplete ? 1 : 0
+                existingRecord["modifiedAt"] = session.modifiedAt
+                
+                // Update optional fields
+                if let winner = session.winner {
+                    existingRecord["winner"] = winner
+                }
+                
+                // Update history as JSON strings
+                if let throwHistoryData = try? JSONEncoder().encode(session.throwHistory),
+                   let throwHistoryString = String(data: throwHistoryData, encoding: .utf8) {
+                    existingRecord["throwHistory"] = throwHistoryString
+                }
+                
+                if let halfInningHistoryData = try? JSONEncoder().encode(session.halfInningHistory),
+                   let halfInningHistoryString = String(data: halfInningHistoryData, encoding: .utf8) {
+                    existingRecord["halfInningHistory"] = halfInningHistoryString
+                }
+                
+                if let scoreboardHistoryData = try? JSONEncoder().encode(session.scoreboardHistory),
+                   let scoreboardHistoryString = String(data: scoreboardHistoryData, encoding: .utf8) {
+                    existingRecord["scoreboardHistory"] = scoreboardHistoryString
+                }
+                
+                let _ = try await privateDatabase.save(existingRecord)
+                print("✅ Updated existing CloudKit record for Baseball Kubb session \(session.id)")
+            } else {
+                print("🆕 No existing record found, creating new CloudKit record for Baseball Kubb session \(session.id)")
+                
+                // Double-check for duplicates before creating
+                let duplicateCheck = try await findBaseballKubbRecordBySessionIdWithRetry(session.id)
+                if duplicateCheck != nil {
+                    print("⚠️ Duplicate found during creation attempt - updating instead")
+                    // Recursively call saveBaseballKubbSession to handle the update
+                    return try await saveBaseballKubbSession(session)
+                }
+                
+                // Create new record
+                let record = session.toCKRecord()
+                let _ = try await privateDatabase.save(record)
+                print("✅ Created new CloudKit record for Baseball Kubb session \(session.id)")
+            }
+            
+            syncStatus = .success
+            
+            // Clear success status after a delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.syncStatus = .idle
+            }
+        } catch let error as CKError {
+            if error.code == .serverRecordChanged {
+                // Record conflict - try to fetch and merge
+                print("Record conflict detected for Baseball Kubb session, attempting to resolve...")
+                try await resolveBaseballKubbRecordConflict(for: session)
+                syncStatus = .success
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.syncStatus = .idle
+                }
+            } else if error.code == .requestRateLimited {
+                print("⚠️ CloudKit rate limited, will retry later")
+                syncStatus = .idle
+                throw error
+            } else {
+                print("❌ CloudKit error saving Baseball Kubb session: \(error.localizedDescription)")
+                syncStatus = .error("CloudKit error - data saved locally only")
+                throw error
+            }
+        } catch {
+            print("❌ Unexpected error saving Baseball Kubb session: \(error.localizedDescription)")
+            syncStatus = .error("Unexpected error - data saved locally only")
+            throw error
+        }
+    }
+    
+    func fetchLastBaseballKubbSession() async throws -> BaseballKubbSession? {
+        guard isSignedIn else {
+            print("❌ Not signed in to iCloud")
+            return nil
+        }
+        
+        do {
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    if let session = BaseballKubbSession(from: record) {
+                        print("✅ Fetched Baseball Kubb session from CloudKit: \(session.id)")
+                        return session
+                    }
+                case .failure(let error):
+                    print("Error fetching Baseball Kubb session: \(error)")
+                }
+            }
+            
+            print("❌ No Baseball Kubb sessions found in CloudKit")
+            return nil
+        } catch {
+            print("❌ Error fetching Baseball Kubb sessions: \(error)")
+            throw error
+        }
+    }
+    
+    func fetchIncompleteBaseballKubbSession() async throws -> BaseballKubbSession? {
+        guard isSignedIn else {
+            print("❌ Not signed in to iCloud")
+            return nil
+        }
+        
+        do {
+            let predicate = NSPredicate(format: "isComplete == 0")
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "modifiedAt", ascending: false)]
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    if let session = BaseballKubbSession(from: record), !session.isComplete {
+                        print("✅ Found incomplete Baseball Kubb session in CloudKit: \(session.id)")
+                        return session
+                    }
+                case .failure(let error):
+                    print("Error fetching incomplete Baseball Kubb session: \(error)")
+                }
+            }
+            
+            print("❌ No incomplete Baseball Kubb sessions found in CloudKit")
+            return nil
+        } catch {
+            print("❌ Error fetching incomplete Baseball Kubb sessions: \(error)")
+            throw error
+        }
+    }
+    
+    private func findBaseballKubbRecordBySessionId(_ sessionId: String) async throws -> CKRecord? {
+        do {
+            let predicate = NSPredicate(format: "sessionId == %@", sessionId)
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    return record
+                case .failure(let error):
+                    print("Error fetching Baseball Kubb record by sessionId: \(error)")
+                }
+            }
+            
+            return nil
+        } catch let error as CKError {
+            if error.code == .invalidArguments {
+                // sessionId field doesn't exist yet - return nil
+                print("sessionId field not available in CloudKit schema yet for Baseball Kubb")
+                return nil
+            } else {
+                throw error
+            }
+        }
+    }
+    
+    private func findBaseballKubbRecordBySessionIdWithRetry(_ sessionId: String, maxRetries: Int = 3) async throws -> CKRecord? {
+        for attempt in 1...maxRetries {
+            do {
+                print("🔍 Attempting to find Baseball Kubb record by sessionId \(sessionId) (attempt \(attempt)/\(maxRetries))")
+                let result = try await findBaseballKubbRecordBySessionId(sessionId)
+                
+                if result != nil {
+                    print("✅ Found Baseball Kubb record on attempt \(attempt)")
+                } else {
+                    print("❌ No Baseball Kubb record found on attempt \(attempt)")
+                }
+                
+                return result
+            } catch {
+                print("⚠️ Attempt \(attempt) failed: \(error)")
+                
+                if attempt == maxRetries {
+                    print("❌ All \(maxRetries) attempts failed, throwing error")
+                    throw error
+                }
+                
+                // Wait before retry (exponential backoff)
+                let delay = Double(attempt * attempt) * 0.5
+                print("⏳ Waiting \(delay) seconds before retry...")
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+        }
+        
+        return nil
+    }
+    
+    private func resolveBaseballKubbRecordConflict(for session: BaseballKubbSession) async throws {
+        // For now, just save the current session as the authoritative version
+        // In a more sophisticated implementation, you might want to merge data
+        print("🔄 Resolving Baseball Kubb record conflict by saving current session")
+        try await saveBaseballKubbSession(session)
     }
     
     // MARK: - Retry Logic
@@ -837,6 +1142,8 @@ extension CKAccountStatus {
             return "Restricted"
         case .couldNotDetermine:
             return "Could Not Determine"
+        case .temporarilyUnavailable:
+            return "Temporarily Unavailable"
         @unknown default:
             return "Unknown"
         }

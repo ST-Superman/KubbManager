@@ -10,6 +10,7 @@ import SwiftUI
 struct MainMenuView: View {
     @State private var selectedMode: TrainingMode?
     @State private var showingEightMeterTraining = false
+    @State private var showingBaseballKubb = false
     @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
     
@@ -31,6 +32,8 @@ struct MainMenuView: View {
                                     selectedMode = mode
                                     if mode == .eightMeter {
                                         showingEightMeterTraining = true
+                                    } else if mode == .baseballKubb {
+                                        showingBaseballKubb = true
                                     }
                                 }
                             }
@@ -52,6 +55,9 @@ struct MainMenuView: View {
         }
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
             EightMeterTrainingView()
+        }
+        .fullScreenCover(isPresented: $showingBaseballKubb) {
+            BaseballKubbView()
         }
         .sheet(isPresented: $showingOptions) {
             OptionsView()
@@ -93,6 +99,11 @@ struct TrainingModeButton: View {
                 // Icon
                 if mode == .eightMeter {
                     Image("kubb_crosshair")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 60)
+                } else if mode == .baseballKubb {
+                    Image("baseball_kubb")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 60, height: 60)
@@ -247,6 +258,38 @@ struct OptionsView: View {
                     Text("Visual Preferences")
                 } footer: {
                     Text("Customize the app's appearance and feedback preferences.")
+                }
+                
+                // Kubb Skins Section
+                Section {
+                    NavigationLink("Kubb Skins") {
+                        SkinSelectionView()
+                    }
+                } header: {
+                    Text("Kubb Skins")
+                } footer: {
+                    Text("Customize the appearance of your kubb pieces. Unlock new skins through achievements!")
+                }
+                
+                // 8 Meters Section
+                Section {
+                    HStack {
+                        Text("8 Meter Accuracy target")
+                        Spacer()
+                        Text("\(Int(settingsManager.chartTargetAccuracy * 100))%")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Slider(value: $settingsManager.chartTargetAccuracy, in: 0.1...1.0, step: 0.05)
+                        Text("Set the target accuracy shown as a line on charts")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } header: {
+                    Text("8 Meters")
+                } footer: {
+                    Text("Configure chart visualization settings.")
                 }
                 
                 // Cloud Sync Section

@@ -491,6 +491,10 @@ struct CompletedSessionsSection: View {
     @State private var showingDeleteAlert = false
     @State private var sessionToDelete: PracticeSession?
     
+    private var completedSessions: [PracticeSession] {
+        historyManager.sessions.filter { $0.isComplete }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -500,13 +504,13 @@ struct CompletedSessionsSection: View {
                     .font(.headline)
                     .foregroundColor(.primary)
                 Spacer()
-                Text("\(historyManager.sessions.count)")
+                Text("\(completedSessions.count)")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
             
             LazyVStack(spacing: 8) {
-                ForEach(historyManager.sessions) { session in
+                ForEach(completedSessions) { session in
                     SessionRowView(session: session)
                         .onTapGesture {
                             selectedSession = session

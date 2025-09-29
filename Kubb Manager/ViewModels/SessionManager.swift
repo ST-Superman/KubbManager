@@ -31,15 +31,52 @@ class SessionManager: ObservableObject {
         errorMessage = nil
         
         do {
+            print("🚀 Starting new practice session with target: \(target)")
+            
+            // Create new session with enhanced logging
             let newSession = PracticeSession(target: target)
+            print("📝 Created session with ID: \(newSession.id)")
+            
+            // Pre-save duplicate check
+            await performPreSaveDuplicateCheck(for: newSession)
+            
             currentSession = newSession
             isSessionActive = true
             
             try await cloudKitManager.saveSession(newSession)
+            print("✅ Successfully started and saved new session: \(newSession.id)")
             isLoading = false
         } catch {
+            print("❌ Failed to start new session: \(error)")
             errorMessage = cloudKitManager.handleCloudKitError(error)
             isLoading = false
+        }
+    }
+    
+    private func performPreSaveDuplicateCheck(for session: PracticeSession) async {
+        do {
+            print("🔍 Performing pre-save duplicate check for session: \(session.id)")
+            
+            // Check if a session with this ID already exists in CloudKit
+            if let existingRecord = try await cloudKitManager.findRecordBySessionId(session.id) {
+                print("⚠️ WARNING: Session with ID \(session.id) already exists in CloudKit!")
+                print("   - This could indicate a duplicate session creation issue")
+                print("   - Existing record created at: \(existingRecord.creationDate ?? Date.distantPast)")
+                print("   - New session created at: \(session.createdAt)")
+                
+                // Log additional details for debugging
+                if let existingSessionId = existingRecord["sessionId"] as? String {
+                    print("   - Existing sessionId: \(existingSessionId)")
+                }
+                if let existingDate = existingRecord["date"] as? Date {
+                    print("   - Existing date: \(existingDate)")
+                }
+            } else {
+                print("✅ No duplicate found - session ID is unique")
+            }
+        } catch {
+            print("⚠️ Pre-save duplicate check failed: \(error)")
+            // Don't fail the session creation, just log the warning
         }
     }
     
@@ -64,6 +101,13 @@ class SessionManager: ObservableObject {
     func addBatonResult(isHit: Bool) async {
         guard var session = currentSession else { return }
         
+        // Check if the session is from a different day and should be ended
+        if !Calendar.current.isDateInToday(session.date) {
+            // Session is from a different day - end it automatically
+            await endSessionEarly()
+            return
+        }
+        
         session.addBatonResult(isHit: isHit)
         currentSession = session
         
@@ -72,10 +116,8 @@ class SessionManager: ObservableObject {
             await saveSession()
         }
         
-        // Check if target is reached
-        if session.isTargetReached {
-            await completeSession()
-        }
+        // Note: Target reached check is now handled in the UI layer
+        // The session will only be completed when the user explicitly chooses to end it
     }
     
     func completeSession() async {
@@ -88,6 +130,9 @@ class SessionManager: ObservableObject {
         
         // Save session completion
         await saveSession()
+        
+        // Check for skin unlocks after session completion
+        await SkinManager.shared.checkSkinsAfterSession()
         
         isSessionActive = false
         isLoading = false
@@ -103,6 +148,9 @@ class SessionManager: ObservableObject {
         
         // Save session state
         await saveSession()
+        
+        // Check for skin unlocks after session completion
+        await SkinManager.shared.checkSkinsAfterSession()
         
         isSessionActive = false
         isLoading = false
