@@ -28,6 +28,7 @@
 		4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C9898CF2E8733C80053F2A8 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
+		4CBCD3912E8A450E0022C75E /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4CCE1B952E82DEF80045735D /* Kubb Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kubb Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -94,6 +95,11 @@
 			sourceTree = "<group>";
 		};
 		4C9898D02E8733C80053F2A8 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4CBCD3962E8A450E0022C75E /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -236,6 +242,10 @@
 				{
 					ProductGroup = 4C9898D02E8733C80053F2A8 /* Products */;
 					ProjectRef = 4C9898CF2E8733C80053F2A8 /* Kubb Manager.xcodeproj */;
+				},
+				{
+					ProductGroup = 4CBCD3962E8A450E0022C75E /* Products */;
+					ProjectRef = 4CBCD3912E8A450E0022C75E /* Kubb Manager.xcodeproj */;
 				},
 				{
 					ProductGroup = 4C1E98B22E89BE61007F9A57 /* Products */;

@@ -14,6 +14,7 @@ struct BaseballKubbView: View {
     @State private var showingHitModal = false
     @State private var showingHalfSummary = false
     @State private var showingMenu = false
+    @State private var showingTutorial = false
     
     var body: some View {
         NavigationView {
@@ -46,6 +47,12 @@ struct BaseballKubbView: View {
                             showingMenu = true
                         }
                     }
+                } else {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Tutorial") {
+                            showingTutorial = true
+                        }
+                    }
                 }
             }
         }
@@ -54,6 +61,9 @@ struct BaseballKubbView: View {
         }
         .sheet(isPresented: $showingMenu) {
             BaseballKubbMenuView(sessionManager: sessionManager, showingMenu: $showingMenu)
+        }
+        .fullScreenCover(isPresented: $showingTutorial) {
+            BaseballKubbTutorialView()
         }
     }
 }
@@ -115,6 +125,7 @@ struct BaseballKubbStartView: View {
     @State private var awayTeam = ""
     @State private var homeTeam = ""
     @State private var showingAbandonConfirmation = false
+    @State private var showingTutorial = false
     
     var body: some View {
         VStack(spacing: 32) {
@@ -136,6 +147,13 @@ struct BaseballKubbStartView: View {
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
+                
+                Button("Learn the Rules") {
+                    showingTutorial = true
+                }
+                .font(.subheadline)
+                .foregroundColor(.blue)
+                .padding(.top, 8)
             }
             
             Spacer()
@@ -250,6 +268,9 @@ struct BaseballKubbStartView: View {
                     showingAbandonConfirmation: $showingAbandonConfirmation
                 )
             }
+        }
+        .fullScreenCover(isPresented: $showingTutorial) {
+            BaseballKubbTutorialView()
         }
     }
     
@@ -1121,6 +1142,7 @@ struct BaseballKubbMenuView: View {
     @ObservedObject var sessionManager: BaseballKubbSessionManager
     @Binding var showingMenu: Bool
     @State private var showingNewGameAlert = false
+    @State private var showingTutorial = false
     
     var body: some View {
         NavigationView {
@@ -1132,6 +1154,11 @@ struct BaseballKubbMenuView: View {
                 VStack(spacing: 16) {
                     Button("Continue Game") {
                         showingMenu = false
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    
+                    Button("View Rules") {
+                        showingTutorial = true
                     }
                     .buttonStyle(SecondaryButtonStyle())
                     
@@ -1160,6 +1187,9 @@ struct BaseballKubbMenuView: View {
             } message: {
                 Text("Are you sure you want to start a new game? All current progress will be lost.")
             }
+        }
+        .fullScreenCover(isPresented: $showingTutorial) {
+            BaseballKubbTutorialView()
         }
     }
 }

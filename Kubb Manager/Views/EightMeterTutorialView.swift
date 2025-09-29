@@ -130,12 +130,14 @@ struct TutorialStep {
     let content: String
     let imageName: String
     let isCustomImage: Bool
+    let hasYouTubeLink: Bool
     
-    init(title: String, content: String, imageName: String, isCustomImage: Bool = false) {
+    init(title: String, content: String, imageName: String, isCustomImage: Bool = false, hasYouTubeLink: Bool = false) {
         self.title = title
         self.content = content
         self.imageName = imageName
         self.isCustomImage = isCustomImage
+        self.hasYouTubeLink = hasYouTubeLink
     }
 }
 
@@ -170,6 +172,16 @@ struct TutorialStepView: View {
                     .font(.body)
                     .multilineTextAlignment(.leading)
                     .lineSpacing(4)
+                
+                // YouTube Link
+                if step.hasYouTubeLink {
+                    Link("Watch Andy's YouTube Playlist", destination: URL(string: "https://www.youtube.com/playlist?list=PLeqH7gfCa66ptEKuilFX_wlmpeFYbcvJO")!)
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                        .padding()
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(12)
+                }
                 
                 Spacer(minLength: 50)
             }
