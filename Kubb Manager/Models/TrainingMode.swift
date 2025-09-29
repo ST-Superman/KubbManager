@@ -15,9 +15,9 @@ enum TrainingMode: String, CaseIterable {
     
     var isAvailable: Bool {
         switch self {
-        case .eightMeter, .baseballKubb:
+        case .eightMeter, .baseballKubb, .inkastBlast:
             return true
-        case .inkastBlast, .fullGameSim:
+        case .fullGameSim:
             return false
         }
     }
@@ -29,7 +29,7 @@ enum TrainingMode: String, CaseIterable {
         case .baseballKubb:
             return "Baseball-style Kubb game with innings and scoring"
         case .inkastBlast:
-            return "Coming Soon - Practice inkast and blast techniques"
+            return "Practice inkast and blast techniques with various game phases"
         case .fullGameSim:
             return "Coming Soon - Full game simulation training"
         }

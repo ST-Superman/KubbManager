@@ -34,6 +34,14 @@ struct KubbSkin: Identifiable, Codable, Equatable {
     let kubbImageScale: Double
     let kingImageScale: Double
     
+    // Baton skin properties
+    let batonColor: SkinColor
+    let batonAccentColor: SkinColor?
+    let batonImageName: String?
+    let batonImageScale: Double
+    let batonHighlightColor: SkinColor
+    let batonHighlightStyle: BatonHighlightStyle
+    
     // Icon and preview
     let iconName: String
     let previewImageName: String?
@@ -57,6 +65,12 @@ struct KubbSkin: Identifiable, Codable, Equatable {
         kingImageName: String? = nil,
         kubbImageScale: Double = 1.0,
         kingImageScale: Double = 1.0,
+        batonColor: SkinColor,
+        batonAccentColor: SkinColor? = nil,
+        batonImageName: String? = nil,
+        batonImageScale: Double = 1.0,
+        batonHighlightColor: SkinColor,
+        batonHighlightStyle: BatonHighlightStyle = .glow,
         iconName: String,
         previewImageName: String? = nil
     ) {
@@ -78,6 +92,12 @@ struct KubbSkin: Identifiable, Codable, Equatable {
         self.kingImageName = kingImageName
         self.kubbImageScale = kubbImageScale
         self.kingImageScale = kingImageScale
+        self.batonColor = batonColor
+        self.batonAccentColor = batonAccentColor
+        self.batonImageName = batonImageName
+        self.batonImageScale = batonImageScale
+        self.batonHighlightColor = batonHighlightColor
+        self.batonHighlightStyle = batonHighlightStyle
         self.iconName = iconName
         self.previewImageName = previewImageName
     }
@@ -182,6 +202,18 @@ enum SkinPattern: String, CaseIterable, Codable {
     }
 }
 
+enum BatonHighlightStyle: String, CaseIterable, Codable {
+    case glow = "glow"
+    case border = "border"
+    case pulse = "pulse"
+    case scale = "scale"
+    case shimmer = "shimmer"
+    
+    var displayName: String {
+        return rawValue.capitalized
+    }
+}
+
 // MARK: - Default Skins
 
 extension KubbSkin {
@@ -198,6 +230,10 @@ extension KubbSkin {
             isDefault: true,
             kubbColor: SkinColor(red: 0.0, green: 0.5, blue: 1.0),
             kingColor: SkinColor(red: 0.5, green: 0.0, blue: 0.8),
+            batonColor: SkinColor(red: 0.2, green: 0.2, blue: 0.2),
+            batonAccentColor: SkinColor(red: 0.4, green: 0.4, blue: 0.4),
+            batonHighlightColor: SkinColor(red: 1.0, green: 0.8, blue: 0.0),
+            batonHighlightStyle: .glow,
             iconName: "rectangle.fill",
             previewImageName: "classic_blue_preview"
         ),
@@ -217,6 +253,10 @@ extension KubbSkin {
             kingColor: SkinColor(red: 0.7, green: 0.5, blue: 0.3),
             kingAccentColor: SkinColor(red: 0.9, green: 0.7, blue: 0.5),
             texture: .wood,
+            batonColor: SkinColor(red: 0.4, green: 0.3, blue: 0.2),
+            batonAccentColor: SkinColor(red: 0.6, green: 0.5, blue: 0.4),
+            batonHighlightColor: SkinColor(red: 1.0, green: 0.6, blue: 0.0),
+            batonHighlightStyle: .border,
             iconName: "tree.fill",
             previewImageName: "wooden_classic_preview"
         ),
@@ -237,6 +277,12 @@ extension KubbSkin {
             kingImageName: "swedish_king",
             kubbImageScale: 1.0,
             kingImageScale: 1.2,
+            batonColor: SkinColor(red: 0.1, green: 0.1, blue: 0.1),
+            batonAccentColor: SkinColor(red: 0.3, green: 0.3, blue: 0.3),
+            batonImageName: "swedish_baton",
+            batonImageScale: 1.0,
+            batonHighlightColor: SkinColor(red: 1.0, green: 0.0, blue: 0.0),
+            batonHighlightStyle: .pulse,
             iconName: "flag.se",
             previewImageName: "swedish_kubb_preview"
         )

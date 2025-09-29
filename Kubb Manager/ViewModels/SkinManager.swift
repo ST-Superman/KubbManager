@@ -15,12 +15,14 @@ class SkinManager: ObservableObject {
     
     @Published var selectedKubbSkin: KubbSkin
     @Published var selectedKingSkin: KubbSkin
+    @Published var selectedBatonSkin: KubbSkin
     @Published var availableSkins: [KubbSkin] = []
     @Published var unlockedSkins: Set<String> = []
     
     private let userDefaults = UserDefaults.standard
     private let selectedKubbSkinKey = "selectedKubbSkin"
     private let selectedKingSkinKey = "selectedKingSkin"
+    private let selectedBatonSkinKey = "selectedBatonSkin"
     private let unlockedSkinsKey = "unlockedSkins"
     
     private init() {
@@ -34,6 +36,7 @@ class SkinManager: ObservableObject {
         let classicBlueSkin = KubbSkin.defaultSkins.first { $0.id == "classic_blue" } ?? KubbSkin.defaultSkins.first!
         self.selectedKubbSkin = classicBlueSkin
         self.selectedKingSkin = classicBlueSkin
+        self.selectedBatonSkin = classicBlueSkin
         
         // Now that all properties are initialized, load saved selections
         if let savedKubbSkin = loadSelectedSkin(for: selectedKubbSkinKey) {
@@ -41,6 +44,9 @@ class SkinManager: ObservableObject {
         }
         if let savedKingSkin = loadSelectedSkin(for: selectedKingSkinKey) {
             self.selectedKingSkin = savedKingSkin
+        }
+        if let savedBatonSkin = loadSelectedSkin(for: selectedBatonSkinKey) {
+            self.selectedBatonSkin = savedBatonSkin
         }
         
         // Load unlocked skins
@@ -60,6 +66,11 @@ class SkinManager: ObservableObject {
     func selectKingSkin(_ skin: KubbSkin) {
         selectedKingSkin = skin
         saveSelectedSkin(skin, for: selectedKingSkinKey)
+    }
+    
+    func selectBatonSkin(_ skin: KubbSkin) {
+        selectedBatonSkin = skin
+        saveSelectedSkin(skin, for: selectedBatonSkinKey)
     }
     
     // MARK: - Skin Unlocking
@@ -197,6 +208,12 @@ class SkinManager: ObservableObject {
                 kingImageName: skin.kingImageName,
                 kubbImageScale: skin.kubbImageScale,
                 kingImageScale: skin.kingImageScale,
+                batonColor: skin.batonColor,
+                batonAccentColor: skin.batonAccentColor,
+                batonImageName: skin.batonImageName,
+                batonImageScale: skin.batonImageScale,
+                batonHighlightColor: skin.batonHighlightColor,
+                batonHighlightStyle: skin.batonHighlightStyle,
                 iconName: skin.iconName,
                 previewImageName: skin.previewImageName
             )

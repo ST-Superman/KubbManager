@@ -1124,6 +1124,77 @@ class CloudKitManager: ObservableObject {
         throw lastError ?? CloudKitError.retryFailed
     }
     
+    // MARK: - InkastBlastSession CloudKit Methods
+    
+    func saveInkastBlastSession(_ session: InkastBlastSessionData) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping InkastBlastSession save")
+            return
+        }
+        
+        do {
+            let record = session.toCKRecord()
+            try await privateDatabase.save(record)
+            print("✅ Successfully saved InkastBlastSession to CloudKit: \(session.id)")
+        } catch {
+            print("❌ Failed to save InkastBlastSession to CloudKit: \(error)")
+        }
+    }
+    
+    func fetchInkastBlastSessions() async -> [InkastBlastSessionData] {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, returning empty InkastBlastSessions")
+            return []
+        }
+        
+        do {
+            let query = CKQuery(recordType: InkastBlastSessionData.recordType, predicate: NSPredicate(value: true))
+            query.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+            
+            let result = try await privateDatabase.records(matching: query)
+            let sessions = result.matchResults.compactMap { (_, result) in
+                switch result {
+                case .success(let record):
+                    return InkastBlastSessionData(from: record)
+                case .failure(let error):
+                    print("❌ Failed to fetch InkastBlastSession record: \(error)")
+                    return nil
+                }
+            }
+            
+            print("✅ Successfully fetched \(sessions.count) InkastBlastSessions from CloudKit")
+            return sessions
+        } catch {
+            print("❌ Failed to fetch InkastBlastSessions from CloudKit: \(error)")
+            return []
+        }
+    }
+    
+    func deleteInkastBlastSession(_ session: InkastBlastSessionData) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping InkastBlastSession delete")
+            return
+        }
+        
+        do {
+            // First, try to find the record by querying with our custom ID
+            let query = CKQuery(recordType: InkastBlastSessionData.recordType, predicate: NSPredicate(format: "sessionId == %@", session.id))
+            let result = try await privateDatabase.records(matching: query)
+            
+            for (recordID, result) in result.matchResults {
+                switch result {
+                case .success:
+                    try await privateDatabase.deleteRecord(withID: recordID)
+                    print("✅ Successfully deleted InkastBlastSession from CloudKit: \(session.id)")
+                case .failure(let error):
+                    print("❌ Failed to delete InkastBlastSession record: \(error)")
+                }
+            }
+        } catch {
+            print("❌ Failed to delete InkastBlastSession from CloudKit: \(error)")
+        }
+    }
+    
     enum CloudKitError: Error {
         case retryFailed
     }

@@ -11,6 +11,7 @@ struct SkinSelectionView: View {
     @StateObject private var skinManager = SkinManager.shared
     @State private var showingKubbSkinPicker = false
     @State private var showingKingSkinPicker = false
+    @State private var showingBatonSkinPicker = false
     
     var body: some View {
         List {
@@ -64,6 +65,30 @@ struct SkinSelectionView: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
+                    
+                    // Current Baton Skin
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Baton Skin")
+                                .font(.headline)
+                            
+                            Text(skinManager.selectedBatonSkin.name)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        BatonPreview(skin: skinManager.selectedBatonSkin, size: 50)
+                        
+                        Button("Change") {
+                            showingBatonSkinPicker = true
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
                 }
             } header: {
                 Text("Current Selection")
@@ -111,6 +136,16 @@ struct SkinSelectionView: View {
                 onSelection: { skin in
                     skinManager.selectKingSkin(skin)
                     showingKingSkinPicker = false
+                }
+            )
+        }
+        .sheet(isPresented: $showingBatonSkinPicker) {
+            SkinPickerView(
+                title: "Select Baton Skin",
+                selectedSkin: skinManager.selectedBatonSkin,
+                onSelection: { skin in
+                    skinManager.selectBatonSkin(skin)
+                    showingBatonSkinPicker = false
                 }
             )
         }

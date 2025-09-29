@@ -11,6 +11,7 @@ struct MainMenuView: View {
     @State private var selectedMode: TrainingMode?
     @State private var showingEightMeterTraining = false
     @State private var showingBaseballKubb = false
+    @State private var showingInkastBlast = false
     @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
     
@@ -34,6 +35,8 @@ struct MainMenuView: View {
                                         showingEightMeterTraining = true
                                     } else if mode == .baseballKubb {
                                         showingBaseballKubb = true
+                                    } else if mode == .inkastBlast {
+                                        showingInkastBlast = true
                                     }
                                 }
                             }
@@ -58,6 +61,12 @@ struct MainMenuView: View {
         }
         .fullScreenCover(isPresented: $showingBaseballKubb) {
             BaseballKubbView()
+        }
+        .fullScreenCover(isPresented: $showingInkastBlast) {
+            InkastBlastView(
+                persistenceController: PersistenceController.shared,
+                cloudKitManager: CloudKitManager.shared
+            )
         }
         .sheet(isPresented: $showingOptions) {
             OptionsView()
