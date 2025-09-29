@@ -9,7 +9,6 @@ import SwiftUI
 
 struct SkinSelectionView: View {
     @StateObject private var skinManager = SkinManager.shared
-    @State private var selectedCategory: SkinCategory = .classic
     @State private var showingKubbSkinPicker = false
     @State private var showingKingSkinPicker = false
     
@@ -70,35 +69,15 @@ struct SkinSelectionView: View {
                 Text("Current Selection")
             }
             
-            // Category Selection
-            Section {
-                Picker("Category", selection: $selectedCategory) {
-                    ForEach(SkinCategory.allCases, id: \.self) { category in
-                        HStack {
-                            Image(systemName: category.icon)
-                            Text(category.displayName)
-                        }
-                        .tag(category)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-            } header: {
-                Text("Skin Categories")
-            }
-            
             // Skins Grid
             Section {
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: 16) {
-                    ForEach(skinsForCurrentCategory, id: \.id) { skin in
+                    ForEach(skinManager.availableSkins, id: \.id) { skin in
                         SkinCard(skin: skin) {
-                            if selectedCategory == .classic || selectedCategory == .modern {
-                                skinManager.selectKubbSkin(skin)
-                            } else {
-                                skinManager.selectKingSkin(skin)
-                            }
+                            skinManager.selectKubbSkin(skin)
                         }
                     }
                 }
@@ -132,9 +111,6 @@ struct SkinSelectionView: View {
         }
     }
     
-    private var skinsForCurrentCategory: [KubbSkin] {
-        return skinManager.skinsForCategory(selectedCategory)
-    }
 }
 
 struct SkinCard: View {
@@ -181,30 +157,13 @@ struct SkinPickerView: View {
     let onSelection: (KubbSkin) -> Void
     @Environment(\.dismiss) private var dismiss
     @StateObject private var skinManager = SkinManager.shared
-    @State private var selectedCategory: SkinCategory = .classic
     
     var body: some View {
         NavigationView {
             List {
-                // Category Selection
-                Section {
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(SkinCategory.allCases, id: \.self) { category in
-                            HStack {
-                                Image(systemName: category.icon)
-                                Text(category.displayName)
-                            }
-                            .tag(category)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                } header: {
-                    Text("Categories")
-                }
-                
                 // Skins List
                 Section {
-                    ForEach(availableSkinsForCategory, id: \.id) { skin in
+                    ForEach(skinManager.availableSkins, id: \.id) { skin in
                         HStack {
                             SkinPreview(skin: skin, size: 40)
                             
@@ -246,9 +205,6 @@ struct SkinPickerView: View {
         }
     }
     
-    private var availableSkinsForCategory: [KubbSkin] {
-        return skinManager.skinsForCategory(selectedCategory)
-    }
 }
 
 #Preview {
