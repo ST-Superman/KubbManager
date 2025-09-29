@@ -30,9 +30,10 @@ class SkinManager: ObservableObject {
         // Unlock all skins by default (achievements disabled)
         self.unlockedSkins = Set(KubbSkin.defaultSkins.map { $0.id })
         
-        // Initialize with default skins first
-        self.selectedKubbSkin = KubbSkin.defaultSkins.first!
-        self.selectedKingSkin = KubbSkin.defaultSkins.first!
+        // Initialize with Classic Blue package (default)
+        let classicBlueSkin = KubbSkin.defaultSkins.first { $0.id == "classic_blue" } ?? KubbSkin.defaultSkins.first!
+        self.selectedKubbSkin = classicBlueSkin
+        self.selectedKingSkin = classicBlueSkin
         
         // Now that all properties are initialized, load saved selections
         if let savedKubbSkin = loadSelectedSkin(for: selectedKubbSkinKey) {
@@ -247,16 +248,53 @@ extension SkinManager {
     }
 }
 
-// MARK: - Integration with Existing Systems
-
-extension SkinManager {
-    func checkSkinsAfterSession() async {
-        // Call this after each training session to check for new unlocks
-        await checkAndUnlockSkins()
+    // MARK: - Skin Package Management
+    
+    func selectSkinPackage(_ packageId: String) {
+        // Find skins that belong to this package (same base ID)
+        let packageSkins = availableSkins.filter { skin in
+            extractBaseId(from: skin.id) == packageId
+        }
+        
+        // Find the kubb and king skins for this package
+        if let kubbSkin = packageSkins.first(where: { $0.id == packageId }) {
+            selectKubbSkin(kubbSkin)
+        }
+        if let kingSkin = packageSkins.first(where: { $0.id == packageId }) {
+            selectKingSkin(kingSkin)
+        }
     }
     
-    func checkSkinsAfterAchievement(_ achievementId: String) async {
-        // Call this when an achievement is completed
-        await checkAndUnlockSkins()
+    func isPackageHighlighted(_ packageId: String) -> Bool {
+        let selectedKubbBaseId = extractBaseId(from: selectedKubbSkin.id)
+        let selectedKingBaseId = extractBaseId(from: selectedKingSkin.id)
+        
+        // Package is highlighted only if both kubb and king are from the same package
+        return selectedKubbBaseId == packageId && selectedKingBaseId == packageId
     }
-}
+    
+    func getAvailablePackages() -> [String] {
+        // Get unique base IDs from all available skins
+        let baseIds = Set(availableSkins.map { extractBaseId(from: $0.id) })
+        return Array(baseIds).sorted()
+    }
+    
+    private func extractBaseId(from skinId: String) -> String {
+        // Extract the base ID from skin ID (everything before any suffix)
+        // For example: "classic_blue" from "classic_blue", "wooden_classic" from "wooden_classic", etc.
+        return skinId
+    }
+    
+    // MARK: - Integration with Existing Systems
+    
+    extension SkinManager {
+        func checkSkinsAfterSession() async {
+            // Call this after each training session to check for new unlocks
+            await checkAndUnlockSkins()
+        }
+        
+        func checkSkinsAfterAchievement(_ achievementId: String) async {
+            // Call this when an achievement is completed
+            await checkAndUnlockSkins()
+        }
+    }

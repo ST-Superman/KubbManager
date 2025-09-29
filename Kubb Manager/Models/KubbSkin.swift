@@ -281,7 +281,7 @@ extension KubbSkin {
     ]
 }
 
-// MARK: - Skin Preview Helper
+// MARK: - Skin Preview Helpers
 
 struct SkinPreview: View {
     let skin: KubbSkin
@@ -336,6 +336,73 @@ struct SkinPreview: View {
                             .foregroundColor(.white)
                     )
             }
+        }
+    }
+}
+
+// Individual Kubb Piece Preview
+struct KubbPiecePreview: View {
+    let skin: KubbSkin
+    let size: CGFloat
+    
+    init(skin: KubbSkin, size: CGFloat = 50) {
+        self.skin = skin
+        self.size = size
+    }
+    
+    var body: some View {
+        if let kubbImageName = skin.kubbImageName {
+            // Image-based kubb
+            Image(kubbImageName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size * 0.6, height: size)
+                .scaleEffect(skin.kubbImageScale)
+        } else {
+            // Color-based kubb
+            RoundedRectangle(cornerRadius: 6)
+                .fill(skin.kubbColor.color)
+                .frame(width: size * 0.6, height: size)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(skin.kubbAccentColor?.color ?? Color.white, lineWidth: 2)
+                )
+        }
+    }
+}
+
+// Individual King Piece Preview
+struct KingPiecePreview: View {
+    let skin: KubbSkin
+    let size: CGFloat
+    
+    init(skin: KubbSkin, size: CGFloat = 50) {
+        self.skin = skin
+        self.size = size
+    }
+    
+    var body: some View {
+        if let kingImageName = skin.kingImageName {
+            // Image-based king
+            Image(kingImageName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size * 0.7, height: size * 1.2)
+                .scaleEffect(skin.kingImageScale)
+        } else {
+            // Color-based king
+            RoundedRectangle(cornerRadius: 10)
+                .fill(skin.kingColor.color)
+                .frame(width: size * 0.7, height: size * 1.2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(skin.kingAccentColor?.color ?? Color.white, lineWidth: 2)
+                )
+                .overlay(
+                    Image(systemName: "crown.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                )
         }
     }
 }

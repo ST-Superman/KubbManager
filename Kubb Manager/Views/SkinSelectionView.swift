@@ -30,7 +30,7 @@ struct SkinSelectionView: View {
                         
                         Spacer()
                         
-                        SkinPreview(skin: skinManager.selectedKubbSkin, size: 50)
+                        KubbPiecePreview(skin: skinManager.selectedKubbSkin, size: 50)
                         
                         Button("Change") {
                             showingKubbSkinPicker = true
@@ -54,7 +54,7 @@ struct SkinSelectionView: View {
                         
                         Spacer()
                         
-                        SkinPreview(skin: skinManager.selectedKingSkin, size: 50)
+                        KingPiecePreview(skin: skinManager.selectedKingSkin, size: 50)
                         
                         Button("Change") {
                             showingKingSkinPicker = true
@@ -69,22 +69,27 @@ struct SkinSelectionView: View {
                 Text("Current Selection")
             }
             
-            // Skins Grid
+            // Skin Packages Grid
             Section {
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: 16) {
-                    ForEach(skinManager.availableSkins, id: \.id) { skin in
-                        SkinCard(skin: skin) {
-                            skinManager.selectKubbSkin(skin)
+                    ForEach(skinManager.getAvailablePackages(), id: \.self) { packageId in
+                        if let packageSkin = skinManager.availableSkins.first(where: { $0.id == packageId }) {
+                            SkinPackageCard(
+                                skin: packageSkin,
+                                isHighlighted: skinManager.isPackageHighlighted(packageId)
+                            ) {
+                                skinManager.selectSkinPackage(packageId)
+                            }
                         }
                     }
                 }
             } header: {
-                Text("Available Skins")
+                Text("Available Skin Packages")
             } footer: {
-                Text("Tap on skins to select them. All skins are available!")
+                Text("Tap on a package to select both kubb and king skins. Mix and match individual skins using the Change buttons above.")
             }
         }
         .navigationTitle("Kubb Skins")
@@ -111,6 +116,45 @@ struct SkinSelectionView: View {
         }
     }
     
+}
+
+struct SkinPackageCard: View {
+    let skin: KubbSkin
+    let isHighlighted: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 12) {
+                // Skin Package Preview
+                SkinPreview(skin: skin, size: 60)
+                
+                // Skin Info
+                VStack(spacing: 4) {
+                    Text(skin.name)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                    
+                    Text(skin.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isHighlighted ? Color.blue : Color.gray, lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
 }
 
 struct SkinCard: View {
