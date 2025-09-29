@@ -916,6 +916,11 @@ class CloudKitManager: ObservableObject {
                     existingRecord["halfInningHistory"] = halfInningHistoryString
                 }
                 
+                if let scoreboardHistoryData = try? JSONEncoder().encode(session.scoreboardHistory),
+                   let scoreboardHistoryString = String(data: scoreboardHistoryData, encoding: .utf8) {
+                    existingRecord["scoreboardHistory"] = scoreboardHistoryString
+                }
+                
                 let _ = try await privateDatabase.save(existingRecord)
                 print("✅ Updated existing CloudKit record for Baseball Kubb session \(session.id)")
             } else {

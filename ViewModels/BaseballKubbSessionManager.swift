@@ -61,15 +61,25 @@ class BaseballKubbSessionManager: ObservableObject {
     }
     
     func abandonGame() {
-        guard var session = currentSession else { return }
+        // Try currentSession first, then incompleteSession
+        guard var session = currentSession ?? incompleteSession else { 
+            print("❌ No session to abandon (neither current nor incomplete)")
+            return 
+        }
         
         print("🚫 Abandoning Baseball Kubb game: \(session.id)")
+        print("   - Before: isComplete = \(session.isComplete)")
         
         session.isComplete = true
         session.modifiedAt = Date()
-        currentSession = session
+        
+        print("   - After: isComplete = \(session.isComplete)")
+        
+        currentSession = nil
         lastSession = session
         incompleteSession = nil
+        
+        print("   - Cleared currentSession and incompleteSession")
         
         // Save to local storage
         localStorage.saveBaseballKubbSession(session)
@@ -78,6 +88,13 @@ class BaseballKubbSessionManager: ObservableObject {
         Task {
             await saveSessionToCloudKit(session)
         }
+        
+        // Force UI update
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+        
+        print("✅ Game abandoned successfully")
     }
     
     func endGame() {
@@ -248,23 +265,29 @@ class BaseballKubbSessionManager: ObservableObject {
         do {
             // Load from local storage first
             if let localSession = localStorage.loadIncompleteBaseballKubbSession() {
-                incompleteSession = localSession
-                print("📱 Loaded incomplete session from local storage: \(localSession.id)")
+                // Only set as incomplete if it's not completed
+                if !localSession.isComplete {
+                    incompleteSession = localSession
+                    print("📱 Loaded incomplete session from local storage: \(localSession.id)")
+                }
             }
             
             // Try to load from CloudKit
             if let cloudSession = try await cloudKitManager.fetchIncompleteBaseballKubbSession() {
-                // If we have both, use the more recent one
-                if let localSession = incompleteSession {
-                    if cloudSession.modifiedAt > localSession.modifiedAt {
+                // Only consider it incomplete if it's not completed
+                if !cloudSession.isComplete {
+                    // If we have both, use the more recent one
+                    if let localSession = incompleteSession {
+                        if cloudSession.modifiedAt > localSession.modifiedAt {
+                            incompleteSession = cloudSession
+                            localStorage.saveBaseballKubbSession(cloudSession)
+                            print("☁️ Updated with newer incomplete CloudKit session: \(cloudSession.id)")
+                        }
+                    } else {
                         incompleteSession = cloudSession
                         localStorage.saveBaseballKubbSession(cloudSession)
-                        print("☁️ Updated with newer incomplete CloudKit session: \(cloudSession.id)")
+                        print("☁️ Loaded incomplete session from CloudKit: \(cloudSession.id)")
                     }
-                } else {
-                    incompleteSession = cloudSession
-                    localStorage.saveBaseballKubbSession(cloudSession)
-                    print("☁️ Loaded incomplete session from CloudKit: \(cloudSession.id)")
                 }
             }
         } catch {

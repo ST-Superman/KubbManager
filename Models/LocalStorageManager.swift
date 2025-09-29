@@ -146,7 +146,9 @@ class LocalStorageManager: ObservableObject {
     
     func loadIncompleteBaseballKubbSession() -> BaseballKubbSession? {
         let sessions = loadBaseballKubbSessions()
-        return sessions.first { !$0.isComplete }
+        let incompleteSessions = sessions.filter { !$0.isComplete }
+        print("📱 Found \(incompleteSessions.count) incomplete Baseball Kubb sessions out of \(sessions.count) total")
+        return incompleteSessions.first
     }
     
     private func saveBaseballKubbSessions(_ sessions: [BaseballKubbSession]) {

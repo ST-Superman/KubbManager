@@ -32,6 +32,7 @@ struct BaseballKubbSession: Identifiable, Codable {
     var winner: String?
     var throwHistory: [BaseballKubbThrowState]
     var halfInningHistory: [BaseballKubbHalfInningState]
+    var scoreboardHistory: [BaseballKubbScoreboardEntry]
     var isComplete: Bool
     let createdAt: Date
     var modifiedAt: Date
@@ -60,6 +61,7 @@ struct BaseballKubbSession: Identifiable, Codable {
         self.winner = nil
         self.throwHistory = []
         self.halfInningHistory = []
+        self.scoreboardHistory = []
         self.isComplete = false
         self.createdAt = Date()
         self.modifiedAt = Date()
@@ -80,20 +82,33 @@ struct BaseballKubbSession: Identifiable, Codable {
     var scoreboardData: [(awayRuns: Int, awayKings: Int, homeRuns: Int, homeKings: Int)] {
         var data: [(awayRuns: Int, awayKings: Int, homeRuns: Int, homeKings: Int)] = []
         
-        // Process each half-inning from history
-        for (index, halfInning) in halfInningHistory.enumerated() {
-            let nextHalfInning = index < halfInningHistory.count - 1 ? halfInningHistory[index + 1] : nil
+        // Process scoreboard history first (most reliable)
+        for entry in scoreboardHistory {
+            let targetIndex = (entry.inning - 1) * 2 + (entry.isTop ? 0 : 1)
             
-            if halfInning.isTop {
+            // Ensure we have enough entries in the array
+            while data.count <= targetIndex {
+                data.append((awayRuns: 0, awayKings: 0, homeRuns: 0, homeKings: 0))
+            }
+            
+            data[targetIndex] = (awayRuns: entry.awayRuns, awayKings: entry.awayKings, homeRuns: entry.homeRuns, homeKings: entry.homeKings)
+        }
+        
+        // Add current half-inning data if it has been completed
+        if isHalfInningOver {
+            let targetIndex = (currentInning - 1) * 2 + (isTop ? 0 : 1)
+            
+            // Ensure we have enough entries in the array
+            while data.count <= targetIndex {
+                data.append((awayRuns: 0, awayKings: 0, homeRuns: 0, homeKings: 0))
+            }
+            
+            if isTop {
                 // Top half - away team scored
-                let awayRuns = nextHalfInning?.awayScore ?? awayScore - halfInning.awayScore
-                let awayKings = nextHalfInning?.awayKings ?? awayKings - halfInning.awayKings
-                data.append((awayRuns: awayRuns, awayKings: awayKings, homeRuns: 0, homeKings: 0))
+                data[targetIndex] = (awayRuns: halfInningRuns, awayKings: halfInningKings, homeRuns: 0, homeKings: 0)
             } else {
                 // Bottom half - home team scored
-                let homeRuns = nextHalfInning?.homeScore ?? homeScore - halfInning.homeScore
-                let homeKings = nextHalfInning?.homeKings ?? homeKings - halfInning.homeKings
-                data.append((awayRuns: 0, awayKings: 0, homeRuns: homeRuns, homeKings: homeKings))
+                data[targetIndex] = (awayRuns: 0, awayKings: 0, homeRuns: halfInningRuns, homeKings: halfInningKings)
             }
         }
         
@@ -192,6 +207,17 @@ struct BaseballKubbSession: Identifiable, Codable {
     
     mutating func nextHalf() {
         saveHalfInningState()
+        
+        // Save current half-inning to scoreboard history
+        let scoreboardEntry = BaseballKubbScoreboardEntry(
+            inning: currentInning,
+            isTop: isTop,
+            awayRuns: isTop ? halfInningRuns : 0,
+            awayKings: isTop ? halfInningKings : 0,
+            homeRuns: isTop ? 0 : halfInningRuns,
+            homeKings: isTop ? 0 : halfInningKings
+        )
+        scoreboardHistory.append(scoreboardEntry)
         
         // Calculate field kubbs for next half
         let kubbsForFieldKubbs: Int
@@ -421,6 +447,13 @@ struct BaseballKubbSession: Identifiable, Codable {
         } else {
             self.halfInningHistory = []
         }
+        
+        if let scoreboardHistoryData = record["scoreboardHistory"] as? String,
+           let scoreboardHistoryJSON = scoreboardHistoryData.data(using: .utf8) {
+            self.scoreboardHistory = (try? JSONDecoder().decode([BaseballKubbScoreboardEntry].self, from: scoreboardHistoryJSON)) ?? []
+        } else {
+            self.scoreboardHistory = []
+        }
     }
     
     func toCKRecord() -> CKRecord {
@@ -466,6 +499,11 @@ struct BaseballKubbSession: Identifiable, Codable {
             record["halfInningHistory"] = halfInningHistoryString
         }
         
+        if let scoreboardHistoryData = try? JSONEncoder().encode(scoreboardHistory),
+           let scoreboardHistoryString = String(data: scoreboardHistoryData, encoding: .utf8) {
+            record["scoreboardHistory"] = scoreboardHistoryString
+        }
+        
         return record
     }
 }
@@ -494,5 +532,14 @@ struct BaseballKubbHalfInningState: Codable {
     let awayScore: Int
     let homeScore: Int
     let awayKings: Int
+    let homeKings: Int
+}
+
+struct BaseballKubbScoreboardEntry: Codable {
+    let inning: Int
+    let isTop: Bool
+    let awayRuns: Int
+    let awayKings: Int
+    let homeRuns: Int
     let homeKings: Int
 }

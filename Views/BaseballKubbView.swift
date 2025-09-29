@@ -23,7 +23,7 @@ struct BaseballKubbView: View {
                 
                 // Main Content
                 if sessionManager.currentSession == nil {
-                    BaseballKubbStartView(sessionManager: sessionManager)
+                    BaseballKubbStartView(sessionManager: sessionManager, showingHalfSummary: $showingHalfSummary)
                 } else if sessionManager.currentSession?.gameOver == true {
                     BaseballKubbGameEndView(sessionManager: sessionManager)
                 } else if showingHalfSummary {
@@ -111,8 +111,10 @@ struct StatCard: View {
 
 struct BaseballKubbStartView: View {
     @ObservedObject var sessionManager: BaseballKubbSessionManager
+    @Binding var showingHalfSummary: Bool
     @State private var awayTeam = ""
     @State private var homeTeam = ""
+    @State private var showingAbandonConfirmation = false
     
     var body: some View {
         VStack(spacing: 32) {
@@ -170,11 +172,15 @@ struct BaseballKubbStartView: View {
                         HStack(spacing: 12) {
                             Button("Resume Game") {
                                 sessionManager.resumeIncompleteGame()
+                                // If the half-inning is over, show the summary
+                                if sessionManager.currentSession?.isHalfInningOver == true {
+                                    showingHalfSummary = true
+                                }
                             }
                             .buttonStyle(SecondaryButtonStyle())
                             
                             Button("Abandon Game") {
-                                sessionManager.abandonGame()
+                                showingAbandonConfirmation = true
                             }
                             .buttonStyle(PrimaryButtonStyle())
                         }
@@ -235,6 +241,15 @@ struct BaseballKubbStartView: View {
             .padding(.horizontal)
             
             Spacer()
+        }
+        .sheet(isPresented: $showingAbandonConfirmation) {
+            if let session = sessionManager.incompleteSession {
+                BaseballKubbAbandonConfirmationView(
+                    session: session,
+                    sessionManager: sessionManager,
+                    showingAbandonConfirmation: $showingAbandonConfirmation
+                )
+            }
         }
     }
     
@@ -710,7 +725,7 @@ struct BaseballKubbScoreboardTable: View {
                 Text("Team")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(width: 60, alignment: .leading)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                 
@@ -721,90 +736,56 @@ struct BaseballKubbScoreboardTable: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4)
                 }
-                
-                Text("Total")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                
-                Text("Kings")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
             }
             .background(Color(.systemGray5))
             
             // Away team row
             HStack(spacing: 0) {
-                Text(session.awayTeam)
+                Text("Away")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(width: 60, alignment: .leading)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                 
                 ForEach(1...9, id: \.self) { inning in
                     let halfInningIndex = (inning - 1) * 2 // Top half
                     let data = halfInningIndex < session.scoreboardData.count ? session.scoreboardData[halfInningIndex] : (awayRuns: 0, awayKings: 0, homeRuns: 0, homeKings: 0)
+                    let isMostRecent = isMostRecentHalfInning(inning: inning, isTop: true)
+                    let hasBeenPlayed = hasHalfInningBeenPlayed(inning: inning, isTop: true)
                     
-                    Text(formatScore(runs: data.awayRuns, kings: data.awayKings))
+                    Text(formatScore(runs: data.awayRuns, kings: data.awayKings, hasBeenPlayed: hasBeenPlayed))
                         .font(.caption)
+                        .fontWeight(isMostRecent ? .bold : .regular)
+                        .foregroundColor(isMostRecent ? .blue : .primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4)
                 }
-                
-                Text("\(session.awayScore)")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                
-                Text("\(session.awayKings)")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
             }
             .background(Color(.systemGray6))
             
             // Home team row
             HStack(spacing: 0) {
-                Text(session.homeTeam)
+                Text("Home")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(width: 60, alignment: .leading)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                 
                 ForEach(1...9, id: \.self) { inning in
                     let halfInningIndex = (inning - 1) * 2 + 1 // Bottom half
                     let data = halfInningIndex < session.scoreboardData.count ? session.scoreboardData[halfInningIndex] : (awayRuns: 0, awayKings: 0, homeRuns: 0, homeKings: 0)
+                    let isMostRecent = isMostRecentHalfInning(inning: inning, isTop: false)
+                    let hasBeenPlayed = hasHalfInningBeenPlayed(inning: inning, isTop: false)
                     
-                    Text(formatScore(runs: data.homeRuns, kings: data.homeKings))
+                    Text(formatScore(runs: data.homeRuns, kings: data.homeKings, hasBeenPlayed: hasBeenPlayed))
                         .font(.caption)
+                        .fontWeight(isMostRecent ? .bold : .regular)
+                        .foregroundColor(isMostRecent ? .blue : .primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4)
                 }
-                
-                Text("\(session.homeScore)")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                
-                Text("\(session.homeKings)")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
             }
             .background(Color(.systemBackground))
         }
@@ -815,8 +796,10 @@ struct BaseballKubbScoreboardTable: View {
         .cornerRadius(8)
     }
     
-    private func formatScore(runs: Int, kings: Int) -> String {
-        if runs == 0 {
+    private func formatScore(runs: Int, kings: Int, hasBeenPlayed: Bool) -> String {
+        if !hasBeenPlayed {
+            return ""
+        } else if runs == 0 {
             return "0"
         } else if kings > 0 {
             return "\(runs)(K)"
@@ -824,18 +807,174 @@ struct BaseballKubbScoreboardTable: View {
             return "\(runs)"
         }
     }
+    
+    private func hasHalfInningBeenPlayed(inning: Int, isTop: Bool) -> Bool {
+        let currentInning = session.currentInning
+        let currentIsTop = session.isTop
+        
+        // If we're past this inning, it has been played
+        if currentInning > inning {
+            return true
+        }
+        
+        // If we're in the same inning
+        if currentInning == inning {
+            if isTop && !currentIsTop {
+                return true // We're in bottom half, so top half was played
+            }
+            if !isTop && currentIsTop {
+                return false // We're in top half, so bottom half hasn't been played yet
+            }
+            if isTop && currentIsTop {
+                // We're currently in the top half - check if it's completed
+                return session.isHalfInningOver
+            }
+            if !isTop && !currentIsTop {
+                // We're currently in the bottom half - check if it's completed
+                return session.isHalfInningOver
+            }
+        }
+        
+        // If we're in the top of the next inning, the bottom of the previous inning was played
+        if currentInning == inning + 1 && currentIsTop && !isTop {
+            return true
+        }
+        
+        // If we're before this inning, it hasn't been played
+        return false
+    }
+    
+    private func isMostRecentHalfInning(inning: Int, isTop: Bool) -> Bool {
+        // Check if this is the most recently completed half-inning
+        let currentInning = session.currentInning
+        let currentIsTop = session.isTop
+        
+        // If we're currently in the middle of an inning, check if it's completed
+        if currentInning == inning && currentIsTop == isTop {
+            // This is the current half-inning - highlight it if it's completed
+            return session.isHalfInningOver
+        }
+        
+        // If we're in the bottom of an inning, highlight the top of the same inning
+        // BUT only if the bottom half hasn't been completed yet
+        if currentInning == inning && !currentIsTop && isTop {
+            return !session.isHalfInningOver
+        }
+        
+        // If we're in the top of the next inning, highlight the bottom of the previous inning
+        if currentInning == inning + 1 && currentIsTop && !isTop {
+            return true
+        }
+        
+        // Special case: if we just completed the bottom of an inning and are now in the top of the next inning,
+        // highlight the bottom of the previous inning
+        if currentInning == inning + 1 && currentIsTop && inning == currentInning - 1 && !isTop {
+            return true
+        }
+        
+        return false
+    }
 }
 
 struct BaseballKubbHalfSummaryView: View {
     @ObservedObject var sessionManager: BaseballKubbSessionManager
     @Binding var showingHalfSummary: Bool
     
+    private var completionTitle: String {
+        guard let session = sessionManager.currentSession else { return "Half Inning Complete" }
+        
+        let inning = session.currentInning
+        let isTop = session.isTop
+        
+        if isTop {
+            return "Middle of the \(ordinalInning(inning))"
+        } else {
+            return "After \(inning) \(inning == 1 ? "Inning" : "Innings")"
+        }
+    }
+    
+    private var statsSectionTitle: String {
+        guard let session = sessionManager.currentSession else { return "Half Inning Stats" }
+        
+        let inning = session.currentInning
+        let isTop = session.isTop
+        
+        if isTop {
+            return "Top of \(ordinalInning(inning)) Stats"
+        } else {
+            return "Bottom of \(ordinalInning(inning)) Stats"
+        }
+    }
+    
+    private func ordinalInning(_ inning: Int) -> String {
+        switch inning {
+        case 1: return "1st"
+        case 2: return "2nd"
+        case 3: return "3rd"
+        case 4: return "4th"
+        case 5: return "5th"
+        case 6: return "6th"
+        case 7: return "7th"
+        case 8: return "8th"
+        case 9: return "9th"
+        default: return "\(inning)th"
+        }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                Text("Half Inning Complete")
+                Text(completionTitle)
                     .font(.title2)
                     .fontWeight(.bold)
+                
+                // Team info section
+                if let session = sessionManager.currentSession {
+                    HStack(alignment: .top, spacing: 16) {
+                        // Away team info
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Away")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            
+                            Text(session.awayTeam)
+                                .font(.subheadline)
+                                .multilineTextAlignment(.leading)
+                            
+                            Text("Total: \(session.awayScore)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Kings: \(session.awayKings)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // Home team info
+                        VStack(alignment: .trailing, spacing: 8) {
+                            Text("Home")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            
+                            Text(session.homeTeam)
+                                .font(.subheadline)
+                                .multilineTextAlignment(.trailing)
+                            
+                            Text("Total: \(session.homeScore)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Kings: \(session.homeKings)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                }
                 
                 // Baseball-style scoreboard
                 if let session = sessionManager.currentSession, !session.scoreboardData.isEmpty {
@@ -843,6 +982,11 @@ struct BaseballKubbHalfSummaryView: View {
                 }
                 
                 VStack(spacing: 16) {
+                    Text(statsSectionTitle)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
                     HStack {
                         Text("Runs Scored:")
                         Spacer()
@@ -875,6 +1019,100 @@ struct BaseballKubbHalfSummaryView: View {
                 .buttonStyle(PrimaryButtonStyle())
             }
             .padding()
+        }
+    }
+}
+
+struct BaseballKubbAbandonConfirmationView: View {
+    let session: BaseballKubbSession
+    @ObservedObject var sessionManager: BaseballKubbSessionManager
+    @Binding var showingAbandonConfirmation: Bool
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Text("Are you sure you wish to abandon this game?")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                    
+                    // Team info section
+                    HStack(alignment: .top, spacing: 16) {
+                        // Away team info
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Away")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            
+                            Text(session.awayTeam)
+                                .font(.subheadline)
+                                .multilineTextAlignment(.leading)
+                            
+                            Text("Total: \(session.awayScore)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Kings: \(session.awayKings)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // Home team info
+                        VStack(alignment: .trailing, spacing: 8) {
+                            Text("Home")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            
+                            Text(session.homeTeam)
+                                .font(.subheadline)
+                                .multilineTextAlignment(.trailing)
+                            
+                            Text("Total: \(session.homeScore)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Kings: \(session.homeKings)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    
+                    // Baseball-style scoreboard
+                    if !session.scoreboardData.isEmpty {
+                        BaseballKubbScoreboardTable(session: session)
+                    }
+                    
+                    // Action buttons
+                    VStack(spacing: 12) {
+                        Button("No, Keep Game in Progress") {
+                            showingAbandonConfirmation = false
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                        
+                        Button("Yes, Mark Game as Abandoned") {
+                            sessionManager.abandonGame()
+                            showingAbandonConfirmation = false
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Abandon Game")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Cancel") {
+                        showingAbandonConfirmation = false
+                    }
+                }
+            }
         }
     }
 }
