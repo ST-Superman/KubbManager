@@ -30,7 +30,13 @@ struct KubbSkin: Identifiable, Codable, Equatable {
     
     // Image-based skin properties
     let kubbImageName: String?
+    let kubbImageNames: [String] // Multiple kubb images (1-10)
+    let kubbDownImageName: String?
+    let kubbDownImageNames: [String] // Multiple kubb down images (1-10)
     let kingImageName: String?
+    let kingImageNames: [String] // Multiple king images (1+)
+    let kingDownImageName: String?
+    let kingDownImageNames: [String] // Multiple king down images (1+)
     let kubbImageScale: Double
     let kingImageScale: Double
     
@@ -38,6 +44,7 @@ struct KubbSkin: Identifiable, Codable, Equatable {
     let batonColor: SkinColor
     let batonAccentColor: SkinColor?
     let batonImageName: String?
+    let batonImageNames: [String] // Multiple baton images (1-6)
     let batonImageScale: Double
     let batonHighlightColor: SkinColor
     let batonHighlightStyle: BatonHighlightStyle
@@ -62,12 +69,19 @@ struct KubbSkin: Identifiable, Codable, Equatable {
         texture: SkinTexture? = nil,
         pattern: SkinPattern? = nil,
         kubbImageName: String? = nil,
+        kubbImageNames: [String] = [],
+        kubbDownImageName: String? = nil,
+        kubbDownImageNames: [String] = [],
         kingImageName: String? = nil,
+        kingImageNames: [String] = [],
+        kingDownImageName: String? = nil,
+        kingDownImageNames: [String] = [],
         kubbImageScale: Double = 1.0,
         kingImageScale: Double = 1.0,
         batonColor: SkinColor,
         batonAccentColor: SkinColor? = nil,
         batonImageName: String? = nil,
+        batonImageNames: [String] = [],
         batonImageScale: Double = 1.0,
         batonHighlightColor: SkinColor,
         batonHighlightStyle: BatonHighlightStyle = .glow,
@@ -89,17 +103,97 @@ struct KubbSkin: Identifiable, Codable, Equatable {
         self.texture = texture
         self.pattern = pattern
         self.kubbImageName = kubbImageName
+        self.kubbImageNames = kubbImageNames
+        self.kubbDownImageName = kubbDownImageName
+        self.kubbDownImageNames = kubbDownImageNames
         self.kingImageName = kingImageName
+        self.kingImageNames = kingImageNames
+        self.kingDownImageName = kingDownImageName
+        self.kingDownImageNames = kingDownImageNames
         self.kubbImageScale = kubbImageScale
         self.kingImageScale = kingImageScale
         self.batonColor = batonColor
         self.batonAccentColor = batonAccentColor
         self.batonImageName = batonImageName
+        self.batonImageNames = batonImageNames
         self.batonImageScale = batonImageScale
         self.batonHighlightColor = batonHighlightColor
         self.batonHighlightStyle = batonHighlightStyle
         self.iconName = iconName
         self.previewImageName = previewImageName
+    }
+    
+    // MARK: - Multi-Image Helper Methods
+    
+    /// Get a random kubb image name for the given index (0-9)
+    func getKubbImageName(for index: Int) -> String? {
+        // Use multiple images if available, otherwise fall back to single image
+        if !kubbImageNames.isEmpty {
+            let imageIndex = index % kubbImageNames.count
+            return kubbImageNames[imageIndex]
+        }
+        return kubbImageName
+    }
+    
+    /// Get a random kubb down image name for the given index (0-9)
+    func getKubbDownImageName(for index: Int) -> String? {
+        // Use multiple down images if available, otherwise fall back to single down image
+        if !kubbDownImageNames.isEmpty {
+            let imageIndex = index % kubbDownImageNames.count
+            return kubbDownImageNames[imageIndex]
+        }
+        return kubbDownImageName
+    }
+    
+    /// Get a random king image name
+    func getKingImageName() -> String? {
+        // Use multiple images if available, otherwise fall back to single image
+        if !kingImageNames.isEmpty {
+            let randomIndex = Int.random(in: 0..<kingImageNames.count)
+            return kingImageNames[randomIndex]
+        }
+        return kingImageName
+    }
+    
+    /// Get a random king down image name
+    func getKingDownImageName() -> String? {
+        // Use multiple down images if available, otherwise fall back to single down image
+        if !kingDownImageNames.isEmpty {
+            let randomIndex = Int.random(in: 0..<kingDownImageNames.count)
+            return kingDownImageNames[randomIndex]
+        }
+        return kingDownImageName
+    }
+    
+    /// Get a random baton image name for the given index (0-5)
+    func getBatonImageName(for index: Int) -> String? {
+        // Use multiple images if available, otherwise fall back to single image
+        if !batonImageNames.isEmpty {
+            let imageIndex = index % batonImageNames.count
+            return batonImageNames[imageIndex]
+        }
+        return batonImageName
+    }
+    
+    /// Check if this skin has custom down images
+    var hasCustomDownImages: Bool {
+        return kubbDownImageName != nil || !kubbDownImageNames.isEmpty || 
+               kingDownImageName != nil || !kingDownImageNames.isEmpty
+    }
+    
+    /// Check if this skin has multiple kubb images
+    var hasMultipleKubbImages: Bool {
+        return !kubbImageNames.isEmpty
+    }
+    
+    /// Check if this skin has multiple king images
+    var hasMultipleKingImages: Bool {
+        return !kingImageNames.isEmpty
+    }
+    
+    /// Check if this skin has multiple baton images
+    var hasMultipleBatonImages: Bool {
+        return !batonImageNames.isEmpty
     }
 }
 
@@ -285,7 +379,37 @@ extension KubbSkin {
             batonHighlightStyle: .pulse,
             iconName: "flag.se",
             previewImageName: "swedish_kubb_preview"
-        )
+        ),
+        
+        // Star Wars Theme
+        KubbSkin(
+            id: "star_wars_png",
+            name: "Star Wars",
+            description: "A long time ago... in a galaxy far, far away",
+            category: .fantasy,
+            unlockType: .defaultSkin,
+            unlockRequirement: "Default skin",
+            isUnlocked: true,
+            isDefault: true,
+            kubbColor: SkinColor(red: 0.2, green: 0.1, blue: 0.0),
+            kingColor: SkinColor(red: 0.3, green: 0.2, blue: 0.1),
+            kubbImageNames: [
+                "sw_stormy", "sw_rebel"
+            ],
+            kingImageName: "sw_King",
+            kubbImageScale: 1.0,
+            kingImageScale: 1.2,
+            batonColor: SkinColor(red: 0.1, green: 0.1, blue: 0.1),
+            batonAccentColor: SkinColor(red: 0.3, green: 0.3, blue: 0.3),
+            batonImageNames: [
+                "sw_green", "sw_red"
+            ],
+            batonImageScale: 1.0,
+            batonHighlightColor: SkinColor(red: 0.0, green: 0.0, blue: 0.5),
+            batonHighlightStyle: .pulse,
+            iconName: "moon.stars.circle.fill",
+            previewImageName: "star_wars_preview"
+        ),
         
         /*
          * SAMPLE SKIN CODE FOR FUTURE REFERENCE:
@@ -341,7 +465,8 @@ struct SkinPreview: View {
     var body: some View {
         VStack(spacing: 4) {
             // Kubb preview
-            if let kubbImageName = skin.kubbImageName {
+            let skinManager = SkinManager.shared
+            if let kubbImageName = skinManager.getRandomKubbImageName(for: 0) {
                 // Image-based kubb
                 Image(kubbImageName)
                     .resizable()
@@ -360,7 +485,7 @@ struct SkinPreview: View {
             }
             
             // King preview
-            if let kingImageName = skin.kingImageName {
+            if let kingImageName = skinManager.getRandomKingImageName() {
                 // Image-based king
                 Image(kingImageName)
                     .resizable()
@@ -397,7 +522,8 @@ struct KubbPiecePreview: View {
     }
     
     var body: some View {
-        if let kubbImageName = skin.kubbImageName {
+        let skinManager = SkinManager.shared
+        if let kubbImageName = skinManager.getRandomKubbImageName(for: 0) {
             // Image-based kubb
             Image(kubbImageName)
                 .resizable()

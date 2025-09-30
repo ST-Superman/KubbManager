@@ -16,7 +16,8 @@ struct BatonVisual: View {
     var body: some View {
         ZStack {
             // Baton body
-            if let batonImageName = skin.batonImageName {
+            let skinManager = SkinManager.shared
+            if let batonImageName = skinManager.getRandomBatonImageName(for: batonNumber - 1) {
                 Image(batonImageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)

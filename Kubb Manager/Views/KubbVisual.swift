@@ -12,6 +12,7 @@ struct KubbVisual: View {
     let isKnockedDown: Bool
     let isTappable: Bool
     let onTap: (() -> Void)?
+    @State private var selectedImageName: String?
     
     var body: some View {
         Button(action: {
@@ -21,7 +22,7 @@ struct KubbVisual: View {
         }) {
             ZStack {
                 // Kubb base
-                if let kubbImageName = skin.kubbImageName {
+                if let kubbImageName = selectedImageName {
                     Image(kubbImageName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -42,6 +43,15 @@ struct KubbVisual: View {
         }
         .disabled(!isTappable)
         .animation(.easeInOut(duration: 0.3), value: isKnockedDown)
+        .onAppear {
+            selectImage()
+        }
+    }
+    
+    private func selectImage() {
+        // Use SkinManager for consistent multi-skin selection across all views
+        let skinManager = SkinManager.shared
+        selectedImageName = skinManager.getRandomKubbImageName(for: 0) // Default to index 0 for KubbVisual
     }
     
     private var kubbColor: Color {

@@ -11,9 +11,9 @@ struct PracticeView: View {
     @EnvironmentObject private var sessionManager: SessionManager
     @Environment(\.dismiss) private var dismiss
     @State private var showingEndSessionAlert = false
+    @State private var showingPauseSessionAlert = false
     @State private var showingResetRoundAlert = false
     @State private var showingTargetReachedAlert = false
-    @State private var hasShownTargetReachedAlert = false
     
     private let hapticSuccess = UINotificationFeedbackGenerator()
     private let hapticError = UINotificationFeedbackGenerator()
@@ -46,6 +46,12 @@ struct PracticeView: View {
             .navigationTitle("Practice Session")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Pause") {
+                        showingPauseSessionAlert = true
+                    }
+                    .foregroundColor(.orange)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("End Session") {
                         showingEndSessionAlert = true
@@ -54,16 +60,27 @@ struct PracticeView: View {
                 }
             }
         }
-        .alert("End Session", isPresented: $showingEndSessionAlert) {
+        .alert("Pause Session", isPresented: $showingPauseSessionAlert) {
             Button("Cancel", role: .cancel) { }
-            Button("End Session", role: .destructive) {
+            Button("Pause") {
                 Task {
-                    await sessionManager.endSessionEarly()
+                    await sessionManager.pauseSession()
                     dismiss()
                 }
             }
         } message: {
-            Text("Are you sure you want to end this practice session? Your progress will be saved and you can resume it later if it's from today.")
+            Text("Pause this practice session? You can resume it later from the main menu.")
+        }
+        .alert("End Session", isPresented: $showingEndSessionAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("End Session", role: .destructive) {
+                Task {
+                    await sessionManager.completeSession()
+                    dismiss()
+                }
+            }
+        } message: {
+            Text("Are you sure you want to end this practice session? Your progress will be saved and it will appear in your history.")
         }
         .alert("Reset Round", isPresented: $showingResetRoundAlert) {
             Button("Cancel", role: .cancel) { }
@@ -79,7 +96,7 @@ struct PracticeView: View {
             Button("Continue Practice") {
                 // User chooses to continue - just dismiss the alert
                 // Session remains active and they can continue logging rounds
-                hasShownTargetReachedAlert = true
+                // Don't set hasShownTargetReachedAlert = true here to allow the alert to show again if target is reached again
             }
             Button("End Session") {
                 Task {
@@ -91,7 +108,7 @@ struct PracticeView: View {
             Text("Congratulations! You've reached your target of \(sessionManager.target) kubbs! 🎉\n\nWould you like to continue practicing or end your session?")
         }
         .onChange(of: sessionManager.isTargetReached) { _, isReached in
-            if isReached && !hasShownTargetReachedAlert {
+            if isReached {
                 hapticSuccess.notificationOccurred(.success)
                 showingTargetReachedAlert = true
             }
@@ -219,6 +236,9 @@ struct KubbGridSection: View {
                             isKnockedDown: sessionManager.currentRound?.kubbState(at: index) ?? false,
                             skin: skinManager.selectedKubbSkin
                         )
+                        .onAppear {
+                            print("📋 [KubbGridSection] Creating KubbView \(index + 1) with skin: \(skinManager.selectedKubbSkin.name)")
+                        }
                     }
                 }
                 
@@ -307,20 +327,30 @@ struct KubbView: View {
     let number: Int
     let isKnockedDown: Bool
     let skin: KubbSkin?
+    @StateObject private var skinManager = SkinManager.shared
     @State private var animationOffset: CGFloat = 0
     @State private var animationRotation: Double = 0
+    @State private var selectedImageName: String?
+    @State private var selectedDownImageName: String?
     
     init(number: Int, isKnockedDown: Bool, skin: KubbSkin? = nil) {
         self.number = number
         self.isKnockedDown = isKnockedDown
         self.skin = skin
+        
+        // Initialize images immediately
+        let skinManager = SkinManager.shared
+        self._selectedImageName = State(initialValue: skinManager.getRandomKubbImageName(for: number - 1))
+        self._selectedDownImageName = State(initialValue: skinManager.getRandomKubbDownImageName(for: number - 1))
+        
+        print("🔍 [KubbView] Initialized kubb \(number) with image: \(self._selectedImageName.wrappedValue ?? "nil")")
     }
     
     var body: some View {
         ZStack {
-            if let kubbImageName = skin?.kubbImageName {
-                // Image-based kubb
-                Image(kubbImageName)
+            if let imageName = getCurrentImageName() {
+                // Image-based kubb with custom down animation
+                Image(imageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 20, height: 50)
@@ -328,6 +358,9 @@ struct KubbView: View {
                     .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
                     .offset(y: isKnockedDown ? animationOffset : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+                    .onAppear {
+                        print("🖼️ [KubbView] Rendering image-based kubb \(number) with image: \(getCurrentImageName() ?? "nil")")
+                    }
             } else {
                 // Color-based kubb (original implementation)
                 RoundedRectangle(cornerRadius: 4)
@@ -340,6 +373,9 @@ struct KubbView: View {
                     .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
                     .offset(y: isKnockedDown ? animationOffset : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+                    .onAppear {
+                        print("🎨 [KubbView] Rendering color-based kubb \(number) - no image available")
+                    }
             }
             
             // Kubb number (only show for color-based kubbs or if no image)
@@ -382,24 +418,60 @@ struct KubbView: View {
     private var accentColor: Color {
         return skin?.kubbAccentColor?.color ?? Color.white
     }
+    
+    // MARK: - Multi-Image Helper Methods
+    
+    private func selectImages() {
+        print("🔍 [KubbView] selectImages called for kubb \(number)")
+        print("🔍 [KubbView] SkinManager selected skin: \(skinManager.selectedKubbSkin.name) (ID: \(skinManager.selectedKubbSkin.id))")
+        
+        // Always use SkinManager for random selection to ensure multi-skin packages work correctly
+        selectedImageName = skinManager.getRandomKubbImageName(for: number - 1)
+        selectedDownImageName = skinManager.getRandomKubbDownImageName(for: number - 1)
+        
+        print("🔍 [KubbView] Selected image name: \(selectedImageName ?? "nil")")
+        print("🔍 [KubbView] Selected down image name: \(selectedDownImageName ?? "nil")")
+    }
+    
+    private func getCurrentImageName() -> String? {
+        // If we have custom down images and kubb is knocked down, use down image
+        if isKnockedDown, let downImageName = selectedDownImageName {
+            print("🖼️ [KubbView] Using down image for kubb \(number): \(downImageName)")
+            return downImageName
+        }
+        
+        // Otherwise use standing image
+        print("🖼️ [KubbView] Using standing image for kubb \(number): \(selectedImageName ?? "nil")")
+        return selectedImageName
+    }
 }
 
 struct KingKubbView: View {
     let isKnockedDown: Bool
     let skin: KubbSkin?
+    @StateObject private var skinManager = SkinManager.shared
     @State private var animationOffset: CGFloat = 0
     @State private var animationRotation: Double = 0
+    @State private var selectedImageName: String?
+    @State private var selectedDownImageName: String?
     
     init(isKnockedDown: Bool, skin: KubbSkin? = nil) {
         self.isKnockedDown = isKnockedDown
         self.skin = skin
+        
+        // Initialize images immediately
+        let skinManager = SkinManager.shared
+        self._selectedImageName = State(initialValue: skinManager.getRandomKingImageName())
+        self._selectedDownImageName = State(initialValue: skinManager.getRandomKingDownImageName())
+        
+        print("🔍 [KingKubbView] Initialized with image: \(self._selectedImageName.wrappedValue ?? "nil")")
     }
     
     var body: some View {
         ZStack {
-            if let kingImageName = skin?.kingImageName {
-                // Image-based king
-                Image(kingImageName)
+            if let imageName = getCurrentImageName() {
+                // Image-based king with custom down animation
+                Image(imageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 40, height: 100)
@@ -407,6 +479,9 @@ struct KingKubbView: View {
                     .rotationEffect(.degrees(isKnockedDown ? animationRotation : 0))
                     .offset(y: isKnockedDown ? animationOffset : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+                    .onAppear {
+                        print("🖼️ [KingKubbView] Rendering king with image: \(getCurrentImageName() ?? "nil")")
+                    }
             } else {
                 // Color-based king (original implementation)
                 RoundedRectangle(cornerRadius: 8)
@@ -458,6 +533,24 @@ struct KingKubbView: View {
     
     private var accentColor: Color {
         return skin?.kingAccentColor?.color ?? Color.white
+    }
+    
+    // MARK: - Multi-Image Helper Methods
+    
+    private func selectImages() {
+        // Always use SkinManager for random selection to ensure multi-skin packages work correctly
+        selectedImageName = skinManager.getRandomKingImageName()
+        selectedDownImageName = skinManager.getRandomKingDownImageName()
+    }
+    
+    private func getCurrentImageName() -> String? {
+        // If we have custom down images and king is knocked down, use down image
+        if isKnockedDown, let downImageName = selectedDownImageName {
+            return downImageName
+        }
+        
+        // Otherwise use standing image
+        return selectedImageName
     }
 }
 

@@ -34,20 +34,32 @@ class SkinManager: ObservableObject {
         
         // Initialize with Classic Blue package (default)
         let classicBlueSkin = KubbSkin.defaultSkins.first { $0.id == "classic_blue" } ?? KubbSkin.defaultSkins.first!
+        print("🚀 [SkinManager] Initializing with default skin: \(classicBlueSkin.name) (ID: \(classicBlueSkin.id))")
         self.selectedKubbSkin = classicBlueSkin
         self.selectedKingSkin = classicBlueSkin
         self.selectedBatonSkin = classicBlueSkin
         
         // Now that all properties are initialized, load saved selections
         if let savedKubbSkin = loadSelectedSkin(for: selectedKubbSkinKey) {
+            print("🚀 [SkinManager] Loading saved kubb skin: \(savedKubbSkin.name) (ID: \(savedKubbSkin.id))")
             self.selectedKubbSkin = savedKubbSkin
+        } else {
+            print("🚀 [SkinManager] No saved kubb skin found, using default")
         }
         if let savedKingSkin = loadSelectedSkin(for: selectedKingSkinKey) {
+            print("🚀 [SkinManager] Loading saved king skin: \(savedKingSkin.name) (ID: \(savedKingSkin.id))")
             self.selectedKingSkin = savedKingSkin
+        } else {
+            print("🚀 [SkinManager] No saved king skin found, using default")
         }
         if let savedBatonSkin = loadSelectedSkin(for: selectedBatonSkinKey) {
+            print("🚀 [SkinManager] Loading saved baton skin: \(savedBatonSkin.name) (ID: \(savedBatonSkin.id))")
             self.selectedBatonSkin = savedBatonSkin
+        } else {
+            print("🚀 [SkinManager] No saved baton skin found, using default")
         }
+        
+        print("🚀 [SkinManager] Final selected skins - Kubb: \(selectedKubbSkin.name), King: \(selectedKingSkin.name), Baton: \(selectedBatonSkin.name)")
         
         // Load unlocked skins
         loadUnlockedSkins()
@@ -59,8 +71,12 @@ class SkinManager: ObservableObject {
     // MARK: - Skin Selection
     
     func selectKubbSkin(_ skin: KubbSkin) {
+        print("🎨 [SkinManager] selectKubbSkin called with: \(skin.name) (ID: \(skin.id))")
+        print("🎨 [SkinManager] Skin has multiple images: \(skin.hasMultipleKubbImages)")
+        print("🎨 [SkinManager] Skin image names: \(skin.kubbImageNames)")
         selectedKubbSkin = skin
         saveSelectedSkin(skin, for: selectedKubbSkinKey)
+        print("🎨 [SkinManager] Kubb skin selection saved")
     }
     
     func selectKingSkin(_ skin: KubbSkin) {
@@ -71,6 +87,89 @@ class SkinManager: ObservableObject {
     func selectBatonSkin(_ skin: KubbSkin) {
         selectedBatonSkin = skin
         saveSelectedSkin(skin, for: selectedBatonSkinKey)
+    }
+    
+    // MARK: - Multi-Image Random Selection
+    
+    /// Get a random kubb image name for the given index (0-9)
+    func getRandomKubbImageName(for index: Int) -> String? {
+        print("🎯 [SkinManager] getRandomKubbImageName called for index: \(index)")
+        print("🎯 [SkinManager] Current selected skin: \(selectedKubbSkin.name) (ID: \(selectedKubbSkin.id))")
+        print("🎯 [SkinManager] Has multiple kubb images: \(selectedKubbSkin.hasMultipleKubbImages)")
+        print("🎯 [SkinManager] Kubb image names: \(selectedKubbSkin.kubbImageNames)")
+        print("🎯 [SkinManager] Kubb image name (single): \(selectedKubbSkin.kubbImageName ?? "nil")")
+        
+        // If skin has multiple images, pick randomly; otherwise use deterministic selection
+        if selectedKubbSkin.hasMultipleKubbImages {
+            let selected = selectedKubbSkin.kubbImageNames.randomElement()
+            print("🎯 [SkinManager] Random selection result: \(selected ?? "nil")")
+            return selected
+        } else {
+            let selected = selectedKubbSkin.getKubbImageName(for: index)
+            print("🎯 [SkinManager] Deterministic selection result: \(selected ?? "nil")")
+            return selected
+        }
+    }
+    
+    /// Get a random kubb down image name for the given index (0-9)
+    func getRandomKubbDownImageName(for index: Int) -> String? {
+        // If skin has multiple down images, pick randomly; otherwise use deterministic selection
+        if !selectedKubbSkin.kubbDownImageNames.isEmpty {
+            return selectedKubbSkin.kubbDownImageNames.randomElement()
+        } else {
+            return selectedKubbSkin.getKubbDownImageName(for: index)
+        }
+    }
+    
+    /// Get a random king image name
+    func getRandomKingImageName() -> String? {
+        // If skin has multiple images, pick randomly; otherwise use single image
+        if selectedKingSkin.hasMultipleKingImages {
+            return selectedKingSkin.kingImageNames.randomElement()
+        } else {
+            return selectedKingSkin.getKingImageName()
+        }
+    }
+    
+    /// Get a random king down image name
+    func getRandomKingDownImageName() -> String? {
+        // If skin has multiple down images, pick randomly; otherwise use single image
+        if !selectedKingSkin.kingDownImageNames.isEmpty {
+            return selectedKingSkin.kingDownImageNames.randomElement()
+        } else {
+            return selectedKingSkin.getKingDownImageName()
+        }
+    }
+    
+    /// Get a random baton image name for the given index (0-5)
+    func getRandomBatonImageName(for index: Int) -> String? {
+        // If skin has multiple images, pick randomly; otherwise use deterministic selection
+        if selectedBatonSkin.hasMultipleBatonImages {
+            return selectedBatonSkin.batonImageNames.randomElement()
+        } else {
+            return selectedBatonSkin.getBatonImageName(for: index)
+        }
+    }
+    
+    /// Check if the selected kubb skin has multiple images
+    var hasMultipleKubbImages: Bool {
+        return selectedKubbSkin.hasMultipleKubbImages
+    }
+    
+    /// Check if the selected king skin has multiple images
+    var hasMultipleKingImages: Bool {
+        return selectedKingSkin.hasMultipleKingImages
+    }
+    
+    /// Check if the selected baton skin has multiple images
+    var hasMultipleBatonImages: Bool {
+        return selectedBatonSkin.hasMultipleBatonImages
+    }
+    
+    /// Check if any selected skin has custom down images
+    var hasCustomDownImages: Bool {
+        return selectedKubbSkin.hasCustomDownImages || 
+               selectedKingSkin.hasCustomDownImages
     }
     
     // MARK: - Skin Unlocking
@@ -166,10 +265,17 @@ class SkinManager: ObservableObject {
     // MARK: - Persistence
     
     private func loadSelectedSkin(for key: String) -> KubbSkin? {
-        guard let skinId = userDefaults.string(forKey: key),
-              let skin = availableSkins.first(where: { $0.id == skinId }) else {
+        guard let skinId = userDefaults.string(forKey: key) else {
+            print("🔍 [SkinManager] No saved skin ID found for key: \(key)")
             return nil
         }
+        print("🔍 [SkinManager] Found saved skin ID: \(skinId) for key: \(key)")
+        
+        guard let skin = availableSkins.first(where: { $0.id == skinId }) else {
+            print("🔍 [SkinManager] No skin found with ID: \(skinId)")
+            return nil
+        }
+        print("🔍 [SkinManager] Loaded skin: \(skin.name) (ID: \(skin.id))")
         return skin
     }
     
@@ -205,12 +311,19 @@ class SkinManager: ObservableObject {
                 texture: skin.texture,
                 pattern: skin.pattern,
                 kubbImageName: skin.kubbImageName,
+                kubbImageNames: skin.kubbImageNames,
+                kubbDownImageName: skin.kubbDownImageName,
+                kubbDownImageNames: skin.kubbDownImageNames,
                 kingImageName: skin.kingImageName,
+                kingImageNames: skin.kingImageNames,
+                kingDownImageName: skin.kingDownImageName,
+                kingDownImageNames: skin.kingDownImageNames,
                 kubbImageScale: skin.kubbImageScale,
                 kingImageScale: skin.kingImageScale,
                 batonColor: skin.batonColor,
                 batonAccentColor: skin.batonAccentColor,
                 batonImageName: skin.batonImageName,
+                batonImageNames: skin.batonImageNames,
                 batonImageScale: skin.batonImageScale,
                 batonHighlightColor: skin.batonHighlightColor,
                 batonHighlightStyle: skin.batonHighlightStyle,
@@ -270,6 +383,11 @@ extension SkinManager {
         }
         if let kingSkin = packageSkins.first(where: { $0.id == packageId }) {
             selectKingSkin(kingSkin)
+        }
+        
+        // For unified skins (like Star Wars), also set the baton skin
+        if let batonSkin = packageSkins.first(where: { $0.id == packageId }) {
+            selectBatonSkin(batonSkin)
         }
     }
     

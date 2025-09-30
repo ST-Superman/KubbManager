@@ -1336,11 +1336,12 @@ struct KubbVisualView: View {
     let isHit: Bool
     let isEnabled: Bool
     let size: CGFloat
+    @State private var selectedImageName: String?
     
     var body: some View {
         ZStack {
             // Kubb visual
-            if let kubbImageName = skin.kubbImageName {
+            if let kubbImageName = selectedImageName {
                 // Image-based kubb
                 Image(kubbImageName)
                     .resizable()
@@ -1376,6 +1377,15 @@ struct KubbVisualView: View {
         .opacity(isEnabled ? 1.0 : 0.5)
         .scaleEffect(isEnabled ? 1.0 : 0.9)
         .animation(.easeInOut(duration: 0.2), value: isEnabled)
+        .onAppear {
+            selectImage()
+        }
+    }
+    
+    private func selectImage() {
+        // Use SkinManager for consistent multi-skin selection across all views
+        let skinManager = SkinManager.shared
+        selectedImageName = skinManager.getRandomKubbImageName(for: 0) // Default to index 0 for KubbVisualView
     }
 }
 
@@ -1384,11 +1394,12 @@ struct KingVisualView: View {
     let isHit: Bool
     let isEnabled: Bool
     let size: CGFloat
+    @State private var selectedImageName: String?
     
     var body: some View {
         ZStack {
             // King visual
-            if let kingImageName = skin.kingImageName {
+            if let kingImageName = selectedImageName {
                 // Image-based king
                 Image(kingImageName)
                     .resizable()
@@ -1429,6 +1440,15 @@ struct KingVisualView: View {
         .opacity(isEnabled ? 1.0 : 0.5)
         .scaleEffect(isEnabled ? 1.0 : 0.9)
         .animation(.easeInOut(duration: 0.2), value: isEnabled)
+        .onAppear {
+            selectImage()
+        }
+    }
+    
+    private func selectImage() {
+        // Use SkinManager for consistent multi-skin selection across all views
+        let skinManager = SkinManager.shared
+        selectedImageName = skinManager.getRandomKingImageName()
     }
 }
 
