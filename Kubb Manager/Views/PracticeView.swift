@@ -236,9 +236,6 @@ struct KubbGridSection: View {
                             isKnockedDown: sessionManager.currentRound?.kubbState(at: index) ?? false,
                             skin: skinManager.selectedKubbSkin
                         )
-                        .onAppear {
-                            print("📋 [KubbGridSection] Creating KubbView \(index + 1) with skin: \(skinManager.selectedKubbSkin.name)")
-                        }
                     }
                 }
                 
@@ -342,8 +339,6 @@ struct KubbView: View {
         let skinManager = SkinManager.shared
         self._selectedImageName = State(initialValue: skinManager.getRandomKubbImageName(for: number - 1))
         self._selectedDownImageName = State(initialValue: skinManager.getRandomKubbDownImageName(for: number - 1))
-        
-        print("🔍 [KubbView] Initialized kubb \(number) with image: \(self._selectedImageName.wrappedValue ?? "nil")")
     }
     
     var body: some View {
@@ -359,7 +354,7 @@ struct KubbView: View {
                     .offset(y: isKnockedDown ? animationOffset : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
                     .onAppear {
-                        print("🖼️ [KubbView] Rendering image-based kubb \(number) with image: \(getCurrentImageName() ?? "nil")")
+                        selectImages()
                     }
             } else {
                 // Color-based kubb (original implementation)
@@ -374,7 +369,7 @@ struct KubbView: View {
                     .offset(y: isKnockedDown ? animationOffset : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
                     .onAppear {
-                        print("🎨 [KubbView] Rendering color-based kubb \(number) - no image available")
+                        selectImages()
                     }
             }
             
@@ -422,26 +417,18 @@ struct KubbView: View {
     // MARK: - Multi-Image Helper Methods
     
     private func selectImages() {
-        print("🔍 [KubbView] selectImages called for kubb \(number)")
-        print("🔍 [KubbView] SkinManager selected skin: \(skinManager.selectedKubbSkin.name) (ID: \(skinManager.selectedKubbSkin.id))")
-        
         // Always use SkinManager for random selection to ensure multi-skin packages work correctly
         selectedImageName = skinManager.getRandomKubbImageName(for: number - 1)
         selectedDownImageName = skinManager.getRandomKubbDownImageName(for: number - 1)
-        
-        print("🔍 [KubbView] Selected image name: \(selectedImageName ?? "nil")")
-        print("🔍 [KubbView] Selected down image name: \(selectedDownImageName ?? "nil")")
     }
     
     private func getCurrentImageName() -> String? {
         // If we have custom down images and kubb is knocked down, use down image
         if isKnockedDown, let downImageName = selectedDownImageName {
-            print("🖼️ [KubbView] Using down image for kubb \(number): \(downImageName)")
             return downImageName
         }
         
         // Otherwise use standing image
-        print("🖼️ [KubbView] Using standing image for kubb \(number): \(selectedImageName ?? "nil")")
         return selectedImageName
     }
 }
@@ -463,8 +450,6 @@ struct KingKubbView: View {
         let skinManager = SkinManager.shared
         self._selectedImageName = State(initialValue: skinManager.getRandomKingImageName())
         self._selectedDownImageName = State(initialValue: skinManager.getRandomKingDownImageName())
-        
-        print("🔍 [KingKubbView] Initialized with image: \(self._selectedImageName.wrappedValue ?? "nil")")
     }
     
     var body: some View {
@@ -480,7 +465,7 @@ struct KingKubbView: View {
                     .offset(y: isKnockedDown ? animationOffset : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
                     .onAppear {
-                        print("🖼️ [KingKubbView] Rendering king with image: \(getCurrentImageName() ?? "nil")")
+                        selectImages()
                     }
             } else {
                 // Color-based king (original implementation)
