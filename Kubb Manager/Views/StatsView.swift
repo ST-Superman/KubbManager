@@ -457,6 +457,9 @@ struct RecentTrendsChart: View {
         .onChange(of: selectedPeriod) { _, _ in
             updateChartData()
         }
+        .onChange(of: historyManager.sessions) { _, _ in
+            updateChartData()
+        }
     }
     
     private func updateChartData() {

@@ -124,6 +124,12 @@ class CloudKitManager: ObservableObject {
         }
         
         print("Local to CloudKit sync completed - Synced: \(syncedCount), Skipped: \(skippedCount)")
+        
+        // Run deduplication after sync to clean up any duplicates that may have been created
+        if syncedCount > 0 {
+            print("🧹 Running post-sync deduplication...")
+            await removeDuplicateCloudKitRecords()
+        }
     }
     
     // MARK: - Debug Methods
@@ -176,6 +182,32 @@ class CloudKitManager: ObservableObject {
         print("Local data cleared successfully")
     }
     
+    /// Comprehensive deduplication that handles completed vs incomplete session conflicts
+    func performComprehensiveDeduplication() async {
+        guard isSignedIn else {
+            print("❌ Not signed in to iCloud")
+            return
+        }
+        
+        print("🔍 Starting comprehensive deduplication...")
+        
+        // First, clean up CloudKit duplicates
+        await removeDuplicateCloudKitRecords()
+        
+        // Then, fetch all sessions and deduplicate them
+        do {
+            let allSessions = try await fetchSessions()
+            print("📊 Found \(allSessions.count) total sessions before deduplication")
+            
+            // This will trigger the enhanced deduplication logic in HistoryManager
+            // when the sessions are loaded
+        } catch {
+            print("❌ Failed to fetch sessions for comprehensive deduplication: \(error)")
+        }
+        
+        print("✅ Comprehensive deduplication completed")
+    }
+    
     func removeDuplicateCloudKitRecords() async {
         guard isSignedIn else {
             print("❌ Not signed in to iCloud")
@@ -212,20 +244,17 @@ class CloudKitManager: ObservableObject {
                 if records.count > 1 {
                     print("⚠️ Found \(records.count) duplicate records for session \(sessionId)")
                     
-                    // Sort by modifiedAt (keep the newest)
-                    let sortedRecords = records.sorted { record1, record2 in
-                        let date1 = record1["modifiedAt"] as? Date ?? Date.distantPast
-                        let date2 = record2["modifiedAt"] as? Date ?? Date.distantPast
-                        return date1 > date2
-                    }
+                    // Enhanced duplicate resolution logic
+                    let recordToKeep = selectBestCloudKitRecord(from: records)
+                    let recordsToDelete = records.filter { $0.recordID != recordToKeep.recordID }
                     
-                    print("✅ Keeping newest record with modifiedAt: \(sortedRecords[0]["modifiedAt"] as? Date ?? Date.distantPast)")
+                    print("✅ Keeping record with modifiedAt: \(recordToKeep["modifiedAt"] as? Date ?? Date.distantPast), isComplete: \(recordToKeep["isComplete"] as? Bool ?? false)")
                     
-                    // Keep the first (newest) record, delete the rest
-                    for i in 1..<sortedRecords.count {
+                    // Delete the other records
+                    for record in recordsToDelete {
                         do {
-                            let _ = try await privateDatabase.deleteRecord(withID: sortedRecords[i].recordID)
-                            print("✅ Deleted duplicate record: \(sortedRecords[i].recordID)")
+                            let _ = try await privateDatabase.deleteRecord(withID: record.recordID)
+                            print("✅ Deleted duplicate record: \(record.recordID)")
                             duplicatesRemoved += 1
                         } catch {
                             print("❌ Failed to delete duplicate record: \(error)")
@@ -238,6 +267,57 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("Error removing duplicates: \(error)")
         }
+    }
+    
+    /// Enhanced CloudKit record selection logic to handle completed vs incomplete duplicates
+    private func selectBestCloudKitRecord(from records: [CKRecord]) -> CKRecord {
+        guard !records.isEmpty else { return records[0] }
+        
+        // First, check if any records are completed
+        let completedRecords = records.filter { record in
+            (record["isComplete"] as? Bool) == true
+        }
+        let incompleteRecords = records.filter { record in
+            (record["isComplete"] as? Bool) != true
+        }
+        
+        if completedRecords.count == 1 && incompleteRecords.count == 1 {
+            // Special case: one completed, one incomplete with same ID
+            let completed = completedRecords[0]
+            let incomplete = incompleteRecords[0]
+            
+            let completedModifiedAt = completed["modifiedAt"] as? Date ?? Date.distantPast
+            let incompleteModifiedAt = incomplete["modifiedAt"] as? Date ?? Date.distantPast
+            let completedTotalKubbs = completed["totalKubbs"] as? Int ?? 0
+            let incompleteTotalKubbs = incomplete["totalKubbs"] as? Int ?? 0
+            
+            print("🔍 Found completed vs incomplete CloudKit duplicate")
+            print("   - Completed: modifiedAt=\(completedModifiedAt), totalKubbs=\(completedTotalKubbs)")
+            print("   - Incomplete: modifiedAt=\(incompleteModifiedAt), totalKubbs=\(incompleteTotalKubbs)")
+            
+            // If the completed record is newer or same age, keep it
+            if completedModifiedAt >= incompleteModifiedAt {
+                print("✅ Keeping completed CloudKit record (newer or same age)")
+                return completed
+            } else {
+                // If incomplete is newer, but completed has more progress, keep completed
+                if completedTotalKubbs > incompleteTotalKubbs {
+                    print("✅ Keeping completed CloudKit record (more progress despite being older)")
+                    return completed
+                } else {
+                    print("⚠️ Keeping incomplete CloudKit record (newer and same/less progress)")
+                    return incomplete
+                }
+            }
+        }
+        
+        // For all other cases, use the standard logic: most recent modifiedAt
+        let sortedRecords = records.sorted { record1, record2 in
+            let date1 = record1["modifiedAt"] as? Date ?? Date.distantPast
+            let date2 = record2["modifiedAt"] as? Date ?? Date.distantPast
+            return date1 > date2
+        }
+        return sortedRecords[0]
     }
     
     func testCloudKitConnection() async {

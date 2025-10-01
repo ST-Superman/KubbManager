@@ -54,7 +54,7 @@ struct HistoryView: View {
                         
                         Button("Clean Duplicates") {
                             Task {
-                                await CloudKitManager.shared.removeDuplicateCloudKitRecords()
+                                await CloudKitManager.shared.performComprehensiveDeduplication()
                                 await historyManager.refreshSessions()
                             }
                         }
@@ -400,9 +400,9 @@ struct IncompleteSessionSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
+                Image(systemName: sessionManager.currentSession?.isPaused == true ? "pause.circle.fill" : "exclamationmark.triangle.fill")
                     .foregroundColor(.orange)
-                Text("Incomplete Session")
+                Text(sessionManager.currentSession?.isPaused == true ? "Paused Session" : "Incomplete Session")
                     .font(.headline)
                     .foregroundColor(.primary)
                 Spacer()
@@ -456,7 +456,13 @@ struct IncompleteSessionSection: View {
                     
                     HStack(spacing: 12) {
                         Button("Resume") {
-                            sessionManager.resumeSession()
+                            if sessionManager.hasPausedSession() {
+                                Task {
+                                    await sessionManager.resumeSession()
+                                }
+                            } else {
+                                sessionManager.resumeIncompleteSession()
+                            }
                         }
                         .buttonStyle(ResumeButtonStyle())
                         

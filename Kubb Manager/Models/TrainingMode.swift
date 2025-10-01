@@ -9,13 +9,12 @@ import Foundation
 
 enum TrainingMode: String, CaseIterable {
     case eightMeter = "8 Meter"
-    case baseballKubb = "Baseball Kubb"
     case inkastBlast = "Inkast & Blast"
     case fullGameSim = "Full Game Sim"
     
     var isAvailable: Bool {
         switch self {
-        case .eightMeter, .baseballKubb, .inkastBlast:
+        case .eightMeter, .inkastBlast:
             return true
         case .fullGameSim:
             return false
@@ -26,8 +25,6 @@ enum TrainingMode: String, CaseIterable {
         switch self {
         case .eightMeter:
             return "Practice your 8-meter throws with target tracking"
-        case .baseballKubb:
-            return "Baseball-style Kubb game with innings and scoring"
         case .inkastBlast:
             return "Practice inkast and blast techniques with various game phases"
         case .fullGameSim:
@@ -39,8 +36,6 @@ enum TrainingMode: String, CaseIterable {
         switch self {
         case .eightMeter:
             return "target"
-        case .baseballKubb:
-            return "baseball_kubb"
         case .inkastBlast:
             return "inkastblast"
         case .fullGameSim:

@@ -8,7 +8,7 @@
 import Foundation
 import CloudKit
 
-struct PracticeSession: Identifiable, Codable {
+struct PracticeSession: Identifiable, Codable, Equatable {
     let id: String
     let date: Date
     var target: Int
@@ -17,6 +17,7 @@ struct PracticeSession: Identifiable, Codable {
     var startTime: Date
     var endTime: Date?
     var isComplete: Bool
+    var isPaused: Bool
     var rounds: [Round]
     let createdAt: Date
     var modifiedAt: Date
@@ -36,6 +37,7 @@ struct PracticeSession: Identifiable, Codable {
         self.startTime = startTime
         self.endTime = nil
         self.isComplete = false
+        self.isPaused = false
         self.rounds = []
         self.createdAt = Date()
         self.modifiedAt = Date()
@@ -85,6 +87,7 @@ struct PracticeSession: Identifiable, Codable {
         self.startTime = startTime
         self.endTime = record["endTime"] as? Date
         self.isComplete = isComplete == 1
+        self.isPaused = (record["isPaused"] as? Int64 ?? 0) == 1
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
         
@@ -110,6 +113,7 @@ struct PracticeSession: Identifiable, Codable {
         record["startTime"] = startTime
         record["endTime"] = endTime
         record["isComplete"] = isComplete ? 1 : 0
+        record["isPaused"] = isPaused ? 1 : 0
         record["createdAt"] = createdAt
         record["modifiedAt"] = modifiedAt
         
@@ -139,10 +143,31 @@ struct PracticeSession: Identifiable, Codable {
     }
     
     var isIncomplete: Bool {
-        // A session is incomplete if it's from today and hasn't reached the target
+        // A session is incomplete ONLY if it's from today and either paused or hasn't reached the target
+        // Sessions from previous days are automatically considered complete (even if target not reached)
         let calendar = Calendar.current
         let isToday = calendar.isDateInToday(date)
-        return isToday && !isTargetReached
+        return isToday && (isPaused || !isTargetReached)
+    }
+    
+    /// Returns a session with auto-completion applied for previous days
+    /// Sessions from previous days are automatically marked as complete
+    func withAutoCompletion() -> PracticeSession {
+        let calendar = Calendar.current
+        let isToday = calendar.isDateInToday(date)
+        
+        // If it's not from today and not already complete, mark it as complete
+        if !isToday && !isComplete {
+            var autoCompletedSession = self
+            autoCompletedSession.isComplete = true
+            autoCompletedSession.isPaused = false
+            autoCompletedSession.endTime = endTime ?? Date()
+            // DON'T update modifiedAt here - this prevents circular sync loops
+            // The modifiedAt should only be updated when the session is actually modified by the user
+            return autoCompletedSession
+        }
+        
+        return self
     }
     
     var currentRound: Round? {
@@ -205,9 +230,23 @@ struct PracticeSession: Identifiable, Codable {
     }
     
     mutating func completeSession() {
-        // Only mark as complete if target is reached
-        isComplete = isTargetReached
+        // Mark as complete when user explicitly ends the session
+        // This ensures the session appears in history regardless of whether target was reached
+        isComplete = true
+        isPaused = false
         endTime = Date()
+        modifiedAt = Date()
+    }
+    
+    mutating func pauseSession() {
+        // Pause the session so it can be resumed later
+        isPaused = true
+        modifiedAt = Date()
+    }
+    
+    mutating func resumeSession() {
+        // Resume a paused session
+        isPaused = false
         modifiedAt = Date()
     }
     

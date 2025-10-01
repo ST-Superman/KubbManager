@@ -441,7 +441,13 @@ struct IncompleteSessionCardView: View {
             
             HStack(spacing: 12) {
                 Button("Resume") {
-                    sessionManager.resumeSession()
+                    if sessionManager.hasPausedSession() {
+                        Task {
+                            await sessionManager.resumeSession()
+                        }
+                    } else {
+                        sessionManager.resumeIncompleteSession()
+                    }
                 }
                 .buttonStyle(ResumeButtonStyle())
                 
@@ -552,7 +558,13 @@ struct IncompleteSessionPracticeView: View {
                 // Action Buttons
                 VStack(spacing: 12) {
                     Button("Resume Session") {
-                        sessionManager.resumeSession()
+                        if sessionManager.hasPausedSession() {
+                            Task {
+                                await sessionManager.resumeSession()
+                            }
+                        } else {
+                            sessionManager.resumeIncompleteSession()
+                        }
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     

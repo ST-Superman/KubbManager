@@ -87,8 +87,15 @@ struct EightMeterTrainingView: View {
         .alert("Incomplete Practice Session", isPresented: $showingRecoveryAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Resume", role: .none) {
-                sessionManager.resumeSession()
-                selectedTab = 1
+                if sessionManager.hasPausedSession() {
+                    Task {
+                        await sessionManager.resumeSession()
+                        selectedTab = 1
+                    }
+                } else {
+                    sessionManager.resumeIncompleteSession()
+                    selectedTab = 1
+                }
             }
             Button("Delete", role: .destructive) {
                 Task {
@@ -97,7 +104,8 @@ struct EightMeterTrainingView: View {
             }
         } message: {
             if let session = sessionManager.currentSession {
-                Text("You have an incomplete practice session from \(session.date.formatted(date: .abbreviated, time: .shortened)). What would you like to do?")
+                let sessionType = session.isPaused ? "paused" : "incomplete"
+                Text("You have a \(sessionType) practice session from \(session.date.formatted(date: .abbreviated, time: .shortened)). What would you like to do?")
             } else {
                 Text("You have an incomplete practice session. What would you like to do?")
             }

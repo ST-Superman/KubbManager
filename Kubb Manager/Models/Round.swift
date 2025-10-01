@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Round: Identifiable, Codable {
+struct Round: Identifiable, Codable, Equatable {
     let id: String
     let roundNumber: Int
     var batonThrows: [BatonThrow] = []
@@ -92,7 +92,7 @@ struct Round: Identifiable, Codable {
     }
 }
 
-struct BatonThrow: Identifiable, Codable {
+struct BatonThrow: Identifiable, Codable, Equatable {
     let id: String
     let isHit: Bool
     let throwType: ThrowType
