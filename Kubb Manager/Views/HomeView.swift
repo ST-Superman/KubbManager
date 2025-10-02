@@ -36,7 +36,7 @@ struct HomeView: View {
                             showingTargetSetting = true
                         },
                         onShowTutorial: {
-                            selectedTab = 3 // Tutorial tab
+                            selectedTab = 2 // Tutorial tab
                         }
                     )
                 }

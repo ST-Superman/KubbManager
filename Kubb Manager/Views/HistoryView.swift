@@ -8,20 +8,20 @@
 import SwiftUI
 
 struct HistoryView: View {
-    @StateObject private var historyManager = HistoryManager()
+    @StateObject private var unifiedHistoryManager = UnifiedHistoryManager()
     @StateObject private var sessionManager = SessionManager()
-    @State private var selectedSession: PracticeSession?
+    @State private var selectedSession: UnifiedSession?
     @State private var showingSessionDetail = false
     @State private var showingExportOptions = false
     @State private var showingDeleteAlert = false
-    @State private var sessionToDelete: PracticeSession?
+    @State private var sessionToDelete: UnifiedSession?
     
     var body: some View {
         NavigationView {
             Group {
-                if historyManager.isLoading && historyManager.sessions.isEmpty {
+                if unifiedHistoryManager.isLoading && unifiedHistoryManager.sessions.isEmpty {
                     LoadingView()
-                } else if historyManager.sessions.isEmpty && !sessionManager.hasIncompleteSession() {
+                } else if unifiedHistoryManager.sessions.isEmpty && !sessionManager.hasIncompleteSession() {
                     EmptyHistoryView()
                 } else {
                     ScrollView {
@@ -32,30 +32,34 @@ struct HistoryView: View {
                                     .environmentObject(sessionManager)
                             }
                             
-                            // Completed Sessions Section
-                            if !historyManager.sessions.isEmpty {
-                                CompletedSessionsSection()
-                                    .environmentObject(historyManager)
+                            // Statistics Header
+                            UnifiedStatisticsHeaderView()
+                                .environmentObject(unifiedHistoryManager)
+                            
+                            // All Sessions Section
+                            if !unifiedHistoryManager.sessions.isEmpty {
+                                AllSessionsSection()
+                                    .environmentObject(unifiedHistoryManager)
                             }
                         }
                         .padding()
                     }
                 }
             }
-            .navigationTitle("Practice History")
+            .navigationTitle("Session History")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button("Refresh") {
                             Task {
-                                await historyManager.refreshSessions()
+                                await unifiedHistoryManager.refreshSessions()
                             }
                         }
                         
                         Button("Clean Duplicates") {
                             Task {
                                 await CloudKitManager.shared.performComprehensiveDeduplication()
-                                await historyManager.refreshSessions()
+                                await unifiedHistoryManager.refreshSessions()
                             }
                         }
                         
@@ -68,12 +72,12 @@ struct HistoryView: View {
                 }
             }
             .refreshable {
-                await historyManager.refreshSessions()
+                await unifiedHistoryManager.refreshSessions()
             }
         }
         .sheet(isPresented: $showingSessionDetail) {
             if let session = selectedSession {
-                SessionResultsView(session: session)
+                UnifiedSessionDetailView(session: session)
             }
         }
         .actionSheet(isPresented: $showingExportOptions) {
@@ -96,35 +100,27 @@ struct HistoryView: View {
             Button("Delete", role: .destructive) {
                 if let session = sessionToDelete {
                     Task {
-                        await historyManager.deleteSession(session)
+                        await unifiedHistoryManager.deleteSession(session)
                     }
                 }
             }
         } message: {
-            Text("Are you sure you want to delete this practice session? This action cannot be undone.")
+            Text("Are you sure you want to delete this session? This action cannot be undone.")
         }
     }
     
     private func exportData(format: ExportFormat) {
-        let content: String?
+        // For now, just show a placeholder since we need to implement unified export
+        let content = "Unified export coming soon..."
         
-        switch format {
-        case .json:
-            content = historyManager.exportSessionsAsJSON()
-        case .csv:
-            content = historyManager.exportSessionsAsCSV()
-        }
+        let activityVC = UIActivityViewController(
+            activityItems: [content],
+            applicationActivities: nil
+        )
         
-        if let content = content {
-            let activityVC = UIActivityViewController(
-                activityItems: [content],
-                applicationActivities: nil
-            )
-            
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first {
-                window.rootViewController?.present(activityVC, animated: true)
-            }
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            window.rootViewController?.present(activityVC, animated: true)
         }
     }
     
@@ -541,6 +537,226 @@ struct CompletedSessionsSection: View {
             }
         } message: {
             Text("Are you sure you want to delete this session? This action cannot be undone.")
+        }
+    }
+}
+
+// MARK: - New Unified Sections
+
+struct UnifiedStatisticsHeaderView: View {
+    @EnvironmentObject private var historyManager: UnifiedHistoryManager
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Overall Statistics")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 16) {
+                QuickStatView(
+                    title: "Total Sessions",
+                    value: "\(historyManager.totalSessions)",
+                    icon: "calendar",
+                    color: .blue
+                )
+                
+                QuickStatView(
+                    title: "8M Training",
+                    value: "\(historyManager.totalPracticeSessions)",
+                    icon: "target",
+                    color: .blue
+                )
+                
+                QuickStatView(
+                    title: "Inkast & Blast",
+                    value: "\(historyManager.totalInkastBlastSessions)",
+                    icon: "bolt.fill",
+                    color: .green
+                )
+                
+                QuickStatView(
+                    title: "Baseball Kubb",
+                    value: "\(historyManager.totalBaseballKubbSessions)",
+                    icon: "baseball",
+                    color: .purple
+                )
+                
+                QuickStatView(
+                    title: "Total Kubbs",
+                    value: "\(historyManager.totalKubbsKnocked)",
+                    icon: "checkmark.circle",
+                    color: .orange
+                )
+                
+                QuickStatView(
+                    title: "Overall Accuracy",
+                    value: String(format: "%.1f%%", historyManager.overallAccuracy * 100),
+                    icon: "scope",
+                    color: .red
+                )
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+}
+
+struct AllSessionsSection: View {
+    @EnvironmentObject private var historyManager: UnifiedHistoryManager
+    @State private var selectedSession: UnifiedSession?
+    @State private var showingSessionDetail = false
+    @State private var showingDeleteAlert = false
+    @State private var sessionToDelete: UnifiedSession?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "clock.arrow.circlepath")
+                    .foregroundColor(.blue)
+                Text("All Sessions")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+                Text("\(historyManager.sessions.count)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            LazyVStack(spacing: 8) {
+                ForEach(historyManager.sessions, id: \.id) { session in
+                    UnifiedSessionRowView(session: session)
+                        .onTapGesture {
+                            selectedSession = session
+                            showingSessionDetail = true
+                        }
+                        .contextMenu {
+                            Button("View Details") {
+                                selectedSession = session
+                                showingSessionDetail = true
+                            }
+                            
+                            Button("Delete", role: .destructive) {
+                                sessionToDelete = session
+                                showingDeleteAlert = true
+                            }
+                        }
+                }
+            }
+        }
+        .sheet(isPresented: $showingSessionDetail) {
+            if let session = selectedSession {
+                UnifiedSessionDetailView(session: session)
+            }
+        }
+        .alert("Delete Session", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                if let session = sessionToDelete {
+                    Task {
+                        await historyManager.deleteSession(session)
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this session? This action cannot be undone.")
+        }
+    }
+}
+
+struct UnifiedSessionRowView: View {
+    let session: UnifiedSession
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // Session Type Icon
+            Image(systemName: session.sessionType.icon)
+                .font(.title2)
+                .foregroundColor(session.sessionType.color)
+                .frame(width: 30)
+            
+            // Session Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.title)
+                    .font(.headline)
+                    .fontWeight(.medium)
+                
+                Text(session.subtitle)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Text(session.date.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if let duration = session.duration {
+                        Text("• \(formatDuration(duration))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            // Session Stats
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(session.primaryStat)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(session.sessionType.color)
+                
+                Text(session.secondaryStat)
+                    .font(.subheadline)
+                    .foregroundColor(.orange)
+                
+                if let accuracy = session.accuracy {
+                    HStack(spacing: 4) {
+                        Image(systemName: "scope")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        
+                        Text(String(format: "%.1f%%", accuracy * 100))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(accuracyColor(accuracy))
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(session.sessionType.color.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let hours = Int(duration) / 3600
+        let minutes = Int(duration.truncatingRemainder(dividingBy: 3600)) / 60
+        
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
+    }
+    
+    private func accuracyColor(_ accuracy: Double) -> Color {
+        if accuracy >= 0.7 {
+            return .green
+        } else if accuracy >= 0.5 {
+            return .orange
+        } else {
+            return .red
         }
     }
 }

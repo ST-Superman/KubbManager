@@ -1228,24 +1228,73 @@ class CloudKitManager: ObservableObject {
         }
         
         do {
-            let query = CKQuery(recordType: InkastBlastSessionData.recordType, predicate: NSPredicate(value: true))
-            query.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+            // Use isComplete field query (similar to PracticeSession pattern)
+            print("Fetching InkastBlastSessions from CloudKit using isComplete query...")
+            let predicate = NSPredicate(format: "isComplete == 1")
+            let query = CKQuery(recordType: InkastBlastSessionData.recordType, predicate: predicate)
             
-            let result = try await privateDatabase.records(matching: query)
-            let sessions = result.matchResults.compactMap { (_, result) in
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            var sessions: [InkastBlastSessionData] = []
+            
+            for (_, result) in matchResults {
                 switch result {
                 case .success(let record):
-                    return InkastBlastSessionData(from: record)
+                    if let session = InkastBlastSessionData(from: record) {
+                        sessions.append(session)
+                    }
                 case .failure(let error):
-                    print("❌ Failed to fetch InkastBlastSession record: \(error)")
-                    return nil
+                    print("Error converting record to InkastBlastSessionData: \(error)")
                 }
             }
             
+            // Sort by date (newest first) since we can't use sort descriptors in CloudKit
+            sessions.sort { $0.createdAt > $1.createdAt }
+            
             print("✅ Successfully fetched \(sessions.count) InkastBlastSessions from CloudKit")
             return sessions
+            
         } catch {
             print("❌ Failed to fetch InkastBlastSessions from CloudKit: \(error)")
+            return []
+        }
+    }
+    
+    func fetchBaseballKubbSessions() async throws -> [BaseballKubbSession] {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, returning empty BaseballKubbSessions")
+            return []
+        }
+        
+        do {
+            // Use isComplete field query (similar to PracticeSession pattern)
+            print("Fetching BaseballKubbSessions from CloudKit using isComplete query...")
+            let predicate = NSPredicate(format: "isComplete == 1")
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            var sessions: [BaseballKubbSession] = []
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    if let session = BaseballKubbSession(from: record) {
+                        sessions.append(session)
+                    }
+                case .failure(let error):
+                    print("Error converting record to BaseballKubbSession: \(error)")
+                }
+            }
+            
+            // Sort by date (newest first) since we can't use sort descriptors in CloudKit
+            sessions.sort { $0.createdAt > $1.createdAt }
+            
+            print("✅ Successfully fetched \(sessions.count) BaseballKubbSessions from CloudKit")
+            return sessions
+            
+        } catch {
+            print("❌ Failed to fetch BaseballKubbSessions from CloudKit: \(error)")
             return []
         }
     }
@@ -1272,6 +1321,31 @@ class CloudKitManager: ObservableObject {
             }
         } catch {
             print("❌ Failed to delete InkastBlastSession from CloudKit: \(error)")
+        }
+    }
+    
+    func deleteBaseballKubbSession(_ session: BaseballKubbSession) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping BaseballKubbSession delete")
+            return
+        }
+        
+        do {
+            // First, try to find the record by querying with our custom ID
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: NSPredicate(format: "sessionId == %@", session.id))
+            let result = try await privateDatabase.records(matching: query)
+            
+            for (recordID, result) in result.matchResults {
+                switch result {
+                case .success:
+                    try await privateDatabase.deleteRecord(withID: recordID)
+                    print("✅ Successfully deleted BaseballKubbSession from CloudKit: \(session.id)")
+                case .failure(let error):
+                    print("❌ Failed to delete BaseballKubbSession record: \(error)")
+                }
+            }
+        } catch {
+            print("❌ Failed to delete BaseballKubbSession from CloudKit: \(error)")
         }
     }
     

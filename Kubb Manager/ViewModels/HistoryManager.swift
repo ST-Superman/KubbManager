@@ -17,6 +17,11 @@ class HistoryManager: ObservableObject {
     
     private let cloudKitManager = CloudKitManager.shared
     
+    // Prevent redundant operations
+    private var isCurrentlyLoading = false
+    private var lastDuplicateCleanup: Date?
+    private let duplicateCleanupCooldown: TimeInterval = 60 // 1 minute cooldown
+    
     init() {
         Task {
             await loadSessions()
@@ -26,6 +31,13 @@ class HistoryManager: ObservableObject {
     // MARK: - Data Loading
     
     func loadSessions() async {
+        // Prevent multiple simultaneous loads
+        guard !isCurrentlyLoading else {
+            print("📚 History loading already in progress, skipping...")
+            return
+        }
+        
+        isCurrentlyLoading = true
         isLoading = true
         errorMessage = nil
         
@@ -39,13 +51,16 @@ class HistoryManager: ObservableObject {
             await saveAutoCompletedSessions(fetchedSessions, autoCompletedSessions)
             
             isLoading = false
+            isCurrentlyLoading = false
         } catch {
             errorMessage = cloudKitManager.handleCloudKitError(error)
             isLoading = false
+            isCurrentlyLoading = false
         }
     }
     
     func refreshSessions() async {
+        // Force refresh by allowing concurrent loads
         isRefreshing = true
         errorMessage = nil
         
@@ -248,11 +263,17 @@ class HistoryManager: ObservableObject {
             }
         }
         
-        // If we found duplicates, trigger an immediate CloudKit cleanup
+        // If we found duplicates, trigger CloudKit cleanup with cooldown
         if hasDuplicates {
-            print("🧹 Duplicates detected - triggering immediate CloudKit cleanup...")
-            Task {
-                await cloudKitManager.removeDuplicateCloudKitRecords()
+            let now = Date()
+            if lastDuplicateCleanup == nil || now.timeIntervalSince(lastDuplicateCleanup!) > duplicateCleanupCooldown {
+                print("🧹 Duplicates detected - triggering CloudKit cleanup...")
+                lastDuplicateCleanup = now
+                Task {
+                    await cloudKitManager.removeDuplicateCloudKitRecords()
+                }
+            } else {
+                print("🧹 Duplicates detected but cleanup on cooldown (last cleanup: \(Int(now.timeIntervalSince(lastDuplicateCleanup!)))s ago)")
             }
         }
         

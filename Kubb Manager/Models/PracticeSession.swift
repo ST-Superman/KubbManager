@@ -48,6 +48,33 @@ struct PracticeSession: Identifiable, Codable, Equatable {
         print("   - StartTime: \(startTime)")
     }
     
+    // Internal initializer for CloudKit reconstruction and conversions (no logging)
+    init(id: String,
+                 date: Date,
+                 target: Int,
+                 totalKubbs: Int,
+                 totalBatons: Int,
+                 startTime: Date,
+                 endTime: Date?,
+                 isComplete: Bool,
+                 isPaused: Bool,
+                 rounds: [Round],
+                 createdAt: Date,
+                 modifiedAt: Date) {
+        self.id = id
+        self.date = date
+        self.target = target
+        self.totalKubbs = totalKubbs
+        self.totalBatons = totalBatons
+        self.startTime = startTime
+        self.endTime = endTime
+        self.isComplete = isComplete
+        self.isPaused = isPaused
+        self.rounds = rounds
+        self.createdAt = createdAt
+        self.modifiedAt = modifiedAt
+    }
+    
     // MARK: - ID Validation
     
     private static func validateAndGenerateUniqueId(_ providedId: String) -> String {
@@ -79,24 +106,26 @@ struct PracticeSession: Identifiable, Codable, Equatable {
             return nil
         }
         
-        self.id = id
-        self.date = date
-        self.target = Int(target)
-        self.totalKubbs = Int(totalKubbs)
-        self.totalBatons = Int(totalBatons)
-        self.startTime = startTime
-        self.endTime = record["endTime"] as? Date
-        self.isComplete = isComplete == 1
-        self.isPaused = (record["isPaused"] as? Int64 ?? 0) == 1
-        self.createdAt = createdAt
-        self.modifiedAt = modifiedAt
+        // Use private initializer to avoid logging for CloudKit reconstruction
+        self.init(
+            id: id,
+            date: date,
+            target: Int(target),
+            totalKubbs: Int(totalKubbs),
+            totalBatons: Int(totalBatons),
+            startTime: startTime,
+            endTime: record["endTime"] as? Date,
+            isComplete: isComplete == 1,
+            isPaused: (record["isPaused"] as? Int64 ?? 0) == 1,
+            rounds: [],
+            createdAt: createdAt,
+            modifiedAt: modifiedAt
+        )
         
         // Parse rounds from JSON string
         if let roundsData = record["rounds"] as? String,
            let roundsJSON = roundsData.data(using: .utf8) {
             self.rounds = (try? JSONDecoder().decode([Round].self, from: roundsJSON)) ?? []
-        } else {
-            self.rounds = []
         }
     }
     
@@ -190,9 +219,13 @@ struct PracticeSession: Identifiable, Codable, Equatable {
         return rounds.reduce(0) { $0 + $1.kingHits }
     }
     
+    var totalKingThrowAttempts: Int {
+        return rounds.reduce(0) { $0 + $1.kingThrowAttempts }
+    }
+    
     var kingAccuracy: Double {
-        guard totalKingThrows > 0 else { return 0.0 }
-        return Double(totalKingHits) / Double(totalKingThrows)
+        guard totalKingThrowAttempts > 0 else { return 0.0 }
+        return Double(totalKingHits) / Double(totalKingThrowAttempts)
     }
     
     // MARK: - Session Management

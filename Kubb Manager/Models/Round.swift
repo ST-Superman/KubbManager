@@ -59,6 +59,10 @@ struct Round: Identifiable, Codable, Equatable {
         return kingThrows.filter { $0.isHit }.count
     }
     
+    var kingThrowAttempts: Int {
+        return kingThrows.count
+    }
+    
     var isRoundComplete: Bool {
         return totalBatonThrows >= 6
     }

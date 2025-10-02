@@ -217,11 +217,9 @@ struct TrainingTabView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 32) {
-                    // Training Header
-                    TrainingHeaderView()
-                    
+            VStack(spacing: 16) {
+                TrainingHeaderView()
+                ScrollView {
                     // Training Mode Buttons
                     VStack(spacing: 20) {
                         ForEach(TrainingMode.allCases, id: \.self) { mode in
@@ -248,7 +246,7 @@ struct TrainingTabView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Training")
+            
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Options") {
@@ -278,17 +276,17 @@ struct TrainingTabView: View {
 
 struct TrainingHeaderView: View {
     var body: some View {
-        VStack(spacing: 16) {
+        HStack(spacing: 6) {
             Image(systemName: "figure.strengthtraining.traditional.circle.fill")
-                .font(.system(size: 80))
+                .font(.system(size: 60))
                 .foregroundColor(.blue)
             
             Text("Choose your training mode to improve your kubb skills")
                 .font(.title3)
-                .foregroundColor(.secondary)
+                .foregroundColor(.blue)
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, 20)
+        .padding(.top, 6)
     }
 }
 
@@ -299,11 +297,12 @@ struct GameLogsTabView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 32) {
-                    // Game Logs Header
-                    GameLogsHeaderView()
+            VStack(spacing: 16) {
+                // Game Logs Header
+                GameLogsHeaderView()
                     
+                ScrollView {
+                    VStack(spacing: 16) {
                     // Game Mode Buttons
                     VStack(spacing: 20) {
                         // Baseball Kubb
@@ -329,7 +328,7 @@ struct GameLogsTabView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Game Logs")
+            }   
         }
         .fullScreenCover(isPresented: $showingBaseballKubb) {
             BaseballKubbView()
@@ -342,17 +341,17 @@ struct GameLogsTabView: View {
 
 struct GameLogsHeaderView: View {
     var body: some View {
-        VStack(spacing: 16) {
+        HStack(spacing: 6) {
             Image(systemName: "play.circle.fill")
-                .font(.system(size: 60))
+                .font(.system(size: 40))
                 .foregroundColor(.green)
             
             Text("Track your game sessions and match results")
                 .font(.title3)
-                .foregroundColor(.secondary)
+                .foregroundColor(.blue)
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, 20)
+        .padding(.top, 6)
     }
 }
 
@@ -368,8 +367,8 @@ struct StatsTabView: View {
                 
                 // Stats Sub-tabs
                 Picker("Stats View", selection: $selectedStatsTab) {
-                    Text("Overview").tag(0)
-                    Text("History").tag(1)
+                    Text("Statistics").tag(0)
+                    Text("Session Logs").tag(1)
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding()
@@ -381,24 +380,24 @@ struct StatsTabView: View {
                     HistoryView()
                 }
             }
-            .navigationTitle("Statistics")
+            
         }
     }
 }
 
 struct StatsHeaderView: View {
     var body: some View {
-        VStack(spacing: 16) {
+        HStack(spacing: 6) {
             Image(systemName: "chart.line.text.clipboard")
-                .font(.system(size: 60))
+                .font(.system(size: 40))
                 .foregroundColor(.blue)
             
             Text("Track your progress and analyze your performance")
                 .font(.title3)
-                .foregroundColor(.secondary)
+                .foregroundColor(.blue)
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, 20)
+        .padding(.top, 6)
         .padding(.horizontal)
     }
 }

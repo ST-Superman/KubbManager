@@ -90,6 +90,14 @@ struct InkastBlastRoundData: Identifiable, Codable {
         return batonsUsed > targetBatons
     }
     
+    var kubbsInkast: Int {
+        return self.inkastKubbs
+    }
+    
+    var kubbsOutOfBounds: Int {
+        return kubbsOutFirstAttempt + kubbsOutSecondAttempt
+    }
+    
     // MARK: - Round Management
     
     mutating func recordInkastResults(firstAttemptOut: Int, secondAttemptOut: Int, neighbors: Int) {

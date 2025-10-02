@@ -29,10 +29,10 @@ class BaseballKubbSessionManager: ObservableObject {
     
     // MARK: - Session Management
     
-    func startNewGame(awayTeam: String, homeTeam: String) {
-        print("🚀 Starting new Baseball Kubb game: \(awayTeam) vs \(homeTeam)")
+    func startNewGame(awayTeam: String, homeTeam: String, userTeam: UserTeam = .away) {
+        print("🚀 Starting new Baseball Kubb game: \(awayTeam) vs \(homeTeam) (User on: \(userTeam.displayName))")
         
-        let newSession = BaseballKubbSession(awayTeam: awayTeam, homeTeam: homeTeam)
+        let newSession = BaseballKubbSession(awayTeam: awayTeam, homeTeam: homeTeam, userTeam: userTeam)
         currentSession = newSession
         
         // Save to local storage immediately

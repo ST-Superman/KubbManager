@@ -124,6 +124,18 @@ struct InkastBlastSessionData: Identifiable, Codable {
         return Double(totalNeighborKubbs) / Double(totalInkastKubbs)
     }
     
+    var totalNeighbors: Int {
+        return totalNeighborKubbs
+    }
+    
+    var totalPenaltyKubbsCount: Int {
+        return self.totalPenaltyKubbs
+    }
+    
+    var kubbsOutOfBounds: Int {
+        return rounds.reduce(0) { $0 + $1.kubbsOutFirstAttempt + $1.kubbsOutSecondAttempt }
+    }
+    
     // MARK: - Session Management
     
     mutating func addRound(_ round: InkastBlastRoundData) {
@@ -233,5 +245,27 @@ struct InkastBlastSessionData: Identifiable, Codable {
         }
         
         return record
+    }
+}
+
+// MARK: - Extensions
+
+extension InkastBlastSessionData {
+    func toPracticeSession() -> PracticeSession {
+        // Use private initializer to avoid logging for statistics conversion
+        return PracticeSession(
+            id: id,
+            date: date,
+            target: totalInkastKubbs, // Use total inkast kubbs as target
+            totalKubbs: totalKubbsKnockedDown,
+            totalBatons: totalBatonsUsed,
+            startTime: startTime,
+            endTime: endTime,
+            isComplete: isComplete,
+            isPaused: false,
+            rounds: [],
+            createdAt: createdAt,
+            modifiedAt: modifiedAt
+        )
     }
 }

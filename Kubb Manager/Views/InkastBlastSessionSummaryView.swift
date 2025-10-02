@@ -79,7 +79,7 @@ struct InkastBlastSessionSummaryView: View {
             InkastStatCard(
                 title: "Inkast Kubbs",
                 value: "\(session.totalInkastKubbs)",
-                icon: "kubbEquipment"
+                icon: "target"
             )
             
             InkastStatCard(

@@ -124,39 +124,37 @@ struct BaseballKubbStartView: View {
     @Binding var showingHalfSummary: Bool
     @State private var awayTeam = ""
     @State private var homeTeam = ""
+    @State private var selectedUserTeam: UserTeam = .away
     @State private var showingAbandonConfirmation = false
     @State private var showingTutorial = false
     
     var body: some View {
-        VStack(spacing: 32) {
-            Spacer()
-            
-            VStack(spacing: 16) {
-                Image("baseball_kubb")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 120, height: 120)
-                
-                Text("Baseball Kubb")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                
-                Text("Baseball-style Kubb training with innings and scoring. Track field kubbs, baseline kubbs, and king hits.")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                
-                Button("Learn the Rules") {
-                    showingTutorial = true
+        ScrollView {
+            VStack(spacing: 32) {
+                VStack(spacing: 16) {
+                    Image("baseball_kubb")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 120)
+                    
+                    Text("Baseball Kubb")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Baseball-style Kubb training with innings and scoring. Track field kubbs, baseline kubbs, and king hits.")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Button("Learn the Rules") {
+                        showingTutorial = true
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .padding(.top, 8)
                 }
-                .font(.subheadline)
-                .foregroundColor(.blue)
-                .padding(.top, 8)
-            }
-            
-            Spacer()
             
             VStack(spacing: 24) {
                 // Show incomplete game option if available
@@ -242,7 +240,19 @@ struct BaseballKubbStartView: View {
                     }
                 }
                 
-                Button(action: startGame) {
+                // Team Selection - always show when teams are entered
+                if !awayTeam.isEmpty && !homeTeam.isEmpty && awayTeam != homeTeam {
+                    UserTeamSelectionView(
+                        selectedTeam: $selectedUserTeam,
+                        awayTeam: awayTeam,
+                        homeTeam: homeTeam
+                    )
+                }
+                
+                Button(action: {
+                    print("🎮 Starting game with teams: \(awayTeam) vs \(homeTeam), User team: \(selectedUserTeam)")
+                    startGame()
+                }) {
                     HStack {
                         Image(systemName: "play.fill")
                         Text("Start New Game")
@@ -258,7 +268,9 @@ struct BaseballKubbStartView: View {
             }
             .padding(.horizontal)
             
-            Spacer()
+            // Add some bottom padding for better scrolling experience
+            Color.clear.frame(height: 50)
+            }
         }
         .sheet(isPresented: $showingAbandonConfirmation) {
             if let session = sessionManager.incompleteSession {
@@ -279,7 +291,7 @@ struct BaseballKubbStartView: View {
     }
     
     private func startGame() {
-        sessionManager.startNewGame(awayTeam: awayTeam, homeTeam: homeTeam)
+        sessionManager.startNewGame(awayTeam: awayTeam, homeTeam: homeTeam, userTeam: selectedUserTeam)
     }
 }
 
@@ -1455,4 +1467,3 @@ struct KingVisualView: View {
 #Preview {
     BaseballKubbView()
 }
-
