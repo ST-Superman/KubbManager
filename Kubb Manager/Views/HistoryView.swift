@@ -50,7 +50,7 @@ struct HistoryView: View {
             .navigationTitle("Session History")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back to Main Menu") {
+                    Button("Dismiss") {
                         dismiss()
                     }
                 }

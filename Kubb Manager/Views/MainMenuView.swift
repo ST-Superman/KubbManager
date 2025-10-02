@@ -173,26 +173,74 @@ struct TrainingModeButton: View {
 }
 
 struct ComingSoonNoticeView: View {
+    @State private var showingMailComposer = false
+    
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Image(systemName: "clock.badge.exclamationmark")
                 .font(.title2)
-                .foregroundColor(.orange)
-            
-            Text("More Training Modes Coming Soon!")
+                .foregroundColor(.purple)
+
+            Text("More Improvements Coming Soon!")
                 .font(.headline)
+                .foregroundColor(.purple)
                 .fontWeight(.semibold)
             
-            Text("We're working on adding Inkast/Blast training and Full Game Simulation. Stay tuned for updates!")
+            Text("We're always working to improve the app. Our next project is a Full Game training simulator. Please send me any feedback or new training session ideas.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.purple)
                 .multilineTextAlignment(.center)
+            
+            Button("Send Feedback") {
+                showingMailComposer = true
+            }
+            .buttonStyle(.bordered)
+            .foregroundColor(.purple)
+            .fontWeight(.semibold)
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.orange.opacity(0.1))
+                .fill(Color.purple.opacity(0.1))
         )
+        .sheet(isPresented: $showingMailComposer) {
+            MailComposerView()
+        }
+    }
+}
+
+struct MailComposerView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                Text("This would open your email app to send feedback to sathomps@gmail.com")
+                    .padding()
+                    .multilineTextAlignment(.center)
+                
+                Spacer()
+            }
+            .navigationTitle("Send Feedback")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Send") {
+                        // This would open the mail composer
+                        if let url = URL(string: "mailto:sathomps@gmail.com?subject=Kubb Manager Feedback") {
+                            UIApplication.shared.open(url)
+                        }
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 

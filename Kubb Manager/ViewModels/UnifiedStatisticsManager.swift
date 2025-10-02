@@ -7,9 +7,13 @@
 
 import Foundation
 import Combine
+import UIKit
+import SwiftUI
 
 @MainActor
 class UnifiedStatisticsManager: ObservableObject {
+    static let shared = UnifiedStatisticsManager()
+    
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
@@ -83,9 +87,25 @@ class UnifiedStatisticsManager: ObservableObject {
     private let cacheValidityDuration: TimeInterval = 30 // 30 seconds cache
     
     init() {
-        Task {
+        // Listen for app becoming active to refresh data
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                await self.loadAllSessionsIfNeeded()
+            }
+        }
+        
+        // Load data immediately and ensure it completes
+        Task { @MainActor in
             await loadAllSessions()
         }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Data Loading
@@ -98,8 +118,9 @@ class UnifiedStatisticsManager: ObservableObject {
         }
         
         // Check cache validity - but only if we already have data loaded
+        // Reduced cache duration to 5 seconds to be more responsive
         if let lastLoad = lastLoadTime,
-           Date().timeIntervalSince(lastLoad) < cacheValidityDuration,
+           Date().timeIntervalSince(lastLoad) < 5.0,
            !practiceSessions.isEmpty {
             print("📊 Using cached stats data (age: \(Int(Date().timeIntervalSince(lastLoad)))s)")
             return
@@ -113,27 +134,35 @@ class UnifiedStatisticsManager: ObservableObject {
         
         do {
             // Load practice sessions (8M training)
+            print("📊 Loading practice sessions...")
             await historyManager.loadSessions()
             practiceSessions = historyManager.sessions
+            print("📊 Loaded \(practiceSessions.count) practice sessions")
             
             // Load Inkast & Blast sessions
+            print("📊 Loading Inkast & Blast sessions...")
             inkastBlastSessions = await cloudKitManager.fetchInkastBlastSessions()
+            print("📊 Loaded \(inkastBlastSessions.count) Inkast & Blast sessions")
             
             // Load Baseball Kubb sessions
+            print("📊 Loading Baseball Kubb sessions...")
             baseballKubbSessions = try await cloudKitManager.fetchBaseballKubbSessions()
+            print("📊 Loaded \(baseballKubbSessions.count) Baseball Kubb sessions")
             
             // Calculate statistics
+            print("📊 Calculating statistics...")
             calculateTrainingStatistics()
             calculateGameLogStatistics()
             calculateModeSpecificStatistics()
             
             // Update cache timestamp
             lastLoadTime = Date()
-            print("✅ Stats data loaded and cached successfully")
+            print("✅ Stats data loaded and cached successfully - Total sessions: \(practiceSessions.count + inkastBlastSessions.count + baseballKubbSessions.count)")
             
             isLoading = false
             isCurrentlyLoading = false
         } catch {
+            print("❌ Error loading stats data: \(error)")
             errorMessage = cloudKitManager.handleCloudKitError(error)
             isLoading = false
             isCurrentlyLoading = false
@@ -149,6 +178,14 @@ class UnifiedStatisticsManager: ObservableObject {
     func invalidateCache() {
         lastLoadTime = nil
         print("📊 Stats cache invalidated")
+    }
+    
+    func loadAllSessionsIfNeeded() async {
+        // If we have no data or cache is stale, load fresh data
+        if practiceSessions.isEmpty || 
+           (lastLoadTime != nil && Date().timeIntervalSince(lastLoadTime!) > 5.0) {
+            await loadAllSessions()
+        }
     }
     
     func forceReload() async {
@@ -178,8 +215,10 @@ class UnifiedStatisticsManager: ObservableObject {
         var dataPoints: [RoundAccuracyDataPoint] = []
         var globalRoundNumber = 1
         
-        // Sort sessions by date to maintain chronological order
-        let sortedSessions = practiceSessions.sorted { $0.startTime < $1.startTime }
+        // Sort sessions by date to maintain chronological order and filter out sessions with 0 batons
+        let sortedSessions = practiceSessions
+            .filter { $0.totalBatons > 0 } // Filter out sessions with 0 batons thrown
+            .sorted { $0.startTime < $1.startTime }
         
         for session in sortedSessions {
             let sessionRounds = session.rounds.sorted { $0.roundNumber < $1.roundNumber }
@@ -201,7 +240,9 @@ class UnifiedStatisticsManager: ObservableObject {
     }
     
     func getSessionsForTrellis() -> [SessionTrellisData] {
-        let sortedSessions = practiceSessions.sorted { $0.startTime < $1.startTime }
+        let sortedSessions = practiceSessions
+            .filter { $0.totalBatons > 0 } // Filter out sessions with 0 batons thrown
+            .sorted { $0.startTime < $1.startTime }
         
         return sortedSessions.map { session in
             let sessionRounds = session.rounds.sorted { $0.roundNumber < $1.roundNumber }
@@ -642,6 +683,22 @@ struct RoundAccuracyDataPoint: Identifiable {
     let roundNumber: Int
     let accuracy: Double
     let sessionTarget: Int
+}
+
+struct TrendPoint: Identifiable {
+    let id = UUID()
+    let x: Double
+    let y: Double
+    let roundNumber: Int
+}
+
+struct PerformanceZone: Identifiable {
+    let id = UUID()
+    let startRound: Int
+    let endRound: Int
+    let upperBound: Double
+    let lowerBound: Double
+    let color: Color
 }
 
 struct SessionTrellisData: Identifiable {

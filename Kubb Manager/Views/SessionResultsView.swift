@@ -37,7 +37,7 @@ struct SessionResultsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Back to Main Menu") {
+                    Button("Dismiss") {
                         dismiss()
                     }
                 }

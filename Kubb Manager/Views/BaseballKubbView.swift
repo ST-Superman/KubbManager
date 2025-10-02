@@ -36,7 +36,7 @@ struct BaseballKubbView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back to Main Menu") {
+                    Button("Dismiss") {
                         dismiss()
                     }
                 }

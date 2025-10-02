@@ -41,7 +41,7 @@ struct LandingPageView: View {
                             icon: "figure.strengthtraining.traditional.circle.fill",
                             color: .blue
                         ) {
-                            selectedTab = 0
+                            selectedTab = 1
                             showingMainApp = true
                         }
                         
@@ -52,7 +52,7 @@ struct LandingPageView: View {
                             icon: "play.circle.fill",
                             color: .green
                         ) {
-                            selectedTab = 1
+                            selectedTab = 2
                             showingMainApp = true
                         }
                         
@@ -63,31 +63,13 @@ struct LandingPageView: View {
                             icon: "chart.line.text.clipboard",
                             color: .orange
                         ) {
-                            selectedTab = 2
+                            selectedTab = 3
                             showingMainApp = true
                         }
                     }
                     
-                    // Quick Access Note
-                    VStack(spacing: 12) {
-                        Image(systemName: "info.circle")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                        
-                        Text("Quick Access")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Text("You can also use the tabs at the bottom to quickly switch between sections")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.blue.opacity(0.1))
-                    )
+                    // Coming Soon Notice
+                    ComingSoonNoticeView()
                 }
                 .padding()
             }
@@ -172,13 +154,21 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
+            // Main Menu Tab
+            MainMenuTabView(selectedTab: $selectedTab)
+                .tabItem {
+                    Image(systemName: "filemenu.and.selection")
+                    Text("Main Menu")
+                }
+                .tag(0)
+            
             // Training Tab
             TrainingTabView()
                 .tabItem {
                     Image(systemName: "figure.strengthtraining.traditional.circle.fill")
                     Text("Training")
                 }
-                .tag(0)
+                .tag(1)
             
             // Game Logs Tab
             GameLogsTabView()
@@ -186,7 +176,7 @@ struct MainTabView: View {
                     Image(systemName: "play.circle.fill")
                     Text("Game Logs")
                 }
-                .tag(1)
+                .tag(2)
             
             // Stats Tab
             StatsTabView()
@@ -194,7 +184,7 @@ struct MainTabView: View {
                     Image(systemName: "chart.line.text.clipboard")
                     Text("Stats")
                 }
-                .tag(2)
+                .tag(3)
         }
         .environmentObject(sessionManager)
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
@@ -202,6 +192,61 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
             sessionManager.handleAppDidEnterBackground()
+        }
+    }
+}
+
+// MARK: - Main Menu Tab
+struct MainMenuTabView: View {
+    @Binding var selectedTab: Int
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 40) {
+                    // App Header
+                    LandingAppHeaderView()
+                    
+                    // Main Action Buttons
+                    VStack(spacing: 24) {
+                        // Training Button
+                        MainActionButton(
+                            title: "Training",
+                            description: "Practice your kubb skills with various training modes",
+                            icon: "figure.strengthtraining.traditional.circle.fill",
+                            color: .blue
+                        ) {
+                            selectedTab = 1
+                        }
+                        
+                        // Game Logs Button
+                        MainActionButton(
+                            title: "Game Logs",
+                            description: "Track your game sessions and match results",
+                            icon: "play.circle.fill",
+                            color: .green
+                        ) {
+                            selectedTab = 2
+                        }
+                        
+                        // Stats Button
+                        MainActionButton(
+                            title: "Statistics",
+                            description: "View your progress and performance analytics",
+                            icon: "chart.line.text.clipboard",
+                            color: .orange
+                        ) {
+                            selectedTab = 3
+                        }
+                    }
+                    
+                    // Coming Soon Notice
+                    ComingSoonNoticeView()
+                }
+                .padding()
+            }
+            .navigationTitle("Kubb Manager")
+            .navigationBarTitleDisplayMode(.large)
         }
     }
 }
@@ -240,9 +285,6 @@ struct TrainingTabView: View {
                             }
                         }
                     }
-                    
-                    // Coming Soon Notice
-                    ComingSoonNoticeView()
                 }
                 .padding()
             }

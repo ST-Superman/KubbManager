@@ -35,7 +35,7 @@ struct ChartDataPoint: Identifiable {
 
 // MARK: - Main Stats View
 struct StatsView: View {
-    @StateObject private var unifiedStatsManager = UnifiedStatisticsManager()
+    @StateObject private var unifiedStatsManager = UnifiedStatisticsManager.shared
     @State private var selectedTab: StatsTab = .trainingOverview
     
     enum StatsTab: String, CaseIterable {
@@ -91,33 +91,69 @@ struct StatsView: View {
             .background(Color(.systemBackground))
             
             // Scrollable content area
-            ScrollView {
+            if unifiedStatsManager.isLoading && unifiedStatsManager.practiceSessions.isEmpty {
                 VStack(spacing: 16) {
-                    // Content based on selected tab
-                    switch selectedTab {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading statistics...")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Content based on selected tab
+                        switch selectedTab {
                     case .trainingOverview:
                         TrainingOverviewStatsSection()
                             .environmentObject(unifiedStatsManager)
+                            .onAppear {
+                                Task {
+                                    await unifiedStatsManager.loadAllSessionsIfNeeded()
+                                }
+                            }
                     case .practice:
                         PracticeStatsSection()
                             .environmentObject(unifiedStatsManager)
+                            .onAppear {
+                                Task {
+                                    await unifiedStatsManager.loadAllSessionsIfNeeded()
+                                }
+                            }
                     case .inkastBlast:
                         InkastBlastStatsSection()
                             .environmentObject(unifiedStatsManager)
+                            .onAppear {
+                                Task {
+                                    await unifiedStatsManager.loadAllSessionsIfNeeded()
+                                }
+                            }
                     case .gameLogs:
                         GameLogsStatsSection()
                             .environmentObject(unifiedStatsManager)
+                            .onAppear {
+                                Task {
+                                    await unifiedStatsManager.loadAllSessionsIfNeeded()
+                                }
+                            }
                     case .baseballKubb:
                         BaseballKubbStatsSection()
                             .environmentObject(unifiedStatsManager)
+                            .onAppear {
+                                Task {
+                                    await unifiedStatsManager.loadAllSessionsIfNeeded()
+                                }
+                            }
                     }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom)
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
             }
         }
         .onAppear {
             Task {
+                // Always try to load fresh data when the view appears
                 await unifiedStatsManager.loadAllSessions()
             }
         }
@@ -932,8 +968,41 @@ struct AllSessionsChartView: View {
     let data: [RoundAccuracyDataPoint]
     let targetAccuracy: Double
     
-    @State private var selectedRange: ClosedRange<Int> = 0...10
+    @State private var selectedRange: ClosedRange<Int> = 0...19
     @State private var isDragging = false
+    @State private var selectedTimePeriod: TimePeriod = .last20
+    @State private var scale: CGFloat = 1.0
+    @State private var offset: CGFloat = 0.0
+    
+    enum TimePeriod: String, CaseIterable {
+        case last10 = "Last 10"
+        case last20 = "Last 20"
+        case last50 = "Last 50"
+        case all = "All"
+        
+        var rangeSize: Int {
+            switch self {
+            case .last10: return 10
+            case .last20: return 20
+            case .last50: return 50
+            case .all: return Int.max
+            }
+        }
+    }
+    
+    init(data: [RoundAccuracyDataPoint], targetAccuracy: Double) {
+        self.data = data
+        self.targetAccuracy = targetAccuracy
+        
+        // Set default range to show last 20 rounds
+        let visibleRangeSize = 20
+        if data.count > visibleRangeSize {
+            let startIndex = max(0, data.count - visibleRangeSize)
+            self._selectedRange = State(initialValue: startIndex...(data.count - 1))
+        } else {
+            self._selectedRange = State(initialValue: 0...(data.count - 1))
+        }
+    }
     
     private var visibleData: [RoundAccuracyDataPoint] {
         guard !data.isEmpty else { return [] }
@@ -946,26 +1015,144 @@ struct AllSessionsChartView: View {
         max(1.0, (visibleData.map { $0.accuracy }.max() ?? 0.0) * 1.1)
     }
     
-    var body: some View {
-        VStack(spacing: 16) {
-            // Main chart with proper scales
-            Chart(visibleData) { point in
-                // Accuracy line
-                LineMark(
-                    x: .value("Round", point.globalRoundNumber),
-                    y: .value("Accuracy", point.accuracy)
+    private var trendLineData: [TrendPoint] {
+        guard visibleData.count > 1 else { return [] }
+        
+        // Calculate 5-round moving average for smoother trend
+        let windowSize = min(5, visibleData.count)
+        var trendPoints: [TrendPoint] = []
+        
+        for i in 0..<visibleData.count {
+            let startIndex = max(0, i - windowSize + 1)
+            let endIndex = i + 1
+            let windowData = Array(visibleData[startIndex..<endIndex])
+            
+            let averageAccuracy = windowData.map { $0.accuracy }.reduce(0, +) / Double(windowData.count)
+            
+            trendPoints.append(TrendPoint(
+                x: Double(i),
+                y: averageAccuracy,
+                roundNumber: visibleData[i].globalRoundNumber
+            ))
+        }
+        
+        return trendPoints
+    }
+    
+    private var performanceZones: [PerformanceZone] {
+        guard !visibleData.isEmpty else { return [] }
+        
+        let firstRound = visibleData.first!.globalRoundNumber
+        let lastRound = visibleData.last!.globalRoundNumber
+        
+        return [
+            PerformanceZone(
+                startRound: firstRound,
+                endRound: lastRound,
+                upperBound: 1.0,
+                lowerBound: targetAccuracy,
+                color: .green.opacity(0.1)
+            ),
+            PerformanceZone(
+                startRound: firstRound,
+                endRound: lastRound,
+                upperBound: targetAccuracy,
+                lowerBound: 0.0,
+                color: .red.opacity(0.1)
+            )
+        ]
+    }
+    
+    private func updateRangeForTimePeriod(_ period: TimePeriod) {
+        let rangeSize = min(period.rangeSize, data.count)
+        if data.count > rangeSize {
+            let startIndex = max(0, data.count - rangeSize)
+            selectedRange = startIndex...(data.count - 1)
+        } else {
+            selectedRange = 0...(data.count - 1)
+        }
+        selectedTimePeriod = period
+    }
+    
+    private func resetToDefault() {
+        updateRangeForTimePeriod(.last20)
+        scale = 1.0
+        offset = 0.0
+    }
+    
+    private var userFriendlyRangeText: String {
+        guard !data.isEmpty else { return "No data" }
+        let startRound = selectedRange.lowerBound + 1
+        let endRound = selectedRange.upperBound + 1
+        let totalRounds = data.count
+        
+        if selectedTimePeriod == .all {
+            return "All \(totalRounds) rounds"
+        } else {
+            return "Rounds \(startRound)-\(endRound) of \(totalRounds)"
+        }
+    }
+    
+    private var chartView: some View {
+        Chart {
+            // Performance zones (background)
+            ForEach(performanceZones) { zone in
+                RectangleMark(
+                    xStart: .value("Start", zone.startRound),
+                    xEnd: .value("End", zone.endRound),
+                    yStart: .value("Lower", zone.lowerBound),
+                    yEnd: .value("Upper", zone.upperBound)
                 )
-                .foregroundStyle(.blue)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                
-                // Data points
+                .foregroundStyle(zone.color)
+            }
+            
+            // Target line (horizontal reference)
+            RuleMark(y: .value("Target", targetAccuracy))
+                .foregroundStyle(.red)
+                .lineStyle(StrokeStyle(lineWidth: 3))
+            
+            // Trend line (moving average) - most prominent
+            ForEach(trendLineData) { trendPoint in
+                LineMark(
+                    x: .value("Round", trendPoint.roundNumber),
+                    y: .value("Trend", trendPoint.y)
+                )
+                .foregroundStyle(.green)
+                .lineStyle(StrokeStyle(lineWidth: 4))
+            }
+            
+            // Individual data points (smaller, less prominent)
+            ForEach(visibleData) { point in
                 PointMark(
                     x: .value("Round", point.globalRoundNumber),
                     y: .value("Accuracy", point.accuracy)
                 )
-                .foregroundStyle(.blue)
-                .symbolSize(30)
+                .foregroundStyle(.blue.opacity(0.6))
+                .symbolSize(20)
             }
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Time period selector
+            Picker("Time Period", selection: $selectedTimePeriod) {
+                ForEach(TimePeriod.allCases, id: \.self) { period in
+                    Text(period.rawValue).tag(period)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .onChange(of: selectedTimePeriod) { _, newPeriod in
+                updateRangeForTimePeriod(newPeriod)
+            }
+            
+            // Range info
+            Text(userFriendlyRangeText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            // Main chart with proper scales and gestures
+            chartView
             .chartYScale(domain: 0...maxAccuracy)
             .chartXScale(domain: selectedRange.lowerBound...selectedRange.upperBound)
             .chartYAxis {
@@ -994,30 +1181,114 @@ struct AllSessionsChartView: View {
             .padding()
             .background(Color(.systemGray6))
             .cornerRadius(12)
+            .scaleEffect(scale)
+            .offset(x: offset)
+            .gesture(
+                SimultaneousGesture(
+                    // Pinch to zoom
+                    MagnificationGesture()
+                        .onChanged { value in
+                            scale = max(0.5, min(2.0, value))
+                        },
+                    // Pan to navigate (when zoomed)
+                    DragGesture()
+                        .onChanged { value in
+                            if scale > 1.0 {
+                                offset = value.translation.width
+                            }
+                        }
+                        .onEnded { _ in
+                            // Reset offset when drag ends
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                offset = 0
+                            }
+                        }
+                )
+            )
+            .onTapGesture(count: 2) {
+                // Double tap to reset
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    resetToDefault()
+                }
+            }
             
-            // Target line indicator
-            HStack {
-                Rectangle()
-                    .fill(Color.red)
-                    .frame(width: 20, height: 3)
-                Text("Target (\(Int(targetAccuracy * 100))%)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            // Legend
+            VStack(spacing: 8) {
+                HStack(spacing: 16) {
+                    // Trend line (most prominent)
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .fill(Color.green)
+                            .frame(width: 24, height: 4)
+                        Text("5-Round Trend")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    // Target line
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .fill(Color.red)
+                            .frame(width: 24, height: 4)
+                        Text("Target (\(Int(targetAccuracy * 100))%)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    // Individual points
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Color.blue.opacity(0.6))
+                            .frame(width: 8, height: 8)
+                        Text("Individual Rounds")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Text("\(visibleData.count) rounds shown")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
-                Spacer()
-                
-                Text("\(visibleData.count) rounds shown")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Performance zones explanation
+                HStack(spacing: 16) {
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .fill(Color.green.opacity(0.1))
+                            .frame(width: 16, height: 12)
+                        Text("Above Target")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .fill(Color.red.opacity(0.1))
+                            .frame(width: 16, height: 12)
+                        Text("Below Target")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
             }
             .padding(.horizontal)
             
-            // Navigation controls
-            NavigationControls(
-                data: data,
-                selectedRange: $selectedRange,
-                isDragging: $isDragging
-            )
+            // Gesture instructions
+            HStack {
+                Image(systemName: "hand.pinch")
+                    .foregroundColor(.secondary)
+                Text("Pinch to zoom • Double-tap to reset")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal)
         }
     }
 }
@@ -1107,138 +1378,6 @@ struct TrellisChartView: View {
     }
 }
 
-// MARK: - Navigation Controls
-
-struct NavigationControls: View {
-    let data: [RoundAccuracyDataPoint]
-    @Binding var selectedRange: ClosedRange<Int>
-    @Binding var isDragging: Bool
-    
-    private let visibleRangeSize = 20 // Show 20 rounds at a time
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Range info
-            HStack {
-                Text("Showing rounds \(selectedRange.lowerBound + 1) - \(selectedRange.upperBound + 1) of \(data.count)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Text("Range: \(selectedRange.count) rounds")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal)
-            
-            // Navigation buttons
-            HStack(spacing: 16) {
-                Button("First") {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedRange = 0...min(visibleRangeSize - 1, data.count - 1)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(selectedRange.lowerBound == 0)
-                
-                Button("Previous") {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        let newStart = max(0, selectedRange.lowerBound - visibleRangeSize)
-                        let newEnd = min(data.count - 1, newStart + visibleRangeSize - 1)
-                        selectedRange = newStart...newEnd
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(selectedRange.lowerBound == 0)
-                
-                Spacer()
-                
-                Button("Next") {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        let newStart = min(data.count - visibleRangeSize, selectedRange.upperBound + 1)
-                        let newEnd = min(data.count - 1, newStart + visibleRangeSize - 1)
-                        selectedRange = newStart...newEnd
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(selectedRange.upperBound >= data.count - 1)
-                
-                Button("Last") {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        let newStart = max(0, data.count - visibleRangeSize)
-                        selectedRange = newStart...(data.count - 1)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(selectedRange.upperBound >= data.count - 1)
-            }
-            .padding(.horizontal)
-            
-            // Mini navigator chart
-            MiniNavigatorChart(
-                data: data,
-                selectedRange: $selectedRange,
-                isDragging: $isDragging
-            )
-            .frame(height: 60)
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 8)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-        .padding(.horizontal)
-    }
-}
-
-// MARK: - Mini Navigator Chart
-
-struct MiniNavigatorChart: View {
-    let data: [RoundAccuracyDataPoint]
-    @Binding var selectedRange: ClosedRange<Int>
-    @Binding var isDragging: Bool
-    
-    var body: some View {
-        Chart(data) { point in
-            LineMark(
-                x: .value("Round", point.globalRoundNumber),
-                y: .value("Accuracy", point.accuracy)
-            )
-            .foregroundStyle(.blue.opacity(0.7))
-            .lineStyle(StrokeStyle(lineWidth: 1))
-            
-            // Selection range highlight
-            RectangleMark(
-                xStart: .value("Start", selectedRange.lowerBound + 1),
-                xEnd: .value("End", selectedRange.upperBound + 1),
-                yStart: .value("Min", 0),
-                yEnd: .value("Max", 1)
-            )
-            .foregroundStyle(.blue.opacity(0.2))
-        }
-        .chartYScale(domain: 0...1.0)
-        .chartXScale(domain: 1...data.count)
-        .chartYAxis(.hidden)
-        .chartXAxis(.hidden)
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    isDragging = true
-                    let width = UIScreen.main.bounds.width - 32 // Account for padding
-                    let startX = value.startLocation.x
-                    let currentX = value.location.x
-                    
-                    let startIndex = max(0, min(data.count - 1, Int(startX / width * CGFloat(data.count))))
-                    let endIndex = max(0, min(data.count - 1, Int(currentX / width * CGFloat(data.count))))
-                    
-                    selectedRange = min(startIndex, endIndex)...max(startIndex, endIndex)
-                }
-                .onEnded { _ in
-                    isDragging = false
-                }
-        )
-    }
-}
 
 #Preview {
     StatsView()
