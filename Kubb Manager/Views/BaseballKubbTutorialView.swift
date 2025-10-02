@@ -133,7 +133,7 @@ struct BaseballKubbTutorialView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Skip") {
+                    Button("Back to Main Menu") {
                         dismiss()
                     }
                 }

@@ -45,7 +45,7 @@ struct InkastBlastView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
+                    Button("Back to Main Menu") {
                         dismiss()
                     }
                 }

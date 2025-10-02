@@ -15,6 +15,7 @@ struct HistoryView: View {
     @State private var showingExportOptions = false
     @State private var showingDeleteAlert = false
     @State private var sessionToDelete: UnifiedSession?
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
@@ -48,6 +49,12 @@ struct HistoryView: View {
             }
             .navigationTitle("Session History")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Back to Main Menu") {
+                        dismiss()
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button("Refresh") {
