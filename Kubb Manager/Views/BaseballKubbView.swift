@@ -15,7 +15,6 @@ struct BaseballKubbView: View {
     @State private var showingHalfSummary = false
     @State private var showingMenu = false
     @State private var showingTutorial = false
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     var body: some View {
         NavigationView {
@@ -38,7 +37,7 @@ struct BaseballKubbView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back to Main Menu") {
-                        navigationCoordinator.returnToMainApp(tab: 1)
+                        dismiss()
                     }
                 }
                 

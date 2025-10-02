@@ -12,7 +12,6 @@ struct SessionResultsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingShareSheet = false
     @State private var shareText = ""
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     var body: some View {
         NavigationView {
@@ -39,7 +38,7 @@ struct SessionResultsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Back to Main Menu") {
-                        navigationCoordinator.returnToMainApp(tab: 0)
+                        dismiss()
                     }
                 }
             }

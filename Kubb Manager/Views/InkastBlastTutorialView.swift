@@ -10,7 +10,6 @@ import SwiftUI
 struct InkastBlastTutorialView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentPage = 0
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     private let tutorialPages = [
         TutorialPage(
@@ -109,7 +108,7 @@ struct InkastBlastTutorialView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Back to Main Menu") {
-                        navigationCoordinator.returnToMainApp(tab: 0)
+                        dismiss()
                     }
                 }
             }

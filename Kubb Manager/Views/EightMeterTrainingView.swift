@@ -14,7 +14,6 @@ struct EightMeterTrainingView: View {
     @State private var showingRecoveryAlert = false
     @State private var showingTutorial = false
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     private var navigationTitle: String {
         switch selectedTab {
@@ -30,7 +29,6 @@ struct EightMeterTrainingView: View {
             TabView(selection: $selectedTab) {
                 // Overview Tab
                 HomeView(selectedTab: $selectedTab)
-                    .environmentObject(navigationCoordinator)
                     .tabItem {
                         Image(systemName: "chart.bar.fill")
                         Text("Overview")
@@ -40,7 +38,6 @@ struct EightMeterTrainingView: View {
                 // Practice Tab
                 if sessionManager.isSessionActive {
                     PracticeView()
-                        .environmentObject(navigationCoordinator)
                         .tabItem {
                             Image(systemName: "target")
                             Text("Practice")
@@ -48,7 +45,6 @@ struct EightMeterTrainingView: View {
                         .tag(1)
                 } else if sessionManager.hasIncompleteSession() {
                     IncompleteSessionPracticeView()
-                        .environmentObject(navigationCoordinator)
                         .tabItem {
                             Image(systemName: "target")
                             Text("Practice")
@@ -56,7 +52,6 @@ struct EightMeterTrainingView: View {
                         .tag(1)
                 } else {
                     TargetSettingView()
-                        .environmentObject(navigationCoordinator)
                         .tabItem {
                             Image(systemName: "target")
                             Text("Practice")
@@ -66,7 +61,6 @@ struct EightMeterTrainingView: View {
                 
                 // Tutorial Tab
                 TutorialOverviewView()
-                    .environmentObject(navigationCoordinator)
                     .tabItem {
                         Image(systemName: "questionmark.circle")
                         Text("Tutorial")
@@ -78,7 +72,7 @@ struct EightMeterTrainingView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back to Main Menu") {
-                        navigationCoordinator.returnToMainApp(tab: 0)
+                        dismiss()
                     }
                 }
             }

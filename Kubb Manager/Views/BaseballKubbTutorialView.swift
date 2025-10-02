@@ -11,7 +11,6 @@ struct BaseballKubbTutorialView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentStep = 0
     @State private var showingFullRules = false
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     private let tutorialSteps = [
         TutorialStep(
@@ -135,7 +134,7 @@ struct BaseballKubbTutorialView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back to Main Menu") {
-                        navigationCoordinator.returnToMainApp(tab: 1)
+                        dismiss()
                     }
                 }
                 

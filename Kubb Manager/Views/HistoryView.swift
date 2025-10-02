@@ -16,7 +16,6 @@ struct HistoryView: View {
     @State private var showingDeleteAlert = false
     @State private var sessionToDelete: UnifiedSession?
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     var body: some View {
         NavigationView {
@@ -52,7 +51,7 @@ struct HistoryView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back to Main Menu") {
-                        navigationCoordinator.returnToMainApp(tab: 2)
+                        dismiss()
                     }
                 }
                 

@@ -17,7 +17,6 @@ struct InkastBlastView: View {
     @State private var showingInkastRecording = false
     @StateObject private var skinManager = SkinManager.shared
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     init(persistenceController: PersistenceController, cloudKitManager: CloudKitManager) {
         self._sessionManager = StateObject(wrappedValue: InkastBlastSessionManager(
@@ -47,7 +46,7 @@ struct InkastBlastView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back to Main Menu") {
-                        navigationCoordinator.returnToMainApp(tab: 0)
+                        dismiss()
                     }
                 }
                 
