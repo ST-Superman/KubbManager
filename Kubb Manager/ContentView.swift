@@ -10,12 +10,21 @@ import SwiftUI
 struct ContentView: View {
     @State private var showingMainApp = false
     @State private var selectedTab = 0
+    @StateObject private var navigationCoordinator = NavigationCoordinator()
     
     var body: some View {
         if showingMainApp {
             MainTabView(selectedTab: $selectedTab)
+                .environmentObject(navigationCoordinator)
         } else {
             LandingPageView(showingMainApp: $showingMainApp, selectedTab: $selectedTab)
+        }
+        .onChange(of: navigationCoordinator.shouldReturnToMainApp) { _, shouldReturn in
+            if shouldReturn {
+                selectedTab = navigationCoordinator.selectedTab
+                showingMainApp = true
+                navigationCoordinator.reset()
+            }
         }
     }
 }
@@ -169,6 +178,7 @@ struct MainActionButton: View {
 struct MainTabView: View {
     @StateObject private var sessionManager = SessionManager()
     @Binding var selectedTab: Int
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -197,6 +207,7 @@ struct MainTabView: View {
                 .tag(2)
         }
         .environmentObject(sessionManager)
+        .environmentObject(navigationCoordinator)
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             sessionManager.handleAppWillResignActive()
         }
@@ -214,6 +225,7 @@ struct TrainingTabView: View {
     @State private var showingFullGameSim = false
     @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     var body: some View {
         NavigationView {
@@ -257,12 +269,14 @@ struct TrainingTabView: View {
         }
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
             EightMeterTrainingView()
+                .environmentObject(navigationCoordinator)
         }
         .fullScreenCover(isPresented: $showingInkastBlast) {
             InkastBlastView(
                 persistenceController: PersistenceController.shared,
                 cloudKitManager: CloudKitManager.shared
             )
+            .environmentObject(navigationCoordinator)
         }
         .fullScreenCover(isPresented: $showingFullGameSim) {
             FullGameSimComingSoonView()
@@ -294,6 +308,7 @@ struct TrainingHeaderView: View {
 struct GameLogsTabView: View {
     @State private var showingBaseballKubb = false
     @State private var showingTraditionalKubb = false
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     var body: some View {
         NavigationView {
@@ -332,6 +347,7 @@ struct GameLogsTabView: View {
         }
         .fullScreenCover(isPresented: $showingBaseballKubb) {
             BaseballKubbView()
+                .environmentObject(navigationCoordinator)
         }
         .fullScreenCover(isPresented: $showingTraditionalKubb) {
             TraditionalKubbComingSoonView()
@@ -358,6 +374,7 @@ struct GameLogsHeaderView: View {
 // MARK: - Stats Tab
 struct StatsTabView: View {
     @State private var selectedStatsTab = 0
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     var body: some View {
         NavigationView {
@@ -376,8 +393,10 @@ struct StatsTabView: View {
                 // Stats Content
                 if selectedStatsTab == 0 {
                     StatsView()
+                        .environmentObject(navigationCoordinator)
                 } else {
                     HistoryView()
+                        .environmentObject(navigationCoordinator)
                 }
             }
             

@@ -10,6 +10,7 @@ import SwiftUI
 struct EightMeterTutorialView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentStep = 0
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     
     private let tutorialSteps = [
         TutorialStep(
@@ -111,7 +112,7 @@ struct EightMeterTutorialView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back to Main Menu") {
-                        dismiss()
+                        navigationCoordinator.returnToMainApp(tab: 0)
                     }
                 }
                 
