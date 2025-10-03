@@ -79,6 +79,7 @@ class UnifiedStatisticsManager: ObservableObject {
     
     private let cloudKitManager = CloudKitManager.shared
     private let historyManager = HistoryManager()
+    private let localStorage = LocalStorageManager.shared
     private var cancellables = Set<AnyCancellable>()
     
     // Cache management
@@ -87,6 +88,17 @@ class UnifiedStatisticsManager: ObservableObject {
     private let cacheValidityDuration: TimeInterval = 30 // 30 seconds cache
     
     init() {
+        // Listen for refresh notifications
+        NotificationCenter.default.addObserver(
+            forName: .dataRefreshRequired,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                await self.loadAllSessions()
+            }
+        }
+        
         // Listen for app becoming active to refresh data
         NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
@@ -130,43 +142,35 @@ class UnifiedStatisticsManager: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        print("📊 Loading stats data from CloudKit...")
+        print("📊 Loading stats data from local storage...")
         
-        do {
-            // Load practice sessions (8M training)
-            print("📊 Loading practice sessions...")
-            await historyManager.loadSessions()
-            practiceSessions = historyManager.sessions
-            print("📊 Loaded \(practiceSessions.count) practice sessions")
-            
-            // Load Inkast & Blast sessions
-            print("📊 Loading Inkast & Blast sessions...")
-            inkastBlastSessions = await cloudKitManager.fetchInkastBlastSessions()
-            print("📊 Loaded \(inkastBlastSessions.count) Inkast & Blast sessions")
-            
-            // Load Baseball Kubb sessions
-            print("📊 Loading Baseball Kubb sessions...")
-            baseballKubbSessions = try await cloudKitManager.fetchBaseballKubbSessions()
-            print("📊 Loaded \(baseballKubbSessions.count) Baseball Kubb sessions")
-            
-            // Calculate statistics
-            print("📊 Calculating statistics...")
-            calculateTrainingStatistics()
-            calculateGameLogStatistics()
-            calculateModeSpecificStatistics()
-            
-            // Update cache timestamp
-            lastLoadTime = Date()
-            print("✅ Stats data loaded and cached successfully - Total sessions: \(practiceSessions.count + inkastBlastSessions.count + baseballKubbSessions.count)")
-            
-            isLoading = false
-            isCurrentlyLoading = false
-        } catch {
-            print("❌ Error loading stats data: \(error)")
-            errorMessage = cloudKitManager.handleCloudKitError(error)
-            isLoading = false
-            isCurrentlyLoading = false
-        }
+        // Load practice sessions (8M training) from local storage
+        print("📊 Loading practice sessions...")
+        practiceSessions = localStorage.loadSessions()
+        print("📊 Loaded \(practiceSessions.count) practice sessions")
+        
+        // Load Inkast & Blast sessions from local storage
+        print("📊 Loading Inkast & Blast sessions...")
+        inkastBlastSessions = localStorage.loadInkastBlastSessions()
+        print("📊 Loaded \(inkastBlastSessions.count) Inkast & Blast sessions")
+        
+        // Load Baseball Kubb sessions from local storage
+        print("📊 Loading Baseball Kubb sessions...")
+        baseballKubbSessions = localStorage.loadBaseballKubbSessions()
+        print("📊 Loaded \(baseballKubbSessions.count) Baseball Kubb sessions")
+        
+        // Calculate statistics
+        print("📊 Calculating statistics...")
+        calculateTrainingStatistics()
+        calculateGameLogStatistics()
+        calculateModeSpecificStatistics()
+        
+        // Update cache timestamp
+        lastLoadTime = Date()
+        print("✅ Stats data loaded and cached successfully - Total sessions: \(practiceSessions.count + inkastBlastSessions.count + baseballKubbSessions.count)")
+        
+        isLoading = false
+        isCurrentlyLoading = false
     }
     
     func refreshAllSessions() async {
@@ -419,7 +423,7 @@ class UnifiedStatisticsManager: ObservableObject {
             for round in session.rounds {
                 if round.batonThrows.count > 0 {
                     totalFirstThrows += 1
-                    if let firstThrow = round.batonThrows.first, firstThrow.isHit {
+                    if let firstThrow = round.batonThrows.first(where: { $0.throwNumber == 1 }) {
                         totalFirstThrowKubbs += firstThrow.kubbsHit
                     }
                 }
@@ -515,8 +519,8 @@ class UnifiedStatisticsManager: ObservableObject {
         
         for session in inkastBlastSessions {
             for round in session.rounds {
-                totalInkastAttempts += round.kubbsInkast
-                successfulInkasts += round.kubbsInkast - round.kubbsOutOfBounds
+                totalInkastAttempts += round.inkastKubbs
+                successfulInkasts += round.inkastKubbs - round.penaltyKubbs
             }
         }
         
@@ -525,7 +529,10 @@ class UnifiedStatisticsManager: ObservableObject {
     }
     
     private func calculatePhaseStats(_ phase: GamePhase) -> (handicap: Double, firstInkastRate: Double, blastEfficiency: Double) {
-        let phaseSessions = inkastBlastSessions.filter { $0.gamePhase == phase }
+        // Include sessions that match the phase OR sessions with "All Phases" that have rounds for this phase
+        let relevantSessions = inkastBlastSessions.filter { session in
+            session.gamePhase == phase || session.gamePhase == .all
+        }
         
         var totalHandicap = 0.0
         var totalRounds = 0
@@ -534,8 +541,16 @@ class UnifiedStatisticsManager: ObservableObject {
         var totalFirstThrowKubbs = 0
         var totalFirstThrows = 0
         
-        for session in phaseSessions {
+        for session in relevantSessions {
             for round in session.rounds {
+                // For "All Phases" sessions, only include rounds that belong to this phase
+                if session.gamePhase == .all {
+                    let roundPhase = determineGamePhaseForRound(round)
+                    if roundPhase != phase {
+                        continue // Skip rounds that don't belong to this phase
+                    }
+                }
+                
                 // Handicap calculation
                 let target = round.targetBatons
                 let actual = round.batonsUsed
@@ -543,13 +558,13 @@ class UnifiedStatisticsManager: ObservableObject {
                 totalRounds += 1
                 
                 // First inkast rate
-                totalInkastAttempts += round.kubbsInkast
-                successfulInkasts += round.kubbsInkast - round.kubbsOutOfBounds
+                totalInkastAttempts += round.inkastKubbs
+                successfulInkasts += round.inkastKubbs - round.penaltyKubbs
                 
-                // Blast efficiency
+                // Blast efficiency - use the helper method from InkastBlastSessionData
                 if round.batonThrows.count > 0 {
                     totalFirstThrows += 1
-                    if let firstThrow = round.batonThrows.first, firstThrow.isHit {
+                    if let firstThrow = round.batonThrows.first(where: { $0.throwNumber == 1 }) {
                         totalFirstThrowKubbs += firstThrow.kubbsHit
                     }
                 }
@@ -561,6 +576,19 @@ class UnifiedStatisticsManager: ObservableObject {
         let blastEfficiency = totalFirstThrows > 0 ? Double(totalFirstThrowKubbs) / Double(totalFirstThrows) : 0.0
         
         return (handicap, firstInkastRate, blastEfficiency)
+    }
+    
+    private func determineGamePhaseForRound(_ round: InkastBlastRoundData) -> GamePhase {
+        switch round.inkastKubbs {
+        case 1...3:
+            return .early
+        case 4...6:
+            return .mid
+        case 7...:
+            return .end
+        default:
+            return .early
+        }
     }
     
     // MARK: - Helper Methods for UI

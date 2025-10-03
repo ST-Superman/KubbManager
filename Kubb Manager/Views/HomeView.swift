@@ -44,12 +44,6 @@ struct HomeView: View {
                 
                 // Recent Activity
                 RecentActivityView()
-                
-                // Debug Section (conditional)
-                if settingsManager.showDebugTools {
-                    DebugSectionView()
-                        .environmentObject(cloudKitManager)
-                }
             }
             .padding()
         }
@@ -104,7 +98,7 @@ struct CurrentSessionCardView: View {
                 HStack {
                     Text("Progress")
                     Spacer()
-                    Text("\(sessionManager.totalKubbs) / \(sessionManager.target)")
+                    Text("\(sessionManager.totalBatons) / \(sessionManager.target)")
                         .fontWeight(.medium)
                 }
                 
@@ -288,7 +282,7 @@ struct RecentActivityView: View {
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                 
-                                Text("\(session.totalKubbs)/\(session.target) kubbs • \(String(format: "%.1f%%", session.accuracy * 100))")
+                                Text("\(session.totalBatons)/\(session.target) batons • \(String(format: "%.1f%%", session.accuracy * 100))")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -318,72 +312,6 @@ struct RecentActivityView: View {
     }
 }
 
-struct DebugSectionView: View {
-    @EnvironmentObject private var cloudKitManager: CloudKitManager
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Debug Tools")
-                .font(.headline)
-            
-            VStack(spacing: 12) {
-                            Button("Test CloudKit Connection") {
-                                Task {
-                                    await cloudKitManager.testCloudKitConnection()
-                                }
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
-                            
-                            Button("Test CloudKit Queries") {
-                                Task {
-                                    await cloudKitManager.testCloudKitQueries()
-                                }
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
-                            
-                            Button("Remove Duplicates") {
-                                Task {
-                                    await cloudKitManager.removeDuplicateCloudKitRecords()
-                                }
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
-                            
-                            Button("Clear CloudKit Data") {
-                                Task {
-                                    await cloudKitManager.clearAllCloudKitData()
-                                }
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
-                            
-                            Button("Refresh iCloud Status") {
-                                Task {
-                                    await cloudKitManager.refreshAccountStatus()
-                                }
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("iCloud Status: \(cloudKitManager.isSignedIn ? "Signed In" : "Not Signed In")")
-                        .font(.caption)
-                        .foregroundColor(cloudKitManager.isSignedIn ? .green : .red)
-                    
-                    Text("Account Status: \(cloudKitManager.accountStatus.description)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    
-                    if case .error(let message) = cloudKitManager.syncStatus {
-                        Text("Error: \(message)")
-                            .font(.caption2)
-                            .foregroundColor(.red)
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(16)
-    }
-}
 
 struct IncompleteSessionCardView: View {
     @EnvironmentObject private var sessionManager: SessionManager
@@ -417,7 +345,7 @@ struct IncompleteSessionCardView: View {
                         Text("Progress")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("\(session.totalKubbs) / \(session.target) kubbs")
+                        Text("\(session.totalBatons) / \(session.target) batons")
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
@@ -532,7 +460,7 @@ struct IncompleteSessionPracticeView: View {
                                     Text("Progress")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
-                                    Text("\(session.totalKubbs) / \(session.target) kubbs")
+                                    Text("\(session.totalBatons) / \(session.target) batons")
                                         .font(.headline)
                                         .fontWeight(.medium)
                                 }

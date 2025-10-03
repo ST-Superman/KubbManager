@@ -14,6 +14,7 @@ struct PracticeView: View {
     @State private var showingPauseSessionAlert = false
     @State private var showingResetRoundAlert = false
     @State private var showingTargetReachedAlert = false
+    @State private var showingRoundCompleteAlert = false
     
     private let hapticSuccess = UINotificationFeedbackGenerator()
     private let hapticError = UINotificationFeedbackGenerator()
@@ -105,12 +106,27 @@ struct PracticeView: View {
                 }
             }
         } message: {
-            Text("Congratulations! You've reached your target of \(sessionManager.target) kubbs! 🎉\n\nWould you like to continue practicing or end your session?")
+            Text("Congratulations! You've reached your target of \(sessionManager.target) batons! 🎉\n\nWould you like to continue practicing or end your session?")
+        }
+        .alert("Round Complete!", isPresented: $showingRoundCompleteAlert) {
+            Button("Start Next Round") {
+                // User confirms they're ready for the next round
+                // The session will automatically create a new round when the next baton is thrown
+            }
+        } message: {
+            Text("Please stand any knocked down kubbs back up and retrieve your batons before starting the next round.")
         }
         .onChange(of: sessionManager.isTargetReached) { _, isReached in
             if isReached {
                 hapticSuccess.notificationOccurred(.success)
                 showingTargetReachedAlert = true
+            }
+        }
+        .onChange(of: sessionManager.totalBatons) { _, totalBatons in
+            // Check if we've just completed a round (total batons is divisible by 6)
+            if totalBatons > 0 && totalBatons % 6 == 0 {
+                hapticSuccess.notificationOccurred(.success)
+                showingRoundCompleteAlert = true
             }
         }
     }
@@ -129,7 +145,7 @@ struct ProgressSection: View {
                     
                     Spacer()
                     
-                    Text("\(sessionManager.totalKubbs) / \(sessionManager.target)")
+                    Text("\(sessionManager.totalBatons) / \(sessionManager.target)")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.secondary)

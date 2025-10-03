@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct Kubb_ManagerApp: App {
+    @StateObject private var appInitializationManager = AppInitializationManager.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    await appInitializationManager.initializeApp()
+                }
         }
     }
 }

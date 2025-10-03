@@ -24,6 +24,8 @@ struct ContentView: View {
 struct LandingPageView: View {
     @Binding var showingMainApp: Bool
     @Binding var selectedTab: Int
+    @State private var showingOptions = false
+    @StateObject private var settingsManager = SettingsManager.shared
     
     var body: some View {
         NavigationView {
@@ -70,11 +72,43 @@ struct LandingPageView: View {
                     
                     // Coming Soon Notice
                     ComingSoonNoticeView()
+                    
+                    // Debug Section (conditional)
+                    if settingsManager.showDebugTools {
+                        DebugSectionView()
+                            .environmentObject(CloudKitManager.shared)
+                    } else {
+                        // Debug info to help troubleshoot
+                        VStack {
+                            Text("Debug Tools Status: OFF")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            Text("Go to Options → Debug Options → Enable 'Include Debug Tools'")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    
                 }
                 .padding()
             }
             .navigationTitle("Kubb Manager")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Options") {
+                        showingOptions = true
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingOptions) {
+            OptionsView()
+                .environmentObject(settingsManager)
         }
     }
 }
@@ -199,6 +233,8 @@ struct MainTabView: View {
 // MARK: - Main Menu Tab
 struct MainMenuTabView: View {
     @Binding var selectedTab: Int
+    @State private var showingOptions = false
+    @StateObject private var settingsManager = SettingsManager.shared
     
     var body: some View {
         NavigationView {
@@ -242,11 +278,43 @@ struct MainMenuTabView: View {
                     
                     // Coming Soon Notice
                     ComingSoonNoticeView()
+                    
+                    // Debug Section (conditional)
+                    if settingsManager.showDebugTools {
+                        DebugSectionView()
+                            .environmentObject(CloudKitManager.shared)
+                    } else {
+                        // Debug info to help troubleshoot
+                        VStack {
+                            Text("Debug Tools Status: OFF")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            Text("Go to Options → Debug Options → Enable 'Include Debug Tools'")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    
                 }
                 .padding()
             }
             .navigationTitle("Kubb Manager")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Options") {
+                        showingOptions = true
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingOptions) {
+            OptionsView()
+                .environmentObject(settingsManager)
         }
     }
 }
@@ -257,7 +325,6 @@ struct TrainingTabView: View {
     @State private var showingEightMeterTraining = false
     @State private var showingInkastBlast = false
     @State private var showingFullGameSim = false
-    @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
     
     var body: some View {
@@ -289,13 +356,7 @@ struct TrainingTabView: View {
                 .padding()
             }
             
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Options") {
-                        showingOptions = true
-                    }
-                }
-            }
+            
         }
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
             EightMeterTrainingView()
@@ -308,10 +369,6 @@ struct TrainingTabView: View {
         }
         .fullScreenCover(isPresented: $showingFullGameSim) {
             FullGameSimComingSoonView()
-        }
-        .sheet(isPresented: $showingOptions) {
-            OptionsView()
-                .environmentObject(settingsManager)
         }
     }
 }
@@ -598,6 +655,7 @@ struct TraditionalKubbComingSoonView: View {
         }
     }
 }
+
 
 
 #Preview {

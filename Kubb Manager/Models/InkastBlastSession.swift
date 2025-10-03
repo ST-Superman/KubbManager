@@ -136,6 +136,58 @@ struct InkastBlastSessionData: Identifiable, Codable {
         return rounds.reduce(0) { $0 + $1.kubbsOutFirstAttempt + $1.kubbsOutSecondAttempt }
     }
     
+    // MARK: - Game Phase Analysis
+    
+    /// Determines the game phase for a round based on inkastKubbs count
+    func gamePhaseForRound(_ round: InkastBlastRoundData) -> GamePhase {
+        switch round.inkastKubbs {
+        case 1...3:
+            return .early
+        case 4...6:
+            return .mid
+        case 7...:
+            return .end
+        default:
+            return .early
+        }
+    }
+    
+    /// Gets the actual kubbs hit on first throw for a round (from batonThrows JSON)
+    func kubbsHitFirstThrow(for round: InkastBlastRoundData) -> Int {
+        // Find the first throw (throwNumber == 1) and return kubbsHit
+        if let firstThrow = round.batonThrows.first(where: { $0.throwNumber == 1 }) {
+            return firstThrow.kubbsHit
+        }
+        return 0
+    }
+    
+    /// Gets rounds grouped by game phase for analysis
+    var roundsByGamePhase: [GamePhase: [InkastBlastRoundData]] {
+        var grouped: [GamePhase: [InkastBlastRoundData]] = [:]
+        
+        for round in rounds {
+            let phase = gamePhaseForRound(round)
+            if grouped[phase] == nil {
+                grouped[phase] = []
+            }
+            grouped[phase]?.append(round)
+        }
+        
+        return grouped
+    }
+    
+    /// Gets statistics for a specific game phase
+    func statisticsForGamePhase(_ phase: GamePhase) -> (totalRounds: Int, totalInkastKubbs: Int, totalFirstThrowHits: Int, totalBatonsUsed: Int) {
+        let phaseRounds = roundsByGamePhase[phase] ?? []
+        
+        let totalRounds = phaseRounds.count
+        let totalInkastKubbs = phaseRounds.reduce(0) { $0 + $1.inkastKubbs }
+        let totalFirstThrowHits = phaseRounds.reduce(0) { $0 + kubbsHitFirstThrow(for: $1) }
+        let totalBatonsUsed = phaseRounds.reduce(0) { $0 + $1.batonsUsed }
+        
+        return (totalRounds, totalInkastKubbs, totalFirstThrowHits, totalBatonsUsed)
+    }
+    
     // MARK: - Session Management
     
     mutating func addRound(_ round: InkastBlastRoundData) {

@@ -42,6 +42,42 @@ struct MainMenuView: View {
                     
                     // Coming Soon Notice
                     ComingSoonNoticeView()
+                    
+                    // Always visible debug info
+                    VStack {
+                        Text("🔍 DEBUG INFO")
+                            .font(.headline)
+                            .foregroundColor(.blue)
+                        Text("SettingsManager.showDebugTools = \(settingsManager.showDebugTools ? "true" : "false")")
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                        Text("This should always be visible at the bottom of Main Menu")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                    
+                    // Debug Section (conditional)
+                    if settingsManager.showDebugTools {
+                        DebugSectionView()
+                            .environmentObject(CloudKitManager.shared)
+                    } else {
+                        // Debug info to help troubleshoot
+                        VStack {
+                            Text("Debug Tools Status: OFF")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            Text("Go to Options → Debug Options → Enable 'Include Debug Tools'")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
                 }
                 .padding()
             }
@@ -377,7 +413,7 @@ struct OptionsView: View {
                 } header: {
                     Text("Debug Options")
                 } footer: {
-                    Text("Enable this option to show debug tools in the 8-meter training overview. These tools are useful for troubleshooting CloudKit sync issues.")
+                    Text("Enable this option to show debug tools on the main menu. These tools are useful for troubleshooting CloudKit sync issues.")
                 }
             }
             .navigationTitle("Options")
@@ -435,6 +471,8 @@ struct ReminderTimePickerView: View {
         }
     }
 }
+
+
 
 #Preview {
     MainMenuView()

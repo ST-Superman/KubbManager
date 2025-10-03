@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TargetSettingView: View {
     @EnvironmentObject private var sessionManager: SessionManager
-    @State private var target: Int = 100
+    @State private var target: Int = 60  // Default to 60 batons (10 rounds of 6 batons)
     @State private var showingSession = false
     @State private var showingError = false
     
@@ -28,7 +28,7 @@ struct TargetSettingView: View {
                         .font(.largeTitle)
                         .fontWeight(.bold)
                     
-                    Text("Set your daily target and start practicing!")
+                    Text("Set your baton target and start practicing!")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -36,39 +36,54 @@ struct TargetSettingView: View {
                 
                 // Target Setting
                 VStack(spacing: 20) {
-                    Text("Daily Target")
+                    Text("Baton Target")
                         .font(.headline)
                         .foregroundColor(.primary)
                     
+                    Text("The number of batons to be thrown this session")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 20)
+                    
                     HStack(spacing: 20) {
-                        Button(action: decreaseTarget) {
-                            Image(systemName: "minus.circle.fill")
+                        VStack(spacing: 2) {
+                            Button(action: decreaseTarget) {
+                                Image(systemName: "minus.circle.fill")
                                 .font(.title2)
                                 .foregroundColor(.red)
+                            }
+                            Text("-6")
+                                .font(.subheadline)
+                                .foregroundColor(.red)
                         }
-                        .disabled(target <= 1)
+                        .disabled(target <= 6)
                         .accessibilityLabel("Decrease target")
-                        .accessibilityHint("Decrease the daily practice target by 1")
+                        .accessibilityHint("Decrease the baton target by 6")
                         
                         Text("\(target)")
                             .font(.system(size: 48, weight: .bold, design: .rounded))
                             .foregroundColor(.primary)
                             .frame(minWidth: 100)
-                            .accessibilityLabel("Daily target: \(target) kubbs")
-                        
-                        Button(action: increaseTarget) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
+                            .accessibilityLabel("Baton target: \(target) batons")
+                        VStack(spacing: 2) {
+                            Button(action: increaseTarget) {
+                                Image(systemName: "plus.circle.fill")
+                            }
+                            Text("+6")
+                                .font(.subheadline)
                                 .foregroundColor(.green)
                         }
-                        .disabled(target >= 1000)
+                        .disabled(target >= 300)
                         .accessibilityLabel("Increase target")
-                        .accessibilityHint("Increase the daily practice target by 1")
+                        .accessibilityHint("Increase the baton target by 6")
                     }
                     
                     // Quick target buttons
                     HStack(spacing: 15) {
-                        ForEach([50, 100, 150, 200], id: \.self) { quickTarget in
+                        ForEach([30, 60, 90, 120], id: \.self) { quickTarget in
                             Button("\(quickTarget)") {
                                 target = quickTarget
                                 hapticFeedback.impactOccurred()
@@ -121,14 +136,14 @@ struct TargetSettingView: View {
     }
     
     private func decreaseTarget() {
-        guard target > 1 else { return }
-        target -= 1
+        guard target > 6 else { return }
+        target -= 6
         hapticFeedback.impactOccurred()
     }
     
     private func increaseTarget() {
-        guard target < 1000 else { return }
-        target += 1
+        guard target < 300 else { return }
+        target += 6
         hapticFeedback.impactOccurred()
     }
     

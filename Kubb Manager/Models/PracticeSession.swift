@@ -164,11 +164,11 @@ struct PracticeSession: Identifiable, Codable, Equatable {
     
     var progressPercentage: Double {
         guard target > 0 else { return 0.0 }
-        return min(Double(totalKubbs) / Double(target), 1.0)
+        return min(Double(totalBatons) / Double(target), 1.0)
     }
     
     var isTargetReached: Bool {
-        return totalKubbs >= target
+        return totalBatons >= target
     }
     
     var isIncomplete: Bool {

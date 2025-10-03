@@ -170,4 +170,37 @@ class LocalStorageManager: ObservableObject {
             return false
         }
     }
+    
+    // MARK: - Bulk Save Methods for Sync
+    
+    func savePracticeSessions(_ sessions: [PracticeSession]) {
+        saveSessions(sessions)
+    }
+    
+    func saveInkastBlastSessions(_ sessions: [InkastBlastSessionData]) {
+        do {
+            let data = try JSONEncoder().encode(sessions)
+            userDefaults.set(data, forKey: "InkastBlastSessions")
+        } catch {
+            print("Error saving Inkast Blast sessions to local storage: \(error)")
+        }
+    }
+    
+    func saveBaseballKubbSessionsBulk(_ sessions: [BaseballKubbSession]) {
+        saveBaseballKubbSessions(sessions)
+    }
+    
+    func loadInkastBlastSessions() -> [InkastBlastSessionData] {
+        guard let data = userDefaults.data(forKey: "InkastBlastSessions") else {
+            return []
+        }
+        
+        do {
+            let sessions = try JSONDecoder().decode([InkastBlastSessionData].self, from: data)
+            return sessions
+        } catch {
+            print("Error loading Inkast Blast sessions from local storage: \(error)")
+            return []
+        }
+    }
 }

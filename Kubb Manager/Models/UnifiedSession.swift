@@ -35,7 +35,7 @@ enum SessionType: String, CaseIterable {
     }
 }
 
-enum UnifiedSession {
+enum UnifiedSession: Identifiable {
     case practice(PracticeSession)
     case inkastBlast(InkastBlastSessionData)
     case baseballKubb(BaseballKubbSession)
@@ -127,7 +127,7 @@ enum UnifiedSession {
     var primaryStat: String {
         switch self {
         case .practice(let session):
-            return "\(session.totalKubbs)/\(session.target)"
+            return "\(session.totalBatons)/\(session.target)"
         case .inkastBlast(let session):
             return "\(session.totalInkastKubbs) kubbs"
         case .baseballKubb(let session):

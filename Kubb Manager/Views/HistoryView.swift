@@ -59,14 +59,14 @@ struct HistoryView: View {
                     Menu {
                         Button("Refresh") {
                             Task {
-                                await unifiedHistoryManager.refreshSessions()
+                                await AppInitializationManager.shared.refreshAllData()
                             }
                         }
                         
                         Button("Clean Duplicates") {
                             Task {
                                 await CloudKitManager.shared.performComprehensiveDeduplication()
-                                await unifiedHistoryManager.refreshSessions()
+                                await AppInitializationManager.shared.refreshAllData()
                             }
                         }
                         
@@ -79,7 +79,7 @@ struct HistoryView: View {
                 }
             }
             .refreshable {
-                await unifiedHistoryManager.refreshSessions()
+                await AppInitializationManager.shared.refreshAllData()
             }
         }
         .sheet(isPresented: $showingSessionDetail) {
@@ -344,7 +344,7 @@ struct SessionRowView: View {
             // Session Stats
             VStack(alignment: .trailing, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text("\(session.totalKubbs)")
+                    Text("\(session.totalBatons)")
                         .font(.headline)
                         .fontWeight(.bold)
                         .foregroundColor(.blue)
@@ -440,7 +440,7 @@ struct IncompleteSessionSection: View {
                             Text("Progress")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Text("\(session.totalKubbs) / \(session.target)")
+                            Text("\(session.totalBatons) / \(session.target)")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                         }
