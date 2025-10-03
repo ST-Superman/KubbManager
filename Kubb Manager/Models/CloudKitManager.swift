@@ -1579,9 +1579,9 @@ class CloudKitManager: ObservableObject {
         }
         
         do {
-            // Use isComplete field query (similar to PracticeSession pattern)
-            print("Fetching InkastBlastSessions from CloudKit using isComplete query...")
-            let predicate = NSPredicate(format: "isComplete == 1")
+            // Fetch all InkastBlast sessions (both complete and incomplete)
+            print("Fetching InkastBlastSessions from CloudKit using createdAt query...")
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
             let query = CKQuery(recordType: "InkastBlast_Session", predicate: predicate)
             
             let (matchResults, _) = try await privateDatabase.records(matching: query)
@@ -1618,9 +1618,9 @@ class CloudKitManager: ObservableObject {
         }
         
         do {
-            // Use isComplete field query (similar to PracticeSession pattern)
-            print("Fetching BaseballKubbSessions from CloudKit using isComplete query...")
-            let predicate = NSPredicate(format: "isComplete == 1")
+            // Fetch all BaseballKubb sessions (both complete and incomplete)
+            print("Fetching BaseballKubbSessions from CloudKit using createdAt query...")
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
             let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
             
             let (matchResults, _) = try await privateDatabase.records(matching: query)

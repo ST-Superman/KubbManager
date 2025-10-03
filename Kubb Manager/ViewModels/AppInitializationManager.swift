@@ -53,19 +53,13 @@ class AppInitializationManager: ObservableObject {
     private func performFullSync() async {
         print("🔄 Starting full sync process...")
         
-        // Step 1: Download all data from CloudKit
+        // Step 1: Download all data from CloudKit and save to local storage
         await downloadAllCloudKitData()
         
-        // Step 2: Clean up old and empty records
-        await cloudKitManager.cleanupOldAndEmptyRecords()
+        // Step 2: Notify all managers to refresh their data from local storage
+        NotificationCenter.default.post(name: .dataRefreshRequired, object: nil)
         
-        // Step 3: Sync local data to CloudKit (upload any local-only changes)
-        await cloudKitManager.syncLocalDataToCloudKit()
-        
-        // Step 4: Update local storage with cleaned CloudKit data
-        await updateLocalStorageWithCloudKitData()
-        
-        print("✅ Full sync completed")
+        print("✅ Full sync completed - CloudKit data synced to local storage")
     }
     
     private func downloadAllCloudKitData() async {
@@ -75,40 +69,23 @@ class AppInitializationManager: ObservableObject {
             // Download practice sessions
             let practiceSessions = try await cloudKitManager.fetchSessions()
             print("📥 Downloaded \(practiceSessions.count) practice sessions")
+            localStorage.savePracticeSessions(practiceSessions)
             
             // Download inkast blast sessions
             let inkastBlastSessions = await cloudKitManager.fetchInkastBlastSessions()
             print("📥 Downloaded \(inkastBlastSessions.count) inkast blast sessions")
+            localStorage.saveInkastBlastSessions(inkastBlastSessions)
             
             // Download baseball kubb sessions
             let baseballKubbSessions = try await cloudKitManager.fetchBaseballKubbSessions()
             print("📥 Downloaded \(baseballKubbSessions.count) baseball kubb sessions")
+            localStorage.saveBaseballKubbSessionsBulk(baseballKubbSessions)
             
         } catch {
             print("❌ Error downloading CloudKit data: \(error)")
         }
     }
     
-    private func updateLocalStorageWithCloudKitData() async {
-        print("💾 Updating local storage with cleaned CloudKit data...")
-        
-        do {
-            // Get the cleaned data from CloudKit
-            let practiceSessions = try await cloudKitManager.fetchSessions()
-            let inkastBlastSessions = await cloudKitManager.fetchInkastBlastSessions()
-            let baseballKubbSessions = try await cloudKitManager.fetchBaseballKubbSessions()
-            
-            // Update local storage with the cleaned data
-            localStorage.savePracticeSessions(practiceSessions)
-            localStorage.saveInkastBlastSessions(inkastBlastSessions)
-            localStorage.saveBaseballKubbSessionsBulk(baseballKubbSessions)
-            
-            print("✅ Local storage updated with cleaned CloudKit data")
-            
-        } catch {
-            print("❌ Error updating local storage: \(error)")
-        }
-    }
     
     private func loadFromLocalStorage() async {
         print("📱 Loading from local storage only...")
@@ -125,10 +102,9 @@ class AppInitializationManager: ObservableObject {
             await performFullSync()
         } else {
             await loadFromLocalStorage()
+            // Notify all managers to refresh their data from local storage
+            NotificationCenter.default.post(name: .dataRefreshRequired, object: nil)
         }
-        
-        // Notify all managers to refresh their data
-        NotificationCenter.default.post(name: .dataRefreshRequired, object: nil)
     }
 }
 

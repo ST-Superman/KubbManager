@@ -41,10 +41,14 @@ class UnifiedHistoryManager: ObservableObject {
     func loadAllSessions() async {
         isLoading = true
         
+        print("🔄 UnifiedHistoryManager: Loading all sessions from local storage...")
+        
         // Load all session types from local storage (source of truth)
         let practiceSessions = localStorage.loadSessions()
         let inkastBlastSessions = localStorage.loadInkastBlastSessions()
         let baseballKubbSessions = localStorage.loadBaseballKubbSessions()
+        
+        print("📊 Local storage counts - Practice: \(practiceSessions.count), InkastBlast: \(inkastBlastSessions.count), BaseballKubb: \(baseballKubbSessions.count)")
         
         // Convert to unified sessions
         var allSessions: [UnifiedSession] = []
@@ -57,7 +61,7 @@ class UnifiedHistoryManager: ObservableObject {
         
         // Add inkast & blast sessions
         for session in inkastBlastSessions {
-            print("⚡ Adding inkast blast session: \(session.id)")
+            print("⚡ Adding inkast blast session: \(session.id) (complete: \(session.isComplete))")
             allSessions.append(.inkastBlast(session))
         }
         
@@ -72,6 +76,8 @@ class UnifiedHistoryManager: ObservableObject {
         
         // Sort by date (newest first)
         sessions.sort { $0.date > $1.date }
+        
+        print("✅ UnifiedHistoryManager: Loaded \(sessions.count) total sessions")
         
         isLoading = false
     }
