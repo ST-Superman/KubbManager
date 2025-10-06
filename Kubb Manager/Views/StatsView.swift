@@ -240,7 +240,7 @@ struct TrainingOverviewStatsSection: View {
                     value: "\(statsManager.trainingStats.totalNeighbors)",
                     icon: "person.2.fill",
                     color: .yellow,
-                    description: "The total number of neighbor kubbs you've thrown during Inkast & Blast sessions. Neighbor kubbs are kubbs that land next to field kubbs."
+                    description: "The total number of neighbor kubbs you've thrown during Inkast & Blast sessions. A Neighbor means that an inkasted kubb has landed on top of another kubb (or kubbs) and is not touching the ground at all."
                 )
                 
                 TrainingStatCard(

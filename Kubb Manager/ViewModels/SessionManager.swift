@@ -120,11 +120,20 @@ class SessionManager: ObservableObject {
             return
         }
         
+        // Don't add batons if the current round is already complete (more than 6 throws)
+        // Allow the 6th baton to be processed to complete the round
+        if let currentRound = session.currentRound, currentRound.totalBatonThrows >= 6 {
+            return
+        }
+        
         session.addBatonResult(isHit: isHit)
         currentSession = session
         
-        // Save only when round is complete
+        // Save when round is complete OR when target is reached
         if let currentRound = session.currentRound, currentRound.isRoundComplete {
+            await saveSession()
+        } else if session.isTargetReached {
+            // Save immediately when target is reached to ensure CloudKit is updated
             await saveSession()
         }
         
@@ -219,6 +228,16 @@ class SessionManager: ObservableObject {
         currentSession = session
         
         // Save round reset
+        await saveSession()
+    }
+    
+    func startNextRound() async {
+        guard var session = currentSession else { return }
+        
+        session.startNextRound()
+        currentSession = session
+        
+        // Save the new round
         await saveSession()
     }
     

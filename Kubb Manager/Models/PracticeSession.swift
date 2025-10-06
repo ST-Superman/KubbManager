@@ -42,10 +42,15 @@ struct PracticeSession: Identifiable, Codable, Equatable {
         self.createdAt = Date()
         self.modifiedAt = Date()
         
+        // Create the first round immediately when starting a new session
+        let firstRound = Round(roundNumber: 1)
+        self.rounds.append(firstRound)
+        
         print("🆔 Created new PracticeSession with ID: \(validatedId)")
         print("   - Date: \(date)")
         print("   - Target: \(target)")
         print("   - StartTime: \(startTime)")
+        print("   - First round created: Round 1")
     }
     
     // Internal initializer for CloudKit reconstruction and conversions (no logging)
@@ -231,6 +236,11 @@ struct PracticeSession: Identifiable, Codable, Equatable {
     // MARK: - Session Management
     
     mutating func addBatonResult(isHit: Bool) {
+        // Don't add batons if the current round is complete - wait for user confirmation
+        if let currentRound = currentRound, currentRound.isRoundComplete {
+            return
+        }
+        
         totalBatons += 1
         
         if isHit {
@@ -255,11 +265,18 @@ struct PracticeSession: Identifiable, Codable, Equatable {
             
             rounds[index].addBatonThrow(isHit: isHit, throwType: throwType)
         } else {
-            let newRound = Round(roundNumber: rounds.count + 1)
-            rounds.append(newRound)
-            let index = rounds.count - 1
-            rounds[index].addBatonThrow(isHit: isHit, throwType: .kubb)
+            // If currentRound is nil but rounds exist, it means the last round just completed
+            // Don't create a new round - wait for user confirmation via startNextRound()
+            // The first round is now created when the session starts, so this should never happen
+            // unless a round just completed
         }
+    }
+    
+    mutating func startNextRound() {
+        // Create a new round when user confirms they're ready
+        let newRound = Round(roundNumber: rounds.count + 1)
+        rounds.append(newRound)
+        modifiedAt = Date()
     }
     
     mutating func completeSession() {
