@@ -24,7 +24,6 @@ class InkastBlastSessionManager: ObservableObject {
     @Published var kubbsOutFirstAttempt: Int = 0
     @Published var kubbsOutSecondAttempt: Int = 0
     @Published var neighborKubbs: Int = 0
-    @Published var knockedDownKubbs: Set<Int> = [] // Track which specific kubbs are knocked down
     
     // Session statistics
     @Published var sessionStats: SessionStats = SessionStats()
@@ -113,7 +112,6 @@ class InkastBlastSessionManager: ObservableObject {
         kubbsOutFirstAttempt = 0
         kubbsOutSecondAttempt = 0
         neighborKubbs = 0
-        knockedDownKubbs = [] // Reset knocked down kubbs for new round
     }
     
     private func generateRandomKubbCount(for gamePhase: GamePhase) -> Int {
@@ -138,19 +136,6 @@ class InkastBlastSessionManager: ObservableObject {
     
     func addBatonThrow(isHit: Bool, kubbsHit: Int = 0) {
         guard var round = currentRound else { return }
-        
-        // Update the knocked down kubbs set for visual tracking
-        if isHit {
-            // Add the next kubbs to the knocked down set
-            let totalKubbs = round.inkastKubbs - round.penaltyKubbs
-            let startIndex = knockedDownKubbs.count
-            let endIndex = min(startIndex + kubbsHit, totalKubbs)
-            
-            for i in startIndex..<endIndex {
-                knockedDownKubbs.insert(i)
-            }
-        }
-        
         round.addBatonThrow(isHit: isHit, kubbsHit: kubbsHit)
         currentRound = round
         
@@ -159,25 +144,6 @@ class InkastBlastSessionManager: ObservableObject {
             completeCurrentRound()
         }
     }
-    
-    func addBatonThrowWithKubbs(isHit: Bool, newlyKnockedDownKubbs: Set<Int>) {
-        guard var round = currentRound else { return }
-        
-        // Update the knocked down kubbs set
-        if isHit {
-            knockedDownKubbs.formUnion(newlyKnockedDownKubbs)
-        }
-        
-        // Add the baton throw with the count of newly knocked down kubbs
-        round.addBatonThrow(isHit: isHit, kubbsHit: newlyKnockedDownKubbs.count)
-        currentRound = round
-        
-        // Check if round is complete
-        if round.isComplete {
-            completeCurrentRound()
-        }
-    }
-    
     
     func completeCurrentRound() {
         guard var session = currentSession,

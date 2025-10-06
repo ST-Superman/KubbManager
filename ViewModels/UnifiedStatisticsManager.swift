@@ -60,15 +60,12 @@ class UnifiedStatisticsManager: ObservableObject {
             earlyGameHandicap: 0,
             earlyGameFirstInkastRate: 0,
             earlyGameBlastEfficiency: 0,
-            earlyGameTotalRounds: 0,
             midGameHandicap: 0,
             midGameFirstInkastRate: 0,
             midGameBlastEfficiency: 0,
-            midGameTotalRounds: 0,
             endGameHandicap: 0,
             endGameFirstInkastRate: 0,
-            endGameBlastEfficiency: 0,
-            endGameTotalRounds: 0
+            endGameBlastEfficiency: 0
         ),
         baseballKubbStats: BaseballKubbStatistics(
             totalGames: 0,
@@ -507,15 +504,12 @@ class UnifiedStatisticsManager: ObservableObject {
             earlyGameHandicap: earlyGameStats.handicap,
             earlyGameFirstInkastRate: earlyGameStats.firstInkastRate,
             earlyGameBlastEfficiency: earlyGameStats.blastEfficiency,
-            earlyGameTotalRounds: earlyGameStats.totalRounds,
             midGameHandicap: midGameStats.handicap,
             midGameFirstInkastRate: midGameStats.firstInkastRate,
             midGameBlastEfficiency: midGameStats.blastEfficiency,
-            midGameTotalRounds: midGameStats.totalRounds,
             endGameHandicap: endGameStats.handicap,
             endGameFirstInkastRate: endGameStats.firstInkastRate,
-            endGameBlastEfficiency: endGameStats.blastEfficiency,
-            endGameTotalRounds: endGameStats.totalRounds
+            endGameBlastEfficiency: endGameStats.blastEfficiency
         )
     }
     
@@ -534,7 +528,7 @@ class UnifiedStatisticsManager: ObservableObject {
         return Double(successfulInkasts) / Double(totalInkastAttempts)
     }
     
-    private func calculatePhaseStats(_ phase: GamePhase) -> (handicap: Double, firstInkastRate: Double, blastEfficiency: Double, totalRounds: Int) {
+    private func calculatePhaseStats(_ phase: GamePhase) -> (handicap: Double, firstInkastRate: Double, blastEfficiency: Double) {
         // Include sessions that match the phase OR sessions with "All Phases" that have rounds for this phase
         let relevantSessions = inkastBlastSessions.filter { session in
             session.gamePhase == phase || session.gamePhase == .all
@@ -581,7 +575,7 @@ class UnifiedStatisticsManager: ObservableObject {
         let firstInkastRate = totalInkastAttempts > 0 ? Double(successfulInkasts) / Double(totalInkastAttempts) : 0.0
         let blastEfficiency = totalFirstThrows > 0 ? Double(totalFirstThrowKubbs) / Double(totalFirstThrows) : 0.0
         
-        return (handicap, firstInkastRate, blastEfficiency, totalRounds)
+        return (handicap, firstInkastRate, blastEfficiency)
     }
     
     private func determineGamePhaseForRound(_ round: InkastBlastRoundData) -> GamePhase {
@@ -690,15 +684,12 @@ struct InkastBlastStatistics {
     let earlyGameHandicap: Double
     let earlyGameFirstInkastRate: Double
     let earlyGameBlastEfficiency: Double
-    let earlyGameTotalRounds: Int
     let midGameHandicap: Double
     let midGameFirstInkastRate: Double
     let midGameBlastEfficiency: Double
-    let midGameTotalRounds: Int
     let endGameHandicap: Double
     let endGameFirstInkastRate: Double
     let endGameBlastEfficiency: Double
-    let endGameTotalRounds: Int
 }
 
 struct BaseballKubbStatistics {
