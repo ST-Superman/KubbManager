@@ -124,6 +124,16 @@ class CloudKitManager: ObservableObject {
         }
         
         print("Local to CloudKit sync completed - Synced: \(syncedCount), Skipped: \(skippedCount)")
+        
+        // Run deduplication after sync to clean up any duplicates that may have been created
+        if syncedCount > 0 {
+            print("🧹 Running post-sync deduplication...")
+            await removeDuplicateCloudKitRecords()
+        }
+        
+        // Run cleanup to remove old and empty records
+        print("🧹 Running post-sync cleanup...")
+        await cleanupOldAndEmptyRecords()
     }
     
     // MARK: - Debug Methods
@@ -142,38 +152,411 @@ class CloudKitManager: ObservableObject {
         
         print("Clearing all CloudKit data and local data...")
         
+        // Clear each record type separately
+        await clearPracticeSessionDataLegacy()
+        await clearInkastBlastSessionData()
+        await clearBaseballKubbSessionData()
+        
+        // Always clear local data regardless of CloudKit status
+        localStorage.clearAllData()
+        print("Local data cleared successfully")
+    }
+    
+    
+    
+    func clearBaseballKubbSessionData() async {
+        guard isSignedIn else { 
+            print("Not signed in to iCloud, cannot clear Baseball Kubb Session data")
+            return 
+        }
+        
+        print("Clearing Baseball Kubb Session CloudKit data...")
+        
         do {
-            // Try to fetch and delete all CloudKit records
-            let query = CKQuery(recordType: PracticeSession.recordType, predicate: NSPredicate(value: true))
+            // Use createdAt field for Baseball_Kubb_Session
+            let startDate = Date(timeIntervalSince1970: 0)
+            let predicate = NSPredicate(format: "createdAt >= %@", startDate as NSDate)
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
             let (matchResults, _) = try await privateDatabase.records(matching: query)
             
-            print("Found \(matchResults.count) records to delete")
+            print("Found \(matchResults.count) Baseball Kubb Session records to delete")
             
             for (recordID, result) in matchResults {
                 switch result {
                 case .success:
                     let _ = try await privateDatabase.deleteRecord(withID: recordID)
-                    print("Deleted record: \(recordID)")
+                    print("Deleted Baseball Kubb Session record: \(recordID)")
                 case .failure(let error):
-                    print("Error deleting record: \(error)")
+                    print("Error deleting Baseball Kubb Session record: \(error)")
                 }
             }
             
-            print("All CloudKit data cleared successfully")
-        } catch let error as CKError {
-            if error.code == .invalidArguments {
-                print("❌ Cannot query CloudKit - this confirms the recordName issue")
-                print("   The query itself is failing due to recordName not being queryable")
-            } else {
-                print("Error clearing CloudKit data: \(error)")
-            }
+            print("Baseball Kubb Session CloudKit data cleared successfully")
         } catch {
-            print("Error clearing CloudKit data: \(error)")
+            print("Error clearing Baseball Kubb Session CloudKit data: \(error)")
+        }
+    }
+    
+    // MARK: - Individual Record Type Clear Methods
+    
+    
+    
+    
+    func clearInkastBlastSessionData() async {
+        guard isSignedIn else { 
+            print("Not signed in to iCloud, cannot clear InkastBlast_Session data")
+            return 
         }
         
-        // Always clear local data regardless of CloudKit status
+        print("Clearing InkastBlast_Session CloudKit data...")
+        
+        do {
+            // Use createdAt field for InkastBlast_Session
+            let startDate = Date(timeIntervalSince1970: 0)
+            let predicate = NSPredicate(format: "createdAt >= %@", startDate as NSDate)
+            let query = CKQuery(recordType: "InkastBlast_Session", predicate: predicate)
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            print("Found \(matchResults.count) InkastBlast_Session records to delete")
+            
+            for (recordID, result) in matchResults {
+                switch result {
+                case .success:
+                    let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                    print("Deleted InkastBlast_Session record: \(recordID)")
+                case .failure(let error):
+                    print("Error deleting InkastBlast_Session record: \(error)")
+                }
+            }
+            
+            print("InkastBlast_Session CloudKit data cleared successfully")
+        } catch {
+            print("Error clearing InkastBlast_Session CloudKit data: \(error)")
+        }
+        
+        // Also clear local data
         localStorage.clearAllData()
-        print("Local data cleared successfully")
+        print("InkastBlast_Session local data cleared successfully")
+    }
+    
+    
+    func clearPracticeSessionDataLegacy() async {
+        guard isSignedIn else { 
+            print("Not signed in to iCloud, cannot clear Practice_Session data")
+            return 
+        }
+        
+        print("Clearing Practice_Session CloudKit data...")
+        
+        do {
+            // Use createdAt field for Practice_Session
+            let startDate = Date(timeIntervalSince1970: 0)
+            let predicate = NSPredicate(format: "createdAt >= %@", startDate as NSDate)
+            let query = CKQuery(recordType: "Practice_Session", predicate: predicate)
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            print("Found \(matchResults.count) Practice_Session records to delete")
+            
+            for (recordID, result) in matchResults {
+                switch result {
+                case .success:
+                    let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                    print("Deleted Practice_Session record: \(recordID)")
+                case .failure(let error):
+                    print("Error deleting Practice_Session record: \(error)")
+                }
+            }
+            
+            print("Practice_Session CloudKit data cleared successfully")
+        } catch {
+            print("Error clearing Practice_Session CloudKit data: \(error)")
+        }
+        
+        // Also clear local data
+        localStorage.clearAllData()
+        print("Practice_Session local data cleared successfully")
+    }
+    
+    /// Clean up old and empty records after CloudKit sync
+    func cleanupOldAndEmptyRecords() async {
+        guard isSignedIn else {
+            print("❌ Not signed in to CloudKit, skipping cleanup")
+            return
+        }
+        
+        print("🧹 Starting cleanup of old and empty records...")
+        
+        // Clean up each active record type
+        await cleanupPracticeSessions()
+        await cleanupBaseballKubbSessions()
+        await cleanupInkastBlastSessions()
+        
+        print("✅ Cleanup completed")
+    }
+    
+    // MARK: - Individual Cleanup Methods
+    
+    private func cleanupPracticeSessions() async {
+        print("🧹 Cleaning up Practice_Session records...")
+        
+        do {
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
+            let query = CKQuery(recordType: "Practice_Session", predicate: predicate)
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            let today = Calendar.current.startOfDay(for: Date())
+            var recordsToDelete: [CKRecord.ID] = []
+            var recordsToUpdate: [(CKRecord.ID, CKRecord)] = []
+            
+            for (recordID, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    let isComplete = record["isComplete"] as? Int == 1
+                    let totalBatons = record["totalBatons"] as? Int ?? 0
+                    let createdAt = record["createdAt"] as? Date ?? Date.distantPast
+                    let createdDate = Calendar.current.startOfDay(for: createdAt)
+                    
+                    // Delete if: (complete with 0 batons) OR (old with 0 batons)
+                    if (isComplete && totalBatons == 0) || (createdDate < today && totalBatons == 0) {
+                        recordsToDelete.append(recordID)
+                        print("🗑️ Marking Practice_Session for deletion: \(recordID) (complete: \(isComplete), batons: \(totalBatons), old: \(createdDate < today))")
+                    }
+                    // Mark as complete if: old with >0 batons and not already complete
+                    else if createdDate < today && totalBatons > 0 && !isComplete {
+                        record["isComplete"] = 1
+                        recordsToUpdate.append((recordID, record))
+                        print("✅ Marking old Practice_Session as complete: \(recordID) (batons: \(totalBatons))")
+                    }
+                case .failure(let error):
+                    print("❌ Error processing Practice_Session record: \(error)")
+                }
+            }
+            
+            // Delete records
+            for recordID in recordsToDelete {
+                do {
+                    let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                    print("🗑️ Deleted Practice_Session: \(recordID)")
+                } catch {
+                    print("❌ Error deleting Practice_Session \(recordID): \(error)")
+                }
+            }
+            
+            // Update records
+            for (recordID, record) in recordsToUpdate {
+                do {
+                    let _ = try await privateDatabase.save(record)
+                    print("✅ Updated Practice_Session: \(recordID)")
+                } catch {
+                    print("❌ Error updating Practice_Session \(recordID): \(error)")
+                }
+            }
+            
+            print("✅ Practice_Session cleanup: \(recordsToDelete.count) deleted, \(recordsToUpdate.count) updated")
+        } catch {
+            print("❌ Error during Practice_Session cleanup: \(error)")
+        }
+    }
+    
+    private func cleanupBaseballKubbSessions() async {
+        print("🧹 Cleaning up Baseball_Kubb_Session records...")
+        
+        do {
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
+            let query = CKQuery(recordType: "Baseball_Kubb_Session", predicate: predicate)
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            let today = Calendar.current.startOfDay(for: Date())
+            var recordsToDelete: [CKRecord.ID] = []
+            var recordsToUpdate: [(CKRecord.ID, CKRecord)] = []
+            
+            for (recordID, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    let isComplete = record["isComplete"] as? Int == 1
+                    let throwHistory = record["throwHistory"] as? [String] ?? []
+                    let createdAt = record["createdAt"] as? Date ?? Date.distantPast
+                    let createdDate = Calendar.current.startOfDay(for: createdAt)
+                    
+                    // Delete if: (complete with no throws) OR (old with no throws)
+                    if (isComplete && throwHistory.isEmpty) || (createdDate < today && throwHistory.isEmpty) {
+                        recordsToDelete.append(recordID)
+                        print("🗑️ Marking Baseball_Kubb_Session for deletion: \(recordID) (complete: \(isComplete), throws: \(throwHistory.count), old: \(createdDate < today))")
+                    }
+                    // Mark as complete if: old with >0 throws and not already complete
+                    else if createdDate < today && !throwHistory.isEmpty && !isComplete {
+                        record["isComplete"] = 1
+                        recordsToUpdate.append((recordID, record))
+                        print("✅ Marking old Baseball_Kubb_Session as complete: \(recordID) (throws: \(throwHistory.count))")
+                    }
+                case .failure(let error):
+                    print("❌ Error processing Baseball_Kubb_Session record: \(error)")
+                }
+            }
+            
+            // Delete records
+            for recordID in recordsToDelete {
+                do {
+                    let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                    print("🗑️ Deleted Baseball_Kubb_Session: \(recordID)")
+                } catch {
+                    print("❌ Error deleting Baseball_Kubb_Session \(recordID): \(error)")
+                }
+            }
+            
+            // Update records
+            for (recordID, record) in recordsToUpdate {
+                do {
+                    let _ = try await privateDatabase.save(record)
+                    print("✅ Updated Baseball_Kubb_Session: \(recordID)")
+                } catch {
+                    print("❌ Error updating Baseball_Kubb_Session \(recordID): \(error)")
+                }
+            }
+            
+            print("✅ Baseball_Kubb_Session cleanup: \(recordsToDelete.count) deleted, \(recordsToUpdate.count) updated")
+        } catch {
+            print("❌ Error during Baseball_Kubb_Session cleanup: \(error)")
+        }
+    }
+    
+    
+    private func cleanupInkastBlastSessions() async {
+        print("🧹 Cleaning up InkastBlast_Session records...")
+        
+        do {
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
+            let query = CKQuery(recordType: "InkastBlast_Session", predicate: predicate)
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            let today = Calendar.current.startOfDay(for: Date())
+            var recordsToDelete: [CKRecord.ID] = []
+            var recordsToUpdate: [(CKRecord.ID, CKRecord)] = []
+            
+            // Group records by sessionId and gamePhase for deduplication
+            var groupedRecords: [String: [CKRecord]] = [:]
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    let sessionId = record["sessionId"] as? String ?? ""
+                    let gamePhase = record["gamePhase"] as? String ?? ""
+                    let groupKey = "\(sessionId)-\(gamePhase)"
+                    
+                    if groupedRecords[groupKey] == nil {
+                        groupedRecords[groupKey] = []
+                    }
+                    groupedRecords[groupKey]?.append(record)
+                    
+                case .failure(let error):
+                    print("❌ Error processing InkastBlast_Session record: \(error)")
+                }
+            }
+            
+            // Process each group for deduplication
+            for (groupKey, records) in groupedRecords {
+                if records.count > 1 {
+                    print("🔄 Found \(records.count) duplicate InkastBlast_Session records for \(groupKey)")
+                    
+                    // Find the best record: max totalRounds, then latest createdAt
+                    let bestRecord = records.max { record1, record2 in
+                        let rounds1 = record1["totalRounds"] as? Int ?? 0
+                        let rounds2 = record2["totalRounds"] as? Int ?? 0
+                        
+                        if rounds1 != rounds2 {
+                            return rounds1 < rounds2
+                        }
+                        
+                        let created1 = record1["createdAt"] as? Date ?? Date.distantPast
+                        let created2 = record2["createdAt"] as? Date ?? Date.distantPast
+                        return created1 < created2
+                    }
+                    
+                    if let bestRecord = bestRecord {
+                        print("✅ Keeping best record: \(bestRecord.recordID) (rounds: \(bestRecord["totalRounds"] as? Int ?? 0), created: \(bestRecord["createdAt"] as? Date ?? Date.distantPast))")
+                        
+                        // Mark all other records in this group for deletion
+                        for record in records {
+                            if record.recordID != bestRecord.recordID {
+                                recordsToDelete.append(record.recordID)
+                                print("🗑️ Marking duplicate for deletion: \(record.recordID)")
+                            }
+                        }
+                    }
+                } else {
+                    // Single record - apply normal cleanup logic
+                    let record = records[0]
+                    let isComplete = record["isComplete"] as? Int == 1
+                    let totalInkastKubbs = record["totalInkastKubbs"] as? Int ?? 0
+                    let createdAt = record["createdAt"] as? Date ?? Date.distantPast
+                    let createdDate = Calendar.current.startOfDay(for: createdAt)
+                    
+                    // Delete if: (complete with 0 kubbs) OR (old with 0 kubbs)
+                    if (isComplete && totalInkastKubbs == 0) || (createdDate < today && totalInkastKubbs == 0) {
+                        recordsToDelete.append(record.recordID)
+                        print("🗑️ Marking InkastBlast_Session for deletion: \(record.recordID) (complete: \(isComplete), kubbs: \(totalInkastKubbs), old: \(createdDate < today))")
+                    }
+                    // Mark as complete if: old with >0 kubbs and not already complete
+                    else if createdDate < today && totalInkastKubbs > 0 && !isComplete {
+                        record["isComplete"] = 1
+                        recordsToUpdate.append((record.recordID, record))
+                        print("✅ Marking old InkastBlast_Session as complete: \(record.recordID) (kubbs: \(totalInkastKubbs))")
+                    }
+                }
+            }
+            
+            // Delete records
+            for recordID in recordsToDelete {
+                do {
+                    let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                    print("🗑️ Deleted InkastBlast_Session: \(recordID)")
+                } catch {
+                    print("❌ Error deleting InkastBlast_Session \(recordID): \(error)")
+                }
+            }
+            
+            // Update records
+            for (recordID, record) in recordsToUpdate {
+                do {
+                    let _ = try await privateDatabase.save(record)
+                    print("✅ Updated InkastBlast_Session: \(recordID)")
+                } catch {
+                    print("❌ Error updating InkastBlast_Session \(recordID): \(error)")
+                }
+            }
+            
+            print("✅ InkastBlast_Session cleanup: \(recordsToDelete.count) deleted, \(recordsToUpdate.count) updated")
+        } catch {
+            print("❌ Error during InkastBlast_Session cleanup: \(error)")
+        }
+    }
+    
+    
+
+    /// Comprehensive deduplication that handles completed vs incomplete session conflicts
+    func performComprehensiveDeduplication() async {
+        guard isSignedIn else {
+            print("❌ Not signed in to iCloud")
+            return
+        }
+        
+        print("🔍 Starting comprehensive deduplication...")
+        
+        // First, clean up CloudKit duplicates
+        await removeDuplicateCloudKitRecords()
+        
+        // Then, fetch all sessions and deduplicate them
+        do {
+            let allSessions = try await fetchSessions()
+            print("📊 Found \(allSessions.count) total sessions before deduplication")
+            
+            // This will trigger the enhanced deduplication logic in HistoryManager
+            // when the sessions are loaded
+        } catch {
+            print("❌ Failed to fetch sessions for comprehensive deduplication: \(error)")
+        }
+        
+        print("✅ Comprehensive deduplication completed")
     }
     
     func removeDuplicateCloudKitRecords() async {
@@ -212,20 +595,17 @@ class CloudKitManager: ObservableObject {
                 if records.count > 1 {
                     print("⚠️ Found \(records.count) duplicate records for session \(sessionId)")
                     
-                    // Sort by modifiedAt (keep the newest)
-                    let sortedRecords = records.sorted { record1, record2 in
-                        let date1 = record1["modifiedAt"] as? Date ?? Date.distantPast
-                        let date2 = record2["modifiedAt"] as? Date ?? Date.distantPast
-                        return date1 > date2
-                    }
+                    // Enhanced duplicate resolution logic
+                    let recordToKeep = selectBestCloudKitRecord(from: records)
+                    let recordsToDelete = records.filter { $0.recordID != recordToKeep.recordID }
                     
-                    print("✅ Keeping newest record with modifiedAt: \(sortedRecords[0]["modifiedAt"] as? Date ?? Date.distantPast)")
+                    print("✅ Keeping record with modifiedAt: \(recordToKeep["modifiedAt"] as? Date ?? Date.distantPast), isComplete: \(recordToKeep["isComplete"] as? Bool ?? false)")
                     
-                    // Keep the first (newest) record, delete the rest
-                    for i in 1..<sortedRecords.count {
+                    // Delete the other records
+                    for record in recordsToDelete {
                         do {
-                            let _ = try await privateDatabase.deleteRecord(withID: sortedRecords[i].recordID)
-                            print("✅ Deleted duplicate record: \(sortedRecords[i].recordID)")
+                            let _ = try await privateDatabase.deleteRecord(withID: record.recordID)
+                            print("✅ Deleted duplicate record: \(record.recordID)")
                             duplicatesRemoved += 1
                         } catch {
                             print("❌ Failed to delete duplicate record: \(error)")
@@ -238,6 +618,57 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("Error removing duplicates: \(error)")
         }
+    }
+    
+    /// Enhanced CloudKit record selection logic to handle completed vs incomplete duplicates
+    private func selectBestCloudKitRecord(from records: [CKRecord]) -> CKRecord {
+        guard !records.isEmpty else { return records[0] }
+        
+        // First, check if any records are completed
+        let completedRecords = records.filter { record in
+            (record["isComplete"] as? Bool) == true
+        }
+        let incompleteRecords = records.filter { record in
+            (record["isComplete"] as? Bool) != true
+        }
+        
+        if completedRecords.count == 1 && incompleteRecords.count == 1 {
+            // Special case: one completed, one incomplete with same ID
+            let completed = completedRecords[0]
+            let incomplete = incompleteRecords[0]
+            
+            let completedModifiedAt = completed["modifiedAt"] as? Date ?? Date.distantPast
+            let incompleteModifiedAt = incomplete["modifiedAt"] as? Date ?? Date.distantPast
+            let completedTotalKubbs = completed["totalKubbs"] as? Int ?? 0
+            let incompleteTotalKubbs = incomplete["totalKubbs"] as? Int ?? 0
+            
+            print("🔍 Found completed vs incomplete CloudKit duplicate")
+            print("   - Completed: modifiedAt=\(completedModifiedAt), totalKubbs=\(completedTotalKubbs)")
+            print("   - Incomplete: modifiedAt=\(incompleteModifiedAt), totalKubbs=\(incompleteTotalKubbs)")
+            
+            // If the completed record is newer or same age, keep it
+            if completedModifiedAt >= incompleteModifiedAt {
+                print("✅ Keeping completed CloudKit record (newer or same age)")
+                return completed
+            } else {
+                // If incomplete is newer, but completed has more progress, keep completed
+                if completedTotalKubbs > incompleteTotalKubbs {
+                    print("✅ Keeping completed CloudKit record (more progress despite being older)")
+                    return completed
+                } else {
+                    print("⚠️ Keeping incomplete CloudKit record (newer and same/less progress)")
+                    return incomplete
+                }
+            }
+        }
+        
+        // For all other cases, use the standard logic: most recent modifiedAt
+        let sortedRecords = records.sorted { record1, record2 in
+            let date1 = record1["modifiedAt"] as? Date ?? Date.distantPast
+            let date2 = record2["modifiedAt"] as? Date ?? Date.distantPast
+            return date1 > date2
+        }
+        return sortedRecords[0]
     }
     
     func testCloudKitConnection() async {
@@ -1122,6 +1553,151 @@ class CloudKitManager: ObservableObject {
         }
         
         throw lastError ?? CloudKitError.retryFailed
+    }
+    
+    // MARK: - InkastBlastSession CloudKit Methods
+    
+    func saveInkastBlastSession(_ session: InkastBlastSessionData) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping InkastBlastSession save")
+            return
+        }
+        
+        do {
+            let record = session.toCKRecord()
+            try await privateDatabase.save(record)
+            print("✅ Successfully saved InkastBlastSession to CloudKit: \(session.id)")
+        } catch {
+            print("❌ Failed to save InkastBlastSession to CloudKit: \(error)")
+        }
+    }
+    
+    func fetchInkastBlastSessions() async -> [InkastBlastSessionData] {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, returning empty InkastBlastSessions")
+            return []
+        }
+        
+        do {
+            // Fetch all InkastBlast sessions (both complete and incomplete)
+            print("Fetching InkastBlastSessions from CloudKit using createdAt query...")
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
+            let query = CKQuery(recordType: "InkastBlast_Session", predicate: predicate)
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            var sessions: [InkastBlastSessionData] = []
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    if let session = InkastBlastSessionData(from: record) {
+                        sessions.append(session)
+                    }
+                case .failure(let error):
+                    print("Error converting record to InkastBlastSessionData: \(error)")
+                }
+            }
+            
+            // Sort by date (newest first) since we can't use sort descriptors in CloudKit
+            sessions.sort { $0.createdAt > $1.createdAt }
+            
+            print("✅ Successfully fetched \(sessions.count) InkastBlastSessions from CloudKit")
+            return sessions
+            
+        } catch {
+            print("❌ Failed to fetch InkastBlastSessions from CloudKit: \(error)")
+            return []
+        }
+    }
+    
+    func fetchBaseballKubbSessions() async throws -> [BaseballKubbSession] {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, returning empty BaseballKubbSessions")
+            return []
+        }
+        
+        do {
+            // Fetch all BaseballKubb sessions (both complete and incomplete)
+            print("Fetching BaseballKubbSessions from CloudKit using createdAt query...")
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: predicate)
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            var sessions: [BaseballKubbSession] = []
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    if let session = BaseballKubbSession(from: record) {
+                        sessions.append(session)
+                    }
+                case .failure(let error):
+                    print("Error converting record to BaseballKubbSession: \(error)")
+                }
+            }
+            
+            // Sort by date (newest first) since we can't use sort descriptors in CloudKit
+            sessions.sort { $0.createdAt > $1.createdAt }
+            
+            print("✅ Successfully fetched \(sessions.count) BaseballKubbSessions from CloudKit")
+            return sessions
+            
+        } catch {
+            print("❌ Failed to fetch BaseballKubbSessions from CloudKit: \(error)")
+            return []
+        }
+    }
+    
+    func deleteInkastBlastSession(_ session: InkastBlastSessionData) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping InkastBlastSession delete")
+            return
+        }
+        
+        do {
+            // First, try to find the record by querying with our custom ID
+            let query = CKQuery(recordType: InkastBlastSessionData.recordType, predicate: NSPredicate(format: "sessionId == %@", session.id))
+            let result = try await privateDatabase.records(matching: query)
+            
+            for (recordID, result) in result.matchResults {
+                switch result {
+                case .success:
+                    try await privateDatabase.deleteRecord(withID: recordID)
+                    print("✅ Successfully deleted InkastBlastSession from CloudKit: \(session.id)")
+                case .failure(let error):
+                    print("❌ Failed to delete InkastBlastSession record: \(error)")
+                }
+            }
+        } catch {
+            print("❌ Failed to delete InkastBlastSession from CloudKit: \(error)")
+        }
+    }
+    
+    func deleteBaseballKubbSession(_ session: BaseballKubbSession) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping BaseballKubbSession delete")
+            return
+        }
+        
+        do {
+            // First, try to find the record by querying with our custom ID
+            let query = CKQuery(recordType: BaseballKubbSession.recordType, predicate: NSPredicate(format: "sessionId == %@", session.id))
+            let result = try await privateDatabase.records(matching: query)
+            
+            for (recordID, result) in result.matchResults {
+                switch result {
+                case .success:
+                    try await privateDatabase.deleteRecord(withID: recordID)
+                    print("✅ Successfully deleted BaseballKubbSession from CloudKit: \(session.id)")
+                case .failure(let error):
+                    print("❌ Failed to delete BaseballKubbSession record: \(error)")
+                }
+            }
+        } catch {
+            print("❌ Failed to delete BaseballKubbSession from CloudKit: \(error)")
+        }
     }
     
     enum CloudKitError: Error {

@@ -14,6 +14,7 @@ struct BaseballKubbView: View {
     @State private var showingHitModal = false
     @State private var showingHalfSummary = false
     @State private var showingMenu = false
+    @State private var showingTutorial = false
     
     var body: some View {
         NavigationView {
@@ -35,7 +36,7 @@ struct BaseballKubbView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
+                    Button("Dismiss") {
                         dismiss()
                     }
                 }
@@ -46,6 +47,12 @@ struct BaseballKubbView: View {
                             showingMenu = true
                         }
                     }
+                } else {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Tutorial") {
+                            showingTutorial = true
+                        }
+                    }
                 }
             }
         }
@@ -54,6 +61,9 @@ struct BaseballKubbView: View {
         }
         .sheet(isPresented: $showingMenu) {
             BaseballKubbMenuView(sessionManager: sessionManager, showingMenu: $showingMenu)
+        }
+        .fullScreenCover(isPresented: $showingTutorial) {
+            BaseballKubbTutorialView()
         }
     }
 }
@@ -114,31 +124,37 @@ struct BaseballKubbStartView: View {
     @Binding var showingHalfSummary: Bool
     @State private var awayTeam = ""
     @State private var homeTeam = ""
+    @State private var selectedUserTeam: UserTeam = .away
     @State private var showingAbandonConfirmation = false
+    @State private var showingTutorial = false
     
     var body: some View {
-        VStack(spacing: 32) {
-            Spacer()
-            
-            VStack(spacing: 16) {
-                Image("baseball_kubb")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 120, height: 120)
-                
-                Text("Baseball Kubb")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                
-                Text("Baseball-style Kubb training with innings and scoring. Track field kubbs, baseline kubbs, and king hits.")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-            
-            Spacer()
+        ScrollView {
+            VStack(spacing: 32) {
+                VStack(spacing: 16) {
+                    Image("baseball_kubb")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 120)
+                    
+                    Text("Baseball Kubb")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Baseball-style Kubb training with innings and scoring. Track field kubbs, baseline kubbs, and king hits.")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Button("Learn the Rules") {
+                        showingTutorial = true
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .padding(.top, 8)
+                }
             
             VStack(spacing: 24) {
                 // Show incomplete game option if available
@@ -191,31 +207,42 @@ struct BaseballKubbStartView: View {
                         .padding(.horizontal)
                 }
                 
-                VStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
+                VStack(spacing: 24) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Away Team")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
                         
                         TextField("Enter away team name", text: $awayTeam)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.title3)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(12)
                             .onSubmit {
                                 // Focus home team field
                             }
                     }
                     
                     Text("VS")
-                        .font(.title2)
+                        .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.secondary)
+                        .padding(.vertical, 8)
                     
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Home Team")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
                         
                         TextField("Enter home team name", text: $homeTeam)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.title3)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(12)
                             .onSubmit {
                                 if !awayTeam.isEmpty && !homeTeam.isEmpty && awayTeam != homeTeam {
                                     startGame()
@@ -224,23 +251,40 @@ struct BaseballKubbStartView: View {
                     }
                 }
                 
-                Button(action: startGame) {
-                    HStack {
+                // Team Selection - always show when teams are entered
+                if !awayTeam.isEmpty && !homeTeam.isEmpty && awayTeam != homeTeam {
+                    UserTeamSelectionView(
+                        selectedTeam: $selectedUserTeam,
+                        awayTeam: awayTeam,
+                        homeTeam: homeTeam
+                    )
+                }
+                
+                Button(action: {
+                    print("🎮 Starting game with teams: \(awayTeam) vs \(homeTeam), User team: \(selectedUserTeam)")
+                    startGame()
+                }) {
+                    HStack(spacing: 12) {
                         Image(systemName: "play.fill")
+                            .font(.title2)
                         Text("Start New Game")
+                            .font(.title2)
+                            .fontWeight(.bold)
                     }
-                    .font(.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 24)
                     .background(canStartGame ? Color.blue : Color.gray)
-                    .cornerRadius(12)
+                    .cornerRadius(16)
                 }
                 .disabled(!canStartGame)
             }
             .padding(.horizontal)
             
-            Spacer()
+            // Add some bottom padding for better scrolling experience
+            Color.clear.frame(height: 50)
+            }
         }
         .sheet(isPresented: $showingAbandonConfirmation) {
             if let session = sessionManager.incompleteSession {
@@ -251,6 +295,9 @@ struct BaseballKubbStartView: View {
                 )
             }
         }
+        .fullScreenCover(isPresented: $showingTutorial) {
+            BaseballKubbTutorialView()
+        }
     }
     
     private var canStartGame: Bool {
@@ -258,7 +305,7 @@ struct BaseballKubbStartView: View {
     }
     
     private func startGame() {
-        sessionManager.startNewGame(awayTeam: awayTeam, homeTeam: homeTeam)
+        sessionManager.startNewGame(awayTeam: awayTeam, homeTeam: homeTeam, userTeam: selectedUserTeam)
     }
 }
 
@@ -480,43 +527,43 @@ struct BaseballKubbThrowControlsView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            HStack(spacing: 16) {
+            HStack(spacing: 30) {
                 Button(action: {
                     sessionManager.recordMiss()
                     checkHalfInningEnd()
                 }) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 12) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.red)
+                            .font(.system(size: 60))
+                            .foregroundColor(.white)
                         
                         Text("MISS")
                             .font(.headline)
-                            .foregroundColor(.red)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(12)
+                    .frame(width: 140, height: 140)
+                    .background(sessionManager.currentSession?.isHalfInningOver ?? false ? Color.gray : Color.red)
+                    .cornerRadius(20)
                 }
                 .disabled(sessionManager.currentSession?.isHalfInningOver ?? false)
                 
                 Button(action: {
                     showingHitModal = true
                 }) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 12) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.green)
+                            .font(.system(size: 60))
+                            .foregroundColor(.white)
                         
                         Text("HIT")
                             .font(.headline)
-                            .foregroundColor(.green)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(12)
+                    .frame(width: 140, height: 140)
+                    .background(sessionManager.currentSession?.isHalfInningOver ?? false ? Color.gray : Color.green)
+                    .cornerRadius(20)
                 }
                 .disabled(sessionManager.currentSession?.isHalfInningOver ?? false)
             }
@@ -541,6 +588,7 @@ struct BaseballKubbHitModalView: View {
     @ObservedObject var sessionManager: BaseballKubbSessionManager
     @Binding var showingHitModal: Bool
     @Binding var showingHalfSummary: Bool
+    @StateObject private var skinManager = SkinManager.shared
     @State private var fieldKubbsHit = 0
     @State private var baselineKubbsHit = 0
     @State private var kingHit = false
@@ -550,107 +598,25 @@ struct BaseballKubbHitModalView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
+                // Header
                 Text("What was knocked down?")
-                    .font(.title2)
+                    .font(.largeTitle)
                     .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
                     .padding(.top)
                 
-                VStack(spacing: 16) {
-                    // Field Kubbs
-                    HStack {
-                        Text("Field Kubbs:")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        HStack(spacing: 12) {
-                            Button("-") {
-                                if fieldKubbsHit > 0 {
-                                    fieldKubbsHit -= 1
-                                }
-                            }
-                            .buttonStyle(CircularButtonStyle())
-                            
-                            Text("\(fieldKubbsHit)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .frame(minWidth: 40)
-                            
-                            Button("+") {
-                                if fieldKubbsHit < (sessionManager.currentSession?.fieldKubbs ?? 0) {
-                                    fieldKubbsHit += 1
-                                }
-                            }
-                            .buttonStyle(CircularButtonStyle())
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                    
-                    // Baseline Kubbs
-                    HStack {
-                        Text("Baseline Kubbs:")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        HStack(spacing: 12) {
-                            Button("-") {
-                                if baselineKubbsHit > 0 {
-                                    baselineKubbsHit -= 1
-                                }
-                            }
-                            .buttonStyle(CircularButtonStyle())
-                            
-                            Text("\(baselineKubbsHit)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .frame(minWidth: 40)
-                            
-                            Button("+") {
-                                if baselineKubbsHit < (sessionManager.currentSession?.currentBaselineKubbs ?? 0) {
-                                    baselineKubbsHit += 1
-                                }
-                            }
-                            .buttonStyle(CircularButtonStyle())
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                    
-                    // King Hit
-                    HStack {
-                        Text("King Hit:")
-                            .font(.headline)
-                        
-                        Spacer()
-                        
-                        Toggle("", isOn: $kingHit)
-                            .toggleStyle(SwitchToggleStyle())
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                }
-                
-                Spacer()
-                
-                HStack(spacing: 16) {
+                visualHitRecordingView
+            }
+            .padding()
+            .navigationTitle("Record Hit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         showingHitModal = false
                     }
-                    .buttonStyle(SecondaryButtonStyle())
-                    
-                    Button("Confirm") {
-                        confirmHit()
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
                 }
-                .padding(.bottom)
             }
-            .padding()
-            .navigationTitle("Hit Details")
-            .navigationBarTitleDisplayMode(.inline)
             .alert("Error", isPresented: $showingError) {
                 Button("OK") { }
             } message: {
@@ -658,6 +624,114 @@ struct BaseballKubbHitModalView: View {
             }
         }
     }
+    
+    private var visualHitRecordingView: some View {
+        VStack(spacing: 24) {
+            // Baseline Kubbs Visual (further away - at top)
+            if (sessionManager.currentSession?.currentBaselineKubbs ?? 0) > 0 && (sessionManager.currentSession?.fieldKubbs ?? 0) - fieldKubbsHit == 0 {
+                BaseballKubbVisualSection(
+                    title: "Baseline Kubbs",
+                    totalKubbs: sessionManager.currentSession?.currentBaselineKubbs ?? 0,
+                    kubbsHit: $baselineKubbsHit,
+                    skin: skinManager.selectedKubbSkin,
+                    color: .green
+                )
+            }
+            
+            // Field Kubbs Visual (closer - below baseline)
+            if (sessionManager.currentSession?.fieldKubbs ?? 0) > 0 {
+                BaseballKubbVisualSection(
+                    title: "Field Kubbs",
+                    totalKubbs: sessionManager.currentSession?.fieldKubbs ?? 0,
+                    kubbsHit: $fieldKubbsHit,
+                    skin: skinManager.selectedKubbSkin,
+                    color: .blue
+                )
+            }
+            
+            // King Hit
+            if (sessionManager.currentSession?.fieldKubbs ?? 0) - fieldKubbsHit == 0 && (sessionManager.currentSession?.currentBaselineKubbs ?? 0) - baselineKubbsHit == 0 {
+                VStack(spacing: 16) {
+                    Text("King Hit")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.purple)
+                    
+                    // Visual King Kubb
+                    Button(action: { kingHit.toggle() }) {
+                        VStack(spacing: 12) {
+                            // King visual representation using selected skin
+                            ZStack {
+                                // Use king skin image if available, otherwise fall back to color-based
+                                if let kingImageName = skinManager.getRandomKingImageName() {
+                                    Image(kingImageName)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 80, height: 120)
+                                        .scaleEffect(skinManager.selectedKingSkin.kingImageScale)
+                                        .opacity(kingHit ? 0.3 : 1.0)
+                                        .rotationEffect(.degrees(kingHit ? 15 : 0))
+                                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: kingHit)
+                                } else {
+                                    // Fallback to color-based king
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                skinManager.selectedKingSkin.kingColor.color.opacity(0.8), 
+                                                skinManager.selectedKingSkin.kingColor.color
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        ))
+                                        .frame(width: 80, height: 120)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.black.opacity(0.3), lineWidth: 2)
+                                        )
+                                        .opacity(kingHit ? 0.3 : 1.0)
+                                        .rotationEffect(.degrees(kingHit ? 15 : 0))
+                                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: kingHit)
+                                }
+                                
+                                // Hit indicator
+                                if kingHit {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.green)
+                                        .background(Color.white)
+                                        .clipShape(Circle())
+                                        .offset(x: 30, y: -30)
+                                }
+                            }
+                            .scaleEffect(kingHit ? 0.9 : 1.0)
+                            
+                            Text(kingHit ? "King Hit!" : "Tap to hit King")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(kingHit ? .green : .purple)
+                        }
+                        .padding()
+                        .background(kingHit ? Color.green.opacity(0.1) : Color.purple.opacity(0.1))
+                        .cornerRadius(16)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            
+            // Confirm Button
+            Button("Confirm Hit") {
+                confirmHit()
+            }
+            .font(.title2)
+            .fontWeight(.bold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.blue)
+            .cornerRadius(16)
+        }
+    }
+    
     
     private func confirmHit() {
         // Validation
@@ -1187,6 +1261,7 @@ struct BaseballKubbMenuView: View {
     @ObservedObject var sessionManager: BaseballKubbSessionManager
     @Binding var showingMenu: Bool
     @State private var showingNewGameAlert = false
+    @State private var showingTutorial = false
     
     var body: some View {
         NavigationView {
@@ -1198,6 +1273,11 @@ struct BaseballKubbMenuView: View {
                 VStack(spacing: 16) {
                     Button("Continue Game") {
                         showingMenu = false
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    
+                    Button("View Rules") {
+                        showingTutorial = true
                     }
                     .buttonStyle(SecondaryButtonStyle())
                     
@@ -1227,10 +1307,374 @@ struct BaseballKubbMenuView: View {
                 Text("Are you sure you want to start a new game? All current progress will be lost.")
             }
         }
+        .fullScreenCover(isPresented: $showingTutorial) {
+            BaseballKubbTutorialView()
+        }
+    }
+}
+
+// MARK: - Visual Hit Recording View
+
+struct BaseballKubbVisualHitView: View {
+    @ObservedObject var sessionManager: BaseballKubbSessionManager
+    @ObservedObject var skinManager: SkinManager
+    @Binding var fieldKubbsHit: Int
+    @Binding var baselineKubbsHit: Int
+    @Binding var kingHit: Bool
+    
+    @State private var fieldKubbsHitSet: Set<Int> = []
+    @State private var baselineKubbsHitSet: Set<Int> = []
+    
+    private var fieldKubbsRemaining: Int {
+        (sessionManager.currentSession?.fieldKubbs ?? 0) - fieldKubbsHitSet.count
+    }
+    
+    private var baselineKubbsRemaining: Int {
+        (sessionManager.currentSession?.currentBaselineKubbs ?? 0) - baselineKubbsHitSet.count
+    }
+    
+    private var canHitBaseline: Bool {
+        fieldKubbsRemaining == 0
+    }
+    
+    private var canHitKing: Bool {
+        fieldKubbsRemaining == 0 && baselineKubbsRemaining == 0
+    }
+    
+    private func toggleFieldKubbHit(at index: Int) {
+        if fieldKubbsHitSet.contains(index) {
+            fieldKubbsHitSet.remove(index)
+        } else {
+            fieldKubbsHitSet.insert(index)
+        }
+        fieldKubbsHit = fieldKubbsHitSet.count
+    }
+    
+    private func toggleBaselineKubbHit(at index: Int) {
+        if baselineKubbsHitSet.contains(index) {
+            baselineKubbsHitSet.remove(index)
+        } else {
+            baselineKubbsHitSet.insert(index)
+        }
+        baselineKubbsHit = baselineKubbsHitSet.count
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                // Baseline Kubbs at top
+                if baselineKubbsRemaining > 0 {
+                    VStack(spacing: 8) {
+                        Text("Baseline Kubbs")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 12) {
+                            ForEach(0..<(sessionManager.currentSession?.currentBaselineKubbs ?? 0), id: \.self) { index in
+                                KubbVisualView(
+                                    skin: skinManager.selectedKubbSkin,
+                                    isHit: baselineKubbsHitSet.contains(index),
+                                    isEnabled: canHitBaseline,
+                                    size: 50
+                                )
+                                .onTapGesture {
+                                    if canHitBaseline {
+                                        toggleBaselineKubbHit(at: index)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.top, 20)
+                }
+                
+                Spacer()
+                
+                // Field Kubbs in center
+                if fieldKubbsRemaining > 0 {
+                    VStack(spacing: 8) {
+                        Text("Field Kubbs")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 12) {
+                            ForEach(0..<(sessionManager.currentSession?.fieldKubbs ?? 0), id: \.self) { index in
+                                KubbVisualView(
+                                    skin: skinManager.selectedKubbSkin,
+                                    isHit: fieldKubbsHitSet.contains(index),
+                                    isEnabled: true,
+                                    size: 60
+                                )
+                                .onTapGesture {
+                                    toggleFieldKubbHit(at: index)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                // King Kubb at bottom (only if all others are cleared)
+                if canHitKing {
+                    VStack(spacing: 8) {
+                        Text("King Kubb")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        KingVisualView(
+                            skin: skinManager.selectedKingSkin,
+                            isHit: kingHit,
+                            isEnabled: true,
+                            size: 80
+                        )
+                        .onTapGesture {
+                            kingHit.toggle()
+                        }
+                    }
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+        .frame(height: 400)
+        .onAppear {
+            // Reset hit sets when the view appears
+            fieldKubbsHitSet.removeAll()
+            baselineKubbsHitSet.removeAll()
+            fieldKubbsHit = 0
+            baselineKubbsHit = 0
+            kingHit = false
+        }
+    }
+}
+
+// MARK: - Kubb Visual Components
+
+struct KubbVisualView: View {
+    let skin: KubbSkin
+    let isHit: Bool
+    let isEnabled: Bool
+    let size: CGFloat
+    @State private var selectedImageName: String?
+    
+    var body: some View {
+        ZStack {
+            // Kubb visual
+            if let kubbImageName = selectedImageName {
+                // Image-based kubb
+                Image(kubbImageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: size * 0.6, height: size)
+                    .scaleEffect(skin.kubbImageScale)
+                    .opacity(isHit ? 0.3 : 1.0)
+                    .rotationEffect(.degrees(isHit ? 90 : 0))
+                    .animation(.easeInOut(duration: 0.3), value: isHit)
+            } else {
+                // Color-based kubb
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(skin.kubbColor.color)
+                    .frame(width: size * 0.4, height: size)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(skin.kubbAccentColor?.color ?? Color.white, lineWidth: 2)
+                    )
+                    .opacity(isHit ? 0.3 : 1.0)
+                    .rotationEffect(.degrees(isHit ? 90 : 0))
+                    .animation(.easeInOut(duration: 0.3), value: isHit)
+            }
+            
+            // Hit indicator
+            if isHit {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.green)
+                    .background(Color.white)
+                    .clipShape(Circle())
+            }
+        }
+        .opacity(isEnabled ? 1.0 : 0.5)
+        .scaleEffect(isEnabled ? 1.0 : 0.9)
+        .animation(.easeInOut(duration: 0.2), value: isEnabled)
+        .onAppear {
+            selectImage()
+        }
+    }
+    
+    private func selectImage() {
+        // Use SkinManager for consistent multi-skin selection across all views
+        let skinManager = SkinManager.shared
+        selectedImageName = skinManager.getRandomKubbImageName(for: 0) // Default to index 0 for KubbVisualView
+    }
+}
+
+struct KingVisualView: View {
+    let skin: KubbSkin
+    let isHit: Bool
+    let isEnabled: Bool
+    let size: CGFloat
+    @State private var selectedImageName: String?
+    
+    var body: some View {
+        ZStack {
+            // King visual
+            if let kingImageName = selectedImageName {
+                // Image-based king
+                Image(kingImageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: size * 0.6, height: size)
+                    .scaleEffect(skin.kingImageScale)
+                    .opacity(isHit ? 0.3 : 1.0)
+                    .rotationEffect(.degrees(isHit ? 90 : 0))
+                    .animation(.easeInOut(duration: 0.3), value: isHit)
+            } else {
+                // Color-based king
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(skin.kingColor.color)
+                    .frame(width: size * 0.5, height: size)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(skin.kingAccentColor?.color ?? Color.white, lineWidth: 3)
+                    )
+                    .overlay(
+                        Image(systemName: "crown.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                    )
+                    .opacity(isHit ? 0.3 : 1.0)
+                    .rotationEffect(.degrees(isHit ? 90 : 0))
+                    .animation(.easeInOut(duration: 0.3), value: isHit)
+            }
+            
+            // Hit indicator
+            if isHit {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.green)
+                    .background(Color.white)
+                    .clipShape(Circle())
+            }
+        }
+        .opacity(isEnabled ? 1.0 : 0.5)
+        .scaleEffect(isEnabled ? 1.0 : 0.9)
+        .animation(.easeInOut(duration: 0.2), value: isEnabled)
+        .onAppear {
+            selectImage()
+        }
+    }
+    
+    private func selectImage() {
+        // Use SkinManager for consistent multi-skin selection across all views
+        let skinManager = SkinManager.shared
+        selectedImageName = skinManager.getRandomKingImageName()
+    }
+}
+
+// MARK: - Baseball Kubb Visual Section Component
+
+struct BaseballKubbVisualSection: View {
+    let title: String
+    let totalKubbs: Int
+    @Binding var kubbsHit: Int
+    let skin: KubbSkin
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text(title)
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
+            
+            // Visual kubb field
+            VStack(spacing: 12) {
+                ForEach(0..<numberOfLines, id: \.self) { lineIndex in
+                    HStack(spacing: 12) {
+                        ForEach(0..<kubbsForLine(lineIndex).count, id: \.self) { kubbIndex in
+                            let actualIndex = (lineIndex * 5) + kubbIndex
+                            let isKnockedDown = actualIndex < kubbsHit
+                            
+                            KubbVisualLarge(
+                                skin: skin,
+                                isKnockedDown: isKnockedDown,
+                                isOutOfBounds: false,
+                                isPenalty: false,
+                                isNeighbor: false,
+                                isNewlyKnockedDown: isKnockedDown,
+                                size: 50
+                            )
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKnockedDown)
+                        }
+                        
+                        // Fill remaining space if needed
+                        if kubbsForLine(lineIndex).count < 5 {
+                            ForEach(0..<(5 - kubbsForLine(lineIndex).count), id: \.self) { _ in
+                                Spacer()
+                                    .frame(width: 50, height: 50)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(color.opacity(0.1))
+            .cornerRadius(16)
+            
+            // Counter with +/- buttons
+            VStack(spacing: 12) {
+                Text("Kubbs Hit: \(kubbsHit)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                HStack(spacing: 20) {
+                    Button(action: { 
+                        if kubbsHit > 0 {
+                            kubbsHit -= 1
+                        }
+                    }) {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(kubbsHit > 0 ? Color.red : Color.gray)
+                    .cornerRadius(30)
+                    .disabled(kubbsHit <= 0)
+                    
+                    Button(action: { 
+                        if kubbsHit < totalKubbs {
+                            kubbsHit += 1
+                        }
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(kubbsHit < totalKubbs ? Color.green : Color.gray)
+                    .cornerRadius(30)
+                    .disabled(kubbsHit >= totalKubbs)
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(16)
+        }
+    }
+    
+    private var numberOfLines: Int {
+        (totalKubbs + 4) / 5 // Round up division
+    }
+    
+    private func kubbsForLine(_ lineIndex: Int) -> [Int] {
+        let startIndex = lineIndex * 5
+        let endIndex = min(startIndex + 5, totalKubbs)
+        return Array(startIndex..<endIndex)
     }
 }
 
 #Preview {
     BaseballKubbView()
 }
-

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Round: Identifiable, Codable {
+struct Round: Identifiable, Codable, Equatable {
     let id: String
     let roundNumber: Int
     var batonThrows: [BatonThrow] = []
@@ -59,6 +59,10 @@ struct Round: Identifiable, Codable {
         return kingThrows.filter { $0.isHit }.count
     }
     
+    var kingThrowAttempts: Int {
+        return kingThrows.count
+    }
+    
     var isRoundComplete: Bool {
         return totalBatonThrows >= 6
     }
@@ -92,7 +96,7 @@ struct Round: Identifiable, Codable {
     }
 }
 
-struct BatonThrow: Identifiable, Codable {
+struct BatonThrow: Identifiable, Codable, Equatable {
     let id: String
     let isHit: Bool
     let throwType: ThrowType

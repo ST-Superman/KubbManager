@@ -10,7 +10,7 @@ import SwiftUI
 struct MainMenuView: View {
     @State private var selectedMode: TrainingMode?
     @State private var showingEightMeterTraining = false
-    @State private var showingBaseballKubb = false
+    @State private var showingInkastBlast = false
     @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
     
@@ -32,8 +32,8 @@ struct MainMenuView: View {
                                     selectedMode = mode
                                     if mode == .eightMeter {
                                         showingEightMeterTraining = true
-                                    } else if mode == .baseballKubb {
-                                        showingBaseballKubb = true
+                                    } else if mode == .inkastBlast {
+                                        showingInkastBlast = true
                                     }
                                 }
                             }
@@ -42,6 +42,42 @@ struct MainMenuView: View {
                     
                     // Coming Soon Notice
                     ComingSoonNoticeView()
+                    
+                    // Always visible debug info
+                    VStack {
+                        Text("🔍 DEBUG INFO")
+                            .font(.headline)
+                            .foregroundColor(.blue)
+                        Text("SettingsManager.showDebugTools = \(settingsManager.showDebugTools ? "true" : "false")")
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                        Text("This should always be visible at the bottom of Main Menu")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                    
+                    // Debug Section (conditional)
+                    if settingsManager.showDebugTools {
+                        DebugSectionView()
+                            .environmentObject(CloudKitManager.shared)
+                    } else {
+                        // Debug info to help troubleshoot
+                        VStack {
+                            Text("Debug Tools Status: OFF")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            Text("Go to Options → Debug Options → Enable 'Include Debug Tools'")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
                 }
                 .padding()
             }
@@ -56,8 +92,11 @@ struct MainMenuView: View {
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
             EightMeterTrainingView()
         }
-        .fullScreenCover(isPresented: $showingBaseballKubb) {
-            BaseballKubbView()
+        .fullScreenCover(isPresented: $showingInkastBlast) {
+            InkastBlastView(
+                persistenceController: PersistenceController.shared,
+                cloudKitManager: CloudKitManager.shared
+            )
         }
         .sheet(isPresented: $showingOptions) {
             OptionsView()
@@ -99,11 +138,6 @@ struct TrainingModeButton: View {
                 // Icon
                 if mode == .eightMeter {
                     Image("kubb_crosshair")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 60, height: 60)
-                } else if mode == .baseballKubb {
-                    Image("baseball_kubb")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 60, height: 60)
@@ -175,26 +209,74 @@ struct TrainingModeButton: View {
 }
 
 struct ComingSoonNoticeView: View {
+    @State private var showingMailComposer = false
+    
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Image(systemName: "clock.badge.exclamationmark")
                 .font(.title2)
-                .foregroundColor(.orange)
-            
-            Text("More Training Modes Coming Soon!")
+                .foregroundColor(.purple)
+
+            Text("More Improvements Coming Soon!")
                 .font(.headline)
+                .foregroundColor(.purple)
                 .fontWeight(.semibold)
             
-            Text("We're working on adding Inkast/Blast training and Full Game Simulation. Stay tuned for updates!")
+            Text("We're always working to improve the app. Our next project is a Full Game training simulator. Please send me any feedback or new training session ideas.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.purple)
                 .multilineTextAlignment(.center)
+            
+            Button("Send Feedback") {
+                showingMailComposer = true
+            }
+            .buttonStyle(.bordered)
+            .foregroundColor(.purple)
+            .fontWeight(.semibold)
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.orange.opacity(0.1))
+                .fill(Color.purple.opacity(0.1))
         )
+        .sheet(isPresented: $showingMailComposer) {
+            MailComposerView()
+        }
+    }
+}
+
+struct MailComposerView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                Text("This would open your email app to send feedback to sathomps@gmail.com")
+                    .padding()
+                    .multilineTextAlignment(.center)
+                
+                Spacer()
+            }
+            .navigationTitle("Send Feedback")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Send") {
+                        // This would open the mail composer
+                        if let url = URL(string: "mailto:sathomps@gmail.com?subject=Kubb Manager Feedback") {
+                            UIApplication.shared.open(url)
+                        }
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -260,6 +342,17 @@ struct OptionsView: View {
                     Text("Customize the app's appearance and feedback preferences.")
                 }
                 
+                // Kubb Skins Section
+                Section {
+                    NavigationLink("Kubb Skins") {
+                        SkinSelectionView()
+                    }
+                } header: {
+                    Text("Kubb Skins")
+                } footer: {
+                    Text("Customize the appearance of your kubb pieces. Unlock new skins through achievements!")
+                }
+                
                 // 8 Meters Section
                 Section {
                     HStack {
@@ -320,7 +413,7 @@ struct OptionsView: View {
                 } header: {
                     Text("Debug Options")
                 } footer: {
-                    Text("Enable this option to show debug tools in the 8-meter training overview. These tools are useful for troubleshooting CloudKit sync issues.")
+                    Text("Enable this option to show debug tools on the main menu. These tools are useful for troubleshooting CloudKit sync issues.")
                 }
             }
             .navigationTitle("Options")
@@ -378,6 +471,8 @@ struct ReminderTimePickerView: View {
         }
     }
 }
+
+
 
 #Preview {
     MainMenuView()

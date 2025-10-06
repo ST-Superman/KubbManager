@@ -85,8 +85,20 @@ class SessionManager: ObservableObject {
         
         do {
             if let incompleteSession = try await cloudKitManager.fetchIncompleteSession() {
-                currentSession = incompleteSession
-                isSessionActive = true
+                // Apply auto-completion: sessions from previous days are automatically completed
+                let autoCompletedSession = incompleteSession.withAutoCompletion()
+                
+                // Only set as current session if it's still incomplete (i.e., from today)
+                if autoCompletedSession.isIncomplete {
+                    currentSession = autoCompletedSession
+                    isSessionActive = true
+                } else {
+                    // Session was auto-completed, save it and clear current session
+                    try await cloudKitManager.saveSession(autoCompletedSession)
+                    currentSession = nil
+                    isSessionActive = false
+                    print("🔄 Auto-completed session from previous day: \(autoCompletedSession.id)")
+                }
             } else {
                 currentSession = nil
                 isSessionActive = false
@@ -108,11 +120,20 @@ class SessionManager: ObservableObject {
             return
         }
         
+        // Don't add batons if the current round is already complete (more than 6 throws)
+        // Allow the 6th baton to be processed to complete the round
+        if let currentRound = session.currentRound, currentRound.totalBatonThrows >= 6 {
+            return
+        }
+        
         session.addBatonResult(isHit: isHit)
         currentSession = session
         
-        // Save only when round is complete
+        // Save when round is complete OR when target is reached
         if let currentRound = session.currentRound, currentRound.isRoundComplete {
+            await saveSession()
+        } else if session.isTargetReached {
+            // Save immediately when target is reached to ensure CloudKit is updated
             await saveSession()
         }
         
@@ -131,8 +152,39 @@ class SessionManager: ObservableObject {
         // Save session completion
         await saveSession()
         
+        // Check for skin unlocks after session completion
+        await SkinManager.shared.checkSkinsAfterSession()
+        
         isSessionActive = false
         isLoading = false
+    }
+    
+    func pauseSession() async {
+        guard var session = currentSession else { return }
+        
+        session.pauseSession()
+        currentSession = session
+        
+        // Save session state
+        await saveSession()
+        
+        isSessionActive = false
+    }
+    
+    func resumeSession() async {
+        guard let session = currentSession else { return }
+        
+        // Only resume if session is paused and from today
+        guard session.isPaused && Calendar.current.isDateInToday(session.date) else { return }
+        
+        var updatedSession = session
+        updatedSession.resumeSession()
+        currentSession = updatedSession
+        
+        // Save session state
+        await saveSession()
+        
+        isSessionActive = true
     }
     
     func endSessionEarly() async {
@@ -145,6 +197,9 @@ class SessionManager: ObservableObject {
         
         // Save session state
         await saveSession()
+        
+        // Check for skin unlocks after session completion
+        await SkinManager.shared.checkSkinsAfterSession()
         
         isSessionActive = false
         isLoading = false
@@ -173,6 +228,16 @@ class SessionManager: ObservableObject {
         currentSession = session
         
         // Save round reset
+        await saveSession()
+    }
+    
+    func startNextRound() async {
+        guard var session = currentSession else { return }
+        
+        session.startNextRound()
+        currentSession = session
+        
+        // Save the new round
         await saveSession()
     }
     
@@ -212,7 +277,7 @@ class SessionManager: ObservableObject {
         return hasIncompleteSession() && !isSessionActive
     }
     
-    func resumeSession() {
+    func resumeIncompleteSession() {
         guard currentSession != nil else { return }
         isSessionActive = true
     }
@@ -236,6 +301,10 @@ class SessionManager: ObservableObject {
     
     func hasIncompleteSession() -> Bool {
         return currentSession?.isIncomplete ?? false
+    }
+    
+    func hasPausedSession() -> Bool {
+        return currentSession?.isPaused ?? false
     }
     
     // MARK: - Private Methods

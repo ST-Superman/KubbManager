@@ -8,11 +8,32 @@
 import Foundation
 import CloudKit
 
+enum UserTeam: String, CaseIterable, Codable {
+    case away = "away"
+    case home = "home"
+    case both = "both"
+    case none = "none"
+    
+    var displayName: String {
+        switch self {
+        case .away:
+            return "Away Team"
+        case .home:
+            return "Home Team"
+        case .both:
+            return "Both Teams (Practice)"
+        case .none:
+            return "None (Scorekeeper)"
+        }
+    }
+}
+
 struct BaseballKubbSession: Identifiable, Codable {
     let id: String
     let date: Date
     var awayTeam: String
     var homeTeam: String
+    var userTeam: UserTeam
     var currentInning: Int
     var isTop: Bool // true = top (away), false = bottom (home)
     var awayScore: Int
@@ -28,6 +49,8 @@ struct BaseballKubbSession: Identifiable, Codable {
     var halfInningRuns: Int
     var halfInningKings: Int
     var runsAfterKingHit: Int
+    var kingThrowAttempts: Int
+    var firstThrowKubbsHit: Int
     var gameOver: Bool
     var winner: String?
     var throwHistory: [BaseballKubbThrowState]
@@ -37,11 +60,12 @@ struct BaseballKubbSession: Identifiable, Codable {
     let createdAt: Date
     var modifiedAt: Date
     
-    init(id: String = UUID().uuidString, date: Date = Date(), awayTeam: String = "", homeTeam: String = "") {
+    init(id: String = UUID().uuidString, date: Date = Date(), awayTeam: String = "", homeTeam: String = "", userTeam: UserTeam = .away) {
         self.id = id
         self.date = date
         self.awayTeam = awayTeam
         self.homeTeam = homeTeam
+        self.userTeam = userTeam
         self.currentInning = 1
         self.isTop = true
         self.awayScore = 0
@@ -57,6 +81,8 @@ struct BaseballKubbSession: Identifiable, Codable {
         self.halfInningRuns = 0
         self.halfInningKings = 0
         self.runsAfterKingHit = 0
+        self.kingThrowAttempts = 0
+        self.firstThrowKubbsHit = 0
         self.gameOver = false
         self.winner = nil
         self.throwHistory = []
@@ -75,6 +101,60 @@ struct BaseballKubbSession: Identifiable, Codable {
     
     var currentBaselineKubbs: Int {
         return isTop ? awayBaselineKubbs : homeBaselineKubbs
+    }
+    
+    // MARK: - User Team Statistics
+    
+    var userScore: Int {
+        switch userTeam {
+        case .away:
+            return awayScore
+        case .home:
+            return homeScore
+        case .both:
+            return awayScore + homeScore
+        case .none:
+            return 0 // No personal score tracking for scorekeeper
+        }
+    }
+    
+    var userKings: Int {
+        switch userTeam {
+        case .away:
+            return awayKings
+        case .home:
+            return homeKings
+        case .both:
+            return awayKings + homeKings
+        case .none:
+            return 0 // No personal king tracking for scorekeeper
+        }
+    }
+    
+    var userBaselineKubbs: Int {
+        switch userTeam {
+        case .away:
+            return awayBaselineKubbs
+        case .home:
+            return homeBaselineKubbs
+        case .both:
+            return awayBaselineKubbs + homeBaselineKubbs
+        case .none:
+            return 0 // No personal baseline kubb tracking for scorekeeper
+        }
+    }
+    
+    var isUserTeamAtBat: Bool {
+        switch userTeam {
+        case .away:
+            return isTop
+        case .home:
+            return !isTop
+        case .both:
+            return true // Always true when playing both teams
+        case .none:
+            return true // Scorekeeper can track any team's at-bat
+        }
     }
     
     // MARK: - Scoreboard Data
@@ -315,7 +395,9 @@ struct BaseballKubbSession: Identifiable, Codable {
             missCount: missCount,
             halfInningRuns: halfInningRuns,
             halfInningKings: halfInningKings,
-            runsAfterKingHit: runsAfterKingHit
+            runsAfterKingHit: runsAfterKingHit,
+            kingThrowAttempts: kingThrowAttempts,
+            firstThrowKubbsHit: firstThrowKubbsHit
         )
         throwHistory.append(state)
     }
@@ -334,6 +416,8 @@ struct BaseballKubbSession: Identifiable, Codable {
             halfInningRuns = lastState.halfInningRuns
             halfInningKings = lastState.halfInningKings
             runsAfterKingHit = lastState.runsAfterKingHit
+            kingThrowAttempts = lastState.kingThrowAttempts
+            firstThrowKubbsHit = lastState.firstThrowKubbsHit
             modifiedAt = Date()
         }
     }
@@ -399,6 +483,8 @@ struct BaseballKubbSession: Identifiable, Codable {
               let halfInningRuns = record["halfInningRuns"] as? Int64,
               let halfInningKings = record["halfInningKings"] as? Int64,
               let runsAfterKingHit = record["runsAfterKingHit"] as? Int64,
+              let kingThrowAttempts = record["kingThrowAttempts"] as? Int64,
+              let firstThrowKubbsHit = record["firstThrowKubbsHit"] as? Int64,
               let gameOver = record["gameOver"] as? Int64,
               let isComplete = record["isComplete"] as? Int64,
               let createdAt = record["createdAt"] as? Date,
@@ -406,10 +492,20 @@ struct BaseballKubbSession: Identifiable, Codable {
             return nil
         }
         
+        // Parse userTeam with fallback to .away for existing records
+        let userTeam: UserTeam
+        if let userTeamString = record["userTeam"] as? String,
+           let parsedUserTeam = UserTeam(rawValue: userTeamString) {
+            userTeam = parsedUserTeam
+        } else {
+            userTeam = .away // Default for existing records without userTeam field
+        }
+        
         self.id = id
         self.date = date
         self.awayTeam = awayTeam
         self.homeTeam = homeTeam
+        self.userTeam = userTeam
         self.currentInning = Int(currentInning)
         self.isTop = isTop == 1
         self.awayScore = Int(awayScore)
@@ -425,6 +521,8 @@ struct BaseballKubbSession: Identifiable, Codable {
         self.halfInningRuns = Int(halfInningRuns)
         self.halfInningKings = Int(halfInningKings)
         self.runsAfterKingHit = Int(runsAfterKingHit)
+        self.kingThrowAttempts = Int(kingThrowAttempts)
+        self.firstThrowKubbsHit = Int(firstThrowKubbsHit)
         self.gameOver = gameOver == 1
         self.isComplete = isComplete == 1
         self.createdAt = createdAt
@@ -463,6 +561,7 @@ struct BaseballKubbSession: Identifiable, Codable {
         record["date"] = date
         record["awayTeam"] = awayTeam
         record["homeTeam"] = homeTeam
+        record["userTeam"] = userTeam.rawValue
         record["currentInning"] = Int64(currentInning)
         record["isTop"] = isTop ? 1 : 0
         record["awayScore"] = Int64(awayScore)
@@ -478,6 +577,8 @@ struct BaseballKubbSession: Identifiable, Codable {
         record["halfInningRuns"] = Int64(halfInningRuns)
         record["halfInningKings"] = Int64(halfInningKings)
         record["runsAfterKingHit"] = Int64(runsAfterKingHit)
+        record["kingThrowAttempts"] = Int64(kingThrowAttempts)
+        record["firstThrowKubbsHit"] = Int64(firstThrowKubbsHit)
         record["gameOver"] = gameOver ? 1 : 0
         record["isComplete"] = isComplete ? 1 : 0
         record["createdAt"] = createdAt
@@ -521,6 +622,8 @@ struct BaseballKubbThrowState: Codable {
     let halfInningRuns: Int
     let halfInningKings: Int
     let runsAfterKingHit: Int
+    let kingThrowAttempts: Int
+    let firstThrowKubbsHit: Int
 }
 
 struct BaseballKubbHalfInningState: Codable {

@@ -8,7 +8,7 @@
 import Foundation
 import CloudKit
 
-struct PracticeSession: Identifiable, Codable {
+struct PracticeSession: Identifiable, Codable, Equatable {
     let id: String
     let date: Date
     var target: Int
@@ -17,6 +17,7 @@ struct PracticeSession: Identifiable, Codable {
     var startTime: Date
     var endTime: Date?
     var isComplete: Bool
+    var isPaused: Bool
     var rounds: [Round]
     let createdAt: Date
     var modifiedAt: Date
@@ -36,14 +37,47 @@ struct PracticeSession: Identifiable, Codable {
         self.startTime = startTime
         self.endTime = nil
         self.isComplete = false
+        self.isPaused = false
         self.rounds = []
         self.createdAt = Date()
         self.modifiedAt = Date()
+        
+        // Create the first round immediately when starting a new session
+        let firstRound = Round(roundNumber: 1)
+        self.rounds.append(firstRound)
         
         print("🆔 Created new PracticeSession with ID: \(validatedId)")
         print("   - Date: \(date)")
         print("   - Target: \(target)")
         print("   - StartTime: \(startTime)")
+        print("   - First round created: Round 1")
+    }
+    
+    // Internal initializer for CloudKit reconstruction and conversions (no logging)
+    init(id: String,
+                 date: Date,
+                 target: Int,
+                 totalKubbs: Int,
+                 totalBatons: Int,
+                 startTime: Date,
+                 endTime: Date?,
+                 isComplete: Bool,
+                 isPaused: Bool,
+                 rounds: [Round],
+                 createdAt: Date,
+                 modifiedAt: Date) {
+        self.id = id
+        self.date = date
+        self.target = target
+        self.totalKubbs = totalKubbs
+        self.totalBatons = totalBatons
+        self.startTime = startTime
+        self.endTime = endTime
+        self.isComplete = isComplete
+        self.isPaused = isPaused
+        self.rounds = rounds
+        self.createdAt = createdAt
+        self.modifiedAt = modifiedAt
     }
     
     // MARK: - ID Validation
@@ -77,23 +111,26 @@ struct PracticeSession: Identifiable, Codable {
             return nil
         }
         
-        self.id = id
-        self.date = date
-        self.target = Int(target)
-        self.totalKubbs = Int(totalKubbs)
-        self.totalBatons = Int(totalBatons)
-        self.startTime = startTime
-        self.endTime = record["endTime"] as? Date
-        self.isComplete = isComplete == 1
-        self.createdAt = createdAt
-        self.modifiedAt = modifiedAt
+        // Use private initializer to avoid logging for CloudKit reconstruction
+        self.init(
+            id: id,
+            date: date,
+            target: Int(target),
+            totalKubbs: Int(totalKubbs),
+            totalBatons: Int(totalBatons),
+            startTime: startTime,
+            endTime: record["endTime"] as? Date,
+            isComplete: isComplete == 1,
+            isPaused: (record["isPaused"] as? Int64 ?? 0) == 1,
+            rounds: [],
+            createdAt: createdAt,
+            modifiedAt: modifiedAt
+        )
         
         // Parse rounds from JSON string
         if let roundsData = record["rounds"] as? String,
            let roundsJSON = roundsData.data(using: .utf8) {
             self.rounds = (try? JSONDecoder().decode([Round].self, from: roundsJSON)) ?? []
-        } else {
-            self.rounds = []
         }
     }
     
@@ -110,6 +147,7 @@ struct PracticeSession: Identifiable, Codable {
         record["startTime"] = startTime
         record["endTime"] = endTime
         record["isComplete"] = isComplete ? 1 : 0
+        record["isPaused"] = isPaused ? 1 : 0
         record["createdAt"] = createdAt
         record["modifiedAt"] = modifiedAt
         
@@ -131,18 +169,39 @@ struct PracticeSession: Identifiable, Codable {
     
     var progressPercentage: Double {
         guard target > 0 else { return 0.0 }
-        return min(Double(totalKubbs) / Double(target), 1.0)
+        return min(Double(totalBatons) / Double(target), 1.0)
     }
     
     var isTargetReached: Bool {
-        return totalKubbs >= target
+        return totalBatons >= target
     }
     
     var isIncomplete: Bool {
-        // A session is incomplete if it's from today and hasn't reached the target
+        // A session is incomplete ONLY if it's from today and either paused or hasn't reached the target
+        // Sessions from previous days are automatically considered complete (even if target not reached)
         let calendar = Calendar.current
         let isToday = calendar.isDateInToday(date)
-        return isToday && !isTargetReached
+        return isToday && (isPaused || !isTargetReached)
+    }
+    
+    /// Returns a session with auto-completion applied for previous days
+    /// Sessions from previous days are automatically marked as complete
+    func withAutoCompletion() -> PracticeSession {
+        let calendar = Calendar.current
+        let isToday = calendar.isDateInToday(date)
+        
+        // If it's not from today and not already complete, mark it as complete
+        if !isToday && !isComplete {
+            var autoCompletedSession = self
+            autoCompletedSession.isComplete = true
+            autoCompletedSession.isPaused = false
+            autoCompletedSession.endTime = endTime ?? Date()
+            // DON'T update modifiedAt here - this prevents circular sync loops
+            // The modifiedAt should only be updated when the session is actually modified by the user
+            return autoCompletedSession
+        }
+        
+        return self
     }
     
     var currentRound: Round? {
@@ -165,14 +224,23 @@ struct PracticeSession: Identifiable, Codable {
         return rounds.reduce(0) { $0 + $1.kingHits }
     }
     
+    var totalKingThrowAttempts: Int {
+        return rounds.reduce(0) { $0 + $1.kingThrowAttempts }
+    }
+    
     var kingAccuracy: Double {
-        guard totalKingThrows > 0 else { return 0.0 }
-        return Double(totalKingHits) / Double(totalKingThrows)
+        guard totalKingThrowAttempts > 0 else { return 0.0 }
+        return Double(totalKingHits) / Double(totalKingThrowAttempts)
     }
     
     // MARK: - Session Management
     
     mutating func addBatonResult(isHit: Bool) {
+        // Don't add batons if the current round is complete - wait for user confirmation
+        if let currentRound = currentRound, currentRound.isRoundComplete {
+            return
+        }
+        
         totalBatons += 1
         
         if isHit {
@@ -197,17 +265,38 @@ struct PracticeSession: Identifiable, Codable {
             
             rounds[index].addBatonThrow(isHit: isHit, throwType: throwType)
         } else {
-            let newRound = Round(roundNumber: rounds.count + 1)
-            rounds.append(newRound)
-            let index = rounds.count - 1
-            rounds[index].addBatonThrow(isHit: isHit, throwType: .kubb)
+            // If currentRound is nil but rounds exist, it means the last round just completed
+            // Don't create a new round - wait for user confirmation via startNextRound()
+            // The first round is now created when the session starts, so this should never happen
+            // unless a round just completed
         }
     }
     
+    mutating func startNextRound() {
+        // Create a new round when user confirms they're ready
+        let newRound = Round(roundNumber: rounds.count + 1)
+        rounds.append(newRound)
+        modifiedAt = Date()
+    }
+    
     mutating func completeSession() {
-        // Only mark as complete if target is reached
-        isComplete = isTargetReached
+        // Mark as complete when user explicitly ends the session
+        // This ensures the session appears in history regardless of whether target was reached
+        isComplete = true
+        isPaused = false
         endTime = Date()
+        modifiedAt = Date()
+    }
+    
+    mutating func pauseSession() {
+        // Pause the session so it can be resumed later
+        isPaused = true
+        modifiedAt = Date()
+    }
+    
+    mutating func resumeSession() {
+        // Resume a paused session
+        isPaused = false
         modifiedAt = Date()
     }
     

@@ -15,6 +15,15 @@ struct EightMeterTrainingView: View {
     @State private var showingTutorial = false
     @Environment(\.dismiss) private var dismiss
     
+    private var navigationTitle: String {
+        switch selectedTab {
+        case 0: return "Overview"
+        case 1: return "8 Meter Training"
+        case 2: return "Tutorial"
+        default: return "8 Meter Training"
+        }
+    }
+    
     var body: some View {
         NavigationView {
             TabView(selection: $selectedTab) {
@@ -50,35 +59,19 @@ struct EightMeterTrainingView: View {
                         .tag(1)
                 }
                 
-                // Stats Tab
-                StatsView()
-                    .tabItem {
-                        Image(systemName: "chart.line.uptrend.xyaxis.circle")
-                        Text("Stats")
-                    }
-                    .tag(2)
-                
-                // History Tab
-                HistoryView()
-                    .tabItem {
-                        Image(systemName: "clock.arrow.circlepath")
-                        Text("History")
-                    }
-                    .tag(3)
-                
                 // Tutorial Tab
                 TutorialOverviewView()
                     .tabItem {
                         Image(systemName: "questionmark.circle")
                         Text("Tutorial")
                     }
-                    .tag(4)
+                    .tag(2)
             }
-            .navigationTitle("8 Meter Training")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back to Menu") {
+                    Button("Dismiss") {
                         dismiss()
                     }
                 }
@@ -87,8 +80,15 @@ struct EightMeterTrainingView: View {
         .alert("Incomplete Practice Session", isPresented: $showingRecoveryAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Resume", role: .none) {
-                sessionManager.resumeSession()
-                selectedTab = 1
+                if sessionManager.hasPausedSession() {
+                    Task {
+                        await sessionManager.resumeSession()
+                        selectedTab = 1
+                    }
+                } else {
+                    sessionManager.resumeIncompleteSession()
+                    selectedTab = 1
+                }
             }
             Button("Delete", role: .destructive) {
                 Task {
@@ -97,7 +97,8 @@ struct EightMeterTrainingView: View {
             }
         } message: {
             if let session = sessionManager.currentSession {
-                Text("You have an incomplete practice session from \(session.date.formatted(date: .abbreviated, time: .shortened)). What would you like to do?")
+                let sessionType = session.isPaused ? "paused" : "incomplete"
+                Text("You have a \(sessionType) practice session from \(session.date.formatted(date: .abbreviated, time: .shortened)). What would you like to do?")
             } else {
                 Text("You have an incomplete practice session. What would you like to do?")
             }

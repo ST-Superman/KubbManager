@@ -37,7 +37,7 @@ struct SessionResultsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Dismiss") {
                         dismiss()
                     }
                 }
@@ -67,7 +67,7 @@ struct SessionResultsView: View {
         🎯 Kubb Practice Session Results
         
         📅 Date: \(dateFormatter.string(from: session.date))
-        🎯 Target: \(session.target) kubbs
+        🎯 Target: \(session.target) batons
         ✅ Kubbs Knocked: \(session.totalKubbs)
         🪃 Batons Used: \(session.totalBatons)
         🎯 Accuracy: \(String(format: "%.1f%%", session.accuracy * 100))
@@ -110,7 +110,7 @@ struct SessionHeaderView: View {
                     .font(.title)
                     .fontWeight(.bold)
                 
-                Text("Target not reached - \(session.target - session.totalKubbs) kubbs remaining")
+                Text("Target not reached - \(session.target - session.totalBatons) batons remaining")
                     .font(.headline)
                     .foregroundColor(.orange)
             }
