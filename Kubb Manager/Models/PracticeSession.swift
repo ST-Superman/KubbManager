@@ -8,44 +8,60 @@
 import Foundation
 import CloudKit
 
+// MARK: - Practice Session Data Model
+// This struct represents a single practice session where a user practices kubb throwing
+// It tracks progress, rounds, and integrates with CloudKit for data synchronization
+
 struct PracticeSession: Identifiable, Codable, Equatable {
-    let id: String
-    let date: Date
-    var target: Int
-    var totalKubbs: Int
-    var totalBatons: Int
-    var startTime: Date
-    var endTime: Date?
-    var isComplete: Bool
-    var isPaused: Bool
-    var rounds: [Round]
-    let createdAt: Date
-    var modifiedAt: Date
+    // MARK: - Core Properties
+    let id: String          // Unique identifier for this session
+    let date: Date          // Date when the session was created
+    var target: Int         // Target number of batons to throw (user's goal)
+    var totalKubbs: Int     // Total kubb pieces knocked down in this session
+    var totalBatons: Int    // Total batons thrown in this session
+    var startTime: Date     // When the session actually started
+    var endTime: Date?      // When the session ended (nil if still in progress)
+    var isComplete: Bool    // Whether the session has been completed
+    var isPaused: Bool      // Whether the session is currently paused
+    var rounds: [Round]     // Array of rounds within this session
+    let createdAt: Date     // When this session record was created
+    var modifiedAt: Date    // When this session was last modified (for sync purposes)
     
+    // MARK: - Initialization
+    
+    /// Creates a new practice session with the specified parameters
+    /// - Parameters:
+    ///   - id: Unique identifier (auto-generated if not provided)
+    ///   - date: Date for the session (defaults to current date)
+    ///   - target: Target number of batons to throw
+    ///   - startTime: When the session actually started (defaults to current time)
     init(id: String = UUID().uuidString, 
          date: Date = Date(), 
          target: Int, 
          startTime: Date = Date()) {
-        // Validate and ensure unique ID
+        // Validate and ensure unique ID format
         let validatedId = Self.validateAndGenerateUniqueId(id)
         
+        // Initialize all properties with default values
         self.id = validatedId
         self.date = date
         self.target = target
-        self.totalKubbs = 0
-        self.totalBatons = 0
+        self.totalKubbs = 0           // Start with no kubb hits
+        self.totalBatons = 0          // Start with no batons thrown
         self.startTime = startTime
-        self.endTime = nil
-        self.isComplete = false
-        self.isPaused = false
-        self.rounds = []
-        self.createdAt = Date()
-        self.modifiedAt = Date()
+        self.endTime = nil            // No end time initially
+        self.isComplete = false       // Session starts incomplete
+        self.isPaused = false         // Session starts active
+        self.rounds = []              // Start with empty rounds array
+        self.createdAt = Date()       // Record creation time
+        self.modifiedAt = Date()      // Record modification time
         
         // Create the first round immediately when starting a new session
+        // This ensures there's always a current round to throw into
         let firstRound = Round(roundNumber: 1)
         self.rounds.append(firstRound)
         
+        // Log session creation for debugging
         print("🆔 Created new PracticeSession with ID: \(validatedId)")
         print("   - Date: \(date)")
         print("   - Target: \(target)")

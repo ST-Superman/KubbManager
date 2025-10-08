@@ -7,13 +7,21 @@
 
 import SwiftUI
 
+// MARK: - Home View
+// This is the main dashboard view that shows the user's current session status,
+// recent activity, and provides quick access to start new practice sessions
+
 struct HomeView: View {
-    @EnvironmentObject private var sessionManager: SessionManager
-    @Binding var selectedTab: Int
-    @State private var showingTargetSetting = false
-    @State private var cloudKitManager = CloudKitManager.shared
-    @StateObject private var settingsManager = SettingsManager.shared
-    @StateObject private var historyManager = HistoryManager()
+    // MARK: - Environment Objects and State
+    // These objects provide access to shared app state and managers
+    @EnvironmentObject private var sessionManager: SessionManager  // Manages current practice session
+    @Binding var selectedTab: Int                                 // Controls which tab is selected in the parent view
+    
+    // MARK: - Local State
+    @State private var showingTargetSetting = false              // Controls target setting modal presentation
+    @State private var cloudKitManager = CloudKitManager.shared  // CloudKit sync manager
+    @StateObject private var settingsManager = SettingsManager.shared  // App settings manager
+    @StateObject private var historyManager = HistoryManager()   // Manages session history and statistics
     
     var body: some View {
         ScrollView {

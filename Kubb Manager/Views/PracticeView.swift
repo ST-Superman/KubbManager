@@ -7,55 +7,69 @@
 
 import SwiftUI
 
+// MARK: - Practice View
+// This is the main practice interface where users record their baton throws
+// It displays the kubb grid, progress tracking, and provides controls for recording hits/misses
+
 struct PracticeView: View {
-    @EnvironmentObject private var sessionManager: SessionManager
-    @Environment(\.dismiss) private var dismiss
-    @State private var showingEndSessionAlert = false
-    @State private var showingPauseSessionAlert = false
-    @State private var showingResetRoundAlert = false
-    @State private var showingTargetReachedModal = false
-    @State private var showingRoundCompleteModal = false
-    @State private var hasShownTargetReachedAlert = false
-    @State private var lastTargetReachedBatons = 0
-    @State private var lastCompletedRound: Round?
+    // MARK: - Environment Objects
+    @EnvironmentObject private var sessionManager: SessionManager  // Manages the current practice session
+    @Environment(\.dismiss) private var dismiss                   // Allows dismissing this view
     
-    private let hapticSuccess = UINotificationFeedbackGenerator()
-    private let hapticError = UINotificationFeedbackGenerator()
-    private let hapticImpact = UIImpactFeedbackGenerator(style: .medium)
+    // MARK: - Modal and Alert State
+    @State private var showingEndSessionAlert = false            // Controls end session confirmation alert
+    @State private var showingPauseSessionAlert = false          // Controls pause session confirmation alert
+    @State private var showingResetRoundAlert = false            // Controls reset round confirmation alert
+    @State private var showingTargetReachedModal = false         // Controls target reached celebration modal
+    @State private var showingRoundCompleteModal = false         // Controls round completion modal
     
+    // MARK: - Session State Tracking
+    @State private var hasShownTargetReachedAlert = false        // Prevents duplicate target reached alerts
+    @State private var lastTargetReachedBatons = 0               // Tracks when target was last reached
+    @State private var lastCompletedRound: Round?                // Tracks the last completed round for display
+    
+    // MARK: - Haptic Feedback
+    private let hapticSuccess = UINotificationFeedbackGenerator()  // Success haptic feedback
+    private let hapticError = UINotificationFeedbackGenerator()    // Error haptic feedback
+    private let hapticImpact = UIImpactFeedbackGenerator(style: .medium)  // Impact haptic feedback
+    
+    // MARK: - Main View Body
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Progress Section
+                        // Progress Section - Shows current progress toward target
                         ProgressSection()
                             .environmentObject(sessionManager)
                         
-                        // Kubb Grid Section
+                        // Kubb Grid Section - Visual representation of kubb pieces and hits
                         KubbGridSection(lastCompletedRound: lastCompletedRound)
                             .environmentObject(sessionManager)
                         
-                        // Baton Controls Section
+                        // Baton Controls Section - Hit/Miss buttons and throw recording
                         BatonControlsSection()
                             .environmentObject(sessionManager)
                         
-                        // Session Controls Section
+                        // Session Controls Section - Round management and session controls
                         SessionControlsSection()
                             .environmentObject(sessionManager)
                     }
                     .padding()
                 }
             }
+            // Set navigation title for the practice session
             .navigationTitle("Practice Session")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // Left toolbar item - Pause session button
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Pause") {
                         showingPauseSessionAlert = true
                     }
                     .foregroundColor(.orange)
                 }
+                // Right toolbar item - End session button
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("End Session") {
                         showingEndSessionAlert = true
@@ -64,6 +78,7 @@ struct PracticeView: View {
                 }
             }
         }
+        // Pause session confirmation alert
         .alert("Pause Session", isPresented: $showingPauseSessionAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Pause") {
@@ -75,6 +90,7 @@ struct PracticeView: View {
         } message: {
             Text("Pause this practice session? You can resume it later from the main menu.")
         }
+        // End session confirmation alert
         .alert("End Session", isPresented: $showingEndSessionAlert) {
             Button("Cancel", role: .cancel) { }
             Button("End Session", role: .destructive) {
@@ -86,6 +102,7 @@ struct PracticeView: View {
         } message: {
             Text("Are you sure you want to end this practice session? Your progress will be saved and it will appear in your history.")
         }
+        // Reset round confirmation alert
         .alert("Reset Round", isPresented: $showingResetRoundAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Reset Round", role: .destructive) {
@@ -96,6 +113,7 @@ struct PracticeView: View {
         } message: {
             Text("Are you sure you want to reset the current round? This will clear all progress for this round.")
         }
+        // Monitor target reached status and show celebration modal
         .onChange(of: sessionManager.isTargetReached) { _, isReached in
             if isReached && !hasShownTargetReachedAlert && sessionManager.totalBatons > lastTargetReachedBatons {
                 hapticSuccess.notificationOccurred(.success)
@@ -103,6 +121,7 @@ struct PracticeView: View {
                 lastTargetReachedBatons = sessionManager.totalBatons
             }
         }
+        // Monitor current round changes to detect round completion
         .onChange(of: sessionManager.currentRound) { _, newCurrentRound in
             // Check if currentRound became nil (indicating a round just completed)
             if newCurrentRound == nil,
@@ -114,8 +133,8 @@ struct PracticeView: View {
                 showingRoundCompleteModal = true
             }
         }
+        // Overlay for round completion modal
         .overlay(
-            // Round Complete Modal
             Group {
                 if showingRoundCompleteModal {
                     RoundCompleteModalView(
@@ -130,8 +149,8 @@ struct PracticeView: View {
                 }
             }
         )
+        // Overlay for target reached celebration modal
         .overlay(
-            // Target Reached Modal
             Group {
                 if showingTargetReachedModal {
                     TargetReachedModalView(
@@ -154,12 +173,14 @@ struct PracticeView: View {
     }
 }
 
+// MARK: - Progress Section View
+// Displays the current progress toward the session target and key statistics
 struct ProgressSection: View {
     @EnvironmentObject private var sessionManager: SessionManager
     
     var body: some View {
         VStack(spacing: 16) {
-            // Progress Bar
+            // Progress Bar Section - Shows visual progress toward target
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Progress")
@@ -173,12 +194,13 @@ struct ProgressSection: View {
                         .foregroundColor(.secondary)
                 }
                 
+                // Linear progress bar showing current vs target batons
                 ProgressView(value: sessionManager.progressPercentage)
                     .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
                     .scaleEffect(x: 1, y: 2, anchor: .center)
             }
             
-            // Statistics Row
+            // Statistics Row - Shows key performance metrics
             HStack(spacing: 20) {
                 StatisticItem(
                     title: "Accuracy",
@@ -207,6 +229,10 @@ struct ProgressSection: View {
         .cornerRadius(16)
     }
     
+    // MARK: - Computed Properties
+    
+    /// Progress bar color based on completion percentage
+    /// Green: 100%+ complete, Blue: 70%+, Orange: 40%+, Red: <40%
     private var progressColor: Color {
         let percentage = sessionManager.progressPercentage
         if percentage >= 1.0 {
@@ -220,6 +246,8 @@ struct ProgressSection: View {
         }
     }
     
+    /// Accuracy text color based on performance level
+    /// Green: 70%+, Yellow: 50-69%, Red: <50%
     private var accuracyColor: Color {
         let accuracy = sessionManager.accuracy
         if accuracy >= 0.7 {
@@ -232,34 +260,41 @@ struct ProgressSection: View {
     }
 }
 
+// MARK: - Statistic Item View
+// A reusable component for displaying individual statistics with icon, value, and title
 struct StatisticItem: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
+    let title: String    // The label for the statistic (e.g., "Accuracy")
+    let value: String    // The numeric value to display (e.g., "85.2%")
+    let icon: String     // SF Symbol name for the icon
+    let color: Color     // Color theme for the icon and value
     
     var body: some View {
         VStack(spacing: 4) {
+            // Icon at the top
             Image(systemName: icon)
                 .font(.title2)
                 .foregroundColor(color)
             
+            // Main value in bold
             Text(value)
                 .font(.headline)
                 .fontWeight(.bold)
             
+            // Title label below
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity)  // Equal width distribution
     }
 }
 
+// MARK: - Kubb Grid Section View
+// Displays the visual representation of kubb pieces and tracks which ones have been hit
 struct KubbGridSection: View {
-    @EnvironmentObject private var sessionManager: SessionManager
-    @StateObject private var skinManager = SkinManager.shared
-    let lastCompletedRound: Round?
+    @EnvironmentObject private var sessionManager: SessionManager  // Manages current session state
+    @StateObject private var skinManager = SkinManager.shared     // Manages skin customization
+    let lastCompletedRound: Round?                                // Reference to last completed round for animations
     
     var body: some View {
         VStack(spacing: 16) {
@@ -267,7 +302,7 @@ struct KubbGridSection: View {
                 .font(.headline)
             
             VStack(spacing: 12) {
-                // First line: 5 regular kubbs
+                // First line: 5 regular kubbs (baseline kubbs)
                 HStack(spacing: 12) {
                     ForEach(0..<5, id: \.self) { index in
                         KubbView(
@@ -278,7 +313,7 @@ struct KubbGridSection: View {
                     }
                 }
                 
-                // Second line: King kubb (only shown when all 5 are hit)
+                // Second line: King kubb (only shown when all 5 baseline kubbs are hit)
                 if let displayRound = getDisplayRound(), displayRound.hits >= 5 {
                     KingKubbView(
                         isKnockedDown: displayRound.kingThrowsCount > 0 && displayRound.kingHits > 0,
@@ -290,6 +325,7 @@ struct KubbGridSection: View {
             .background(Color(.systemGray6))
             .cornerRadius(16)
             
+            // Round statistics display
             if let displayRound = getDisplayRound() {
                 VStack(spacing: 4) {
                     Text("Round \(displayRound.roundNumber)")
@@ -328,6 +364,7 @@ struct KubbGridSection: View {
                         }
                     }
                     
+                    // Baseline clear achievement indicator
                     if displayRound.hasBaselineClear {
                         HStack {
                             Image(systemName: "crown.fill")
@@ -343,6 +380,7 @@ struct KubbGridSection: View {
                         .cornerRadius(8)
                     }
                     
+                    // King throw attempts indicator
                     if displayRound.kingThrowsCount > 0 {
                         HStack {
                             Image(systemName: "crown")
@@ -360,33 +398,38 @@ struct KubbGridSection: View {
     
     // MARK: - Helper Functions
     
+    /// Determines which round to display (current active round or last completed round)
     private func getDisplayRound() -> Round? {
         // Show current round if available, otherwise show the last completed round
         return sessionManager.currentRound ?? lastCompletedRound
     }
     
+    /// Gets the hit/miss state for a specific kubb piece at the given index
     private func getKubbState(at index: Int) -> Bool {
         // Get kubb state from the display round
         return getDisplayRound()?.kubbState(at: index) ?? false
     }
 }
 
+// MARK: - Kubb View
+// Individual kubb piece display with animation and skin support
 struct KubbView: View {
-    let number: Int
-    let isKnockedDown: Bool
-    let skin: KubbSkin?
-    @StateObject private var skinManager = SkinManager.shared
-    @State private var animationOffset: CGFloat = 0
-    @State private var animationRotation: Double = 0
-    @State private var selectedImageName: String?
-    @State private var selectedDownImageName: String?
+    let number: Int                    // Kubb piece number (1-5)
+    let isKnockedDown: Bool           // Whether this kubb has been hit
+    let skin: KubbSkin?               // Optional skin for customization
+    
+    @StateObject private var skinManager = SkinManager.shared  // Skin management
+    @State private var animationOffset: CGFloat = 0           // Vertical offset for knockdown animation
+    @State private var animationRotation: Double = 0          // Rotation for knockdown animation
+    @State private var selectedImageName: String?             // Selected image for upright state
+    @State private var selectedDownImageName: String?         // Selected image for knocked down state
     
     init(number: Int, isKnockedDown: Bool, skin: KubbSkin? = nil) {
         self.number = number
         self.isKnockedDown = isKnockedDown
         self.skin = skin
         
-        // Initialize images immediately
+        // Initialize images immediately for better performance
         let skinManager = SkinManager.shared
         self._selectedImageName = State(initialValue: skinManager.getRandomKubbImageName(for: number - 1))
         self._selectedDownImageName = State(initialValue: skinManager.getRandomKubbDownImageName(for: number - 1))
@@ -394,8 +437,8 @@ struct KubbView: View {
     
     var body: some View {
         ZStack {
+            // Image-based kubb rendering (if skin has images)
             if let imageName = getCurrentImageName() {
-                // Image-based kubb with custom down animation
                 Image(imageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -408,7 +451,7 @@ struct KubbView: View {
                         selectImages()
                     }
             } else {
-                // Color-based kubb (original implementation)
+                // Color-based kubb rendering (fallback/default)
                 RoundedRectangle(cornerRadius: 4)
                     .fill(kubbColor)
                     .frame(width: 20, height: 50)
@@ -424,7 +467,7 @@ struct KubbView: View {
                     }
             }
             
-            // Kubb number (only show for color-based kubbs or if no image)
+            // Kubb number display (only for color-based kubbs)
             if skin?.kubbImageName == nil {
                 Text("\(number)")
                     .font(.caption)
@@ -436,6 +479,7 @@ struct KubbView: View {
             }
         }
         .frame(width: 60, height: 60)
+        // Monitor knockdown state changes to trigger animations
         .onChange(of: isKnockedDown) { _, newValue in
             if newValue {
                 // Trigger knock-over animation
@@ -484,20 +528,23 @@ struct KubbView: View {
     }
 }
 
+// MARK: - King Kubb View
+// King kubb piece display with animation and skin support (larger than regular kubbs)
 struct KingKubbView: View {
-    let isKnockedDown: Bool
-    let skin: KubbSkin?
-    @StateObject private var skinManager = SkinManager.shared
-    @State private var animationOffset: CGFloat = 0
-    @State private var animationRotation: Double = 0
-    @State private var selectedImageName: String?
-    @State private var selectedDownImageName: String?
+    let isKnockedDown: Bool           // Whether the king has been hit
+    let skin: KubbSkin?               // Optional skin for customization
+    
+    @StateObject private var skinManager = SkinManager.shared  // Skin management
+    @State private var animationOffset: CGFloat = 0           // Vertical offset for knockdown animation
+    @State private var animationRotation: Double = 0          // Rotation for knockdown animation
+    @State private var selectedImageName: String?             // Selected image for upright state
+    @State private var selectedDownImageName: String?         // Selected image for knocked down state
     
     init(isKnockedDown: Bool, skin: KubbSkin? = nil) {
         self.isKnockedDown = isKnockedDown
         self.skin = skin
         
-        // Initialize images immediately
+        // Initialize images immediately for better performance
         let skinManager = SkinManager.shared
         self._selectedImageName = State(initialValue: skinManager.getRandomKingImageName())
         self._selectedDownImageName = State(initialValue: skinManager.getRandomKingDownImageName())
@@ -505,8 +552,8 @@ struct KingKubbView: View {
     
     var body: some View {
         ZStack {
+            // Image-based king rendering (if skin has images)
             if let imageName = getCurrentImageName() {
-                // Image-based king with custom down animation
                 Image(imageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -519,7 +566,7 @@ struct KingKubbView: View {
                         selectImages()
                     }
             } else {
-                // Color-based king (original implementation)
+                // Color-based king rendering (fallback/default)
                 RoundedRectangle(cornerRadius: 8)
                     .fill(kingColor)
                     .frame(width: 40, height: 100)
@@ -542,9 +589,10 @@ struct KingKubbView: View {
             }
         }
         .frame(width: 120, height: 120)
+        // Monitor knockdown state changes to trigger animations
         .onChange(of: isKnockedDown) { _, newValue in
             if newValue {
-                // Trigger knock-over animation
+                // Trigger knock-over animation with larger movement for king
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                     animationOffset = 20
                     animationRotation = 90
@@ -590,13 +638,19 @@ struct KingKubbView: View {
     }
 }
 
+// MARK: - Baton Controls Section View
+// Provides the main interface for recording baton throws (hit/miss)
 struct BatonControlsSection: View {
     @EnvironmentObject private var sessionManager: SessionManager
     
-    private let hapticSuccess = UINotificationFeedbackGenerator()
-    private let hapticError = UINotificationFeedbackGenerator()
-    private let hapticImpact = UIImpactFeedbackGenerator(style: .heavy)
+    // MARK: - Haptic Feedback
+    private let hapticSuccess = UINotificationFeedbackGenerator()  // Success feedback
+    private let hapticError = UINotificationFeedbackGenerator()    // Error feedback
+    private let hapticImpact = UIImpactFeedbackGenerator(style: .heavy)  // Heavy impact feedback
     
+    // MARK: - Computed Properties
+    
+    /// Determines if the current round is complete (controls button states)
     private var isRoundComplete: Bool {
         // Round is complete if current round is complete OR if there's no current round (modal should show)
         return sessionManager.currentRound?.isRoundComplete ?? true
@@ -608,7 +662,7 @@ struct BatonControlsSection: View {
                 .font(.headline)
             
             HStack(spacing: 30) {
-                // MISS Button
+                // MISS Button - Records a missed baton throw
                 Button(action: { recordBatonResult(isHit: false) }) {
                     VStack(spacing: 8) {
                         Image(systemName: "xmark.circle.fill")
@@ -631,7 +685,7 @@ struct BatonControlsSection: View {
                 .accessibilityLabel("Miss")
                 .accessibilityHint(isRoundComplete ? "Round complete - wait for next round" : "Record a missed baton throw")
                 
-                // HIT Button
+                // HIT Button - Records a successful baton throw
                 Button(action: { recordBatonResult(isHit: true) }) {
                     VStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
@@ -655,43 +709,55 @@ struct BatonControlsSection: View {
                 .accessibilityHint(isRoundComplete ? "Round complete - wait for next round" : "Record a successful baton throw")
             }
             
+            // Instructional text that changes based on round state
             Text(isRoundComplete ? "Round complete - tap 'Start Next Round' to continue" : "Tap the result of your baton throw")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
     }
     
+    // MARK: - Helper Functions
+    
+    /// Records a baton throw result (hit or miss) with haptic feedback
     private func recordBatonResult(isHit: Bool) {
+        // Provide immediate haptic feedback for button press
         hapticImpact.impactOccurred()
         
+        // Provide success/error haptic feedback based on result
         if isHit {
             hapticSuccess.notificationOccurred(.success)
         } else {
             hapticError.notificationOccurred(.error)
         }
         
+        // Record the result in the session manager asynchronously
         Task {
             await sessionManager.addBatonResult(isHit: isHit)
         }
     }
 }
 
+// MARK: - Session Controls Section View
+// Provides controls for managing the current session (reset round, etc.)
 struct SessionControlsSection: View {
-    @EnvironmentObject private var sessionManager: SessionManager
-    @State private var showingResetRoundAlert = false
+    @EnvironmentObject private var sessionManager: SessionManager  // Manages current session state
+    @State private var showingResetRoundAlert = false             // Controls reset confirmation alert
     
     var body: some View {
         VStack(spacing: 12) {
+            // Reset round button with confirmation
             Button("Reset Current Round") {
                 showingResetRoundAlert = true
             }
             .buttonStyle(SecondaryButtonStyle())
             
+            // Help text for the reset button
             Text("Tap to reset the current round if you need to start over")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
+        // Reset round confirmation alert
         .alert("Reset Round", isPresented: $showingResetRoundAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Reset Round", role: .destructive) {
@@ -705,6 +771,8 @@ struct SessionControlsSection: View {
     }
 }
 
+// MARK: - Secondary Button Style
+// Custom button style for secondary actions (reset, etc.)
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -722,40 +790,42 @@ struct SecondaryButtonStyle: ButtonStyle {
 
 // MARK: - Custom Modal Views
 
+// MARK: - Round Complete Modal View
+// Modal shown when a round is completed, prompting user to start next round
 struct RoundCompleteModalView: View {
-    @Binding var isPresented: Bool
-    let onStartNextRound: () -> Void
+    @Binding var isPresented: Bool    // Controls modal visibility
+    let onStartNextRound: () -> Void  // Callback when user starts next round
     
     var body: some View {
         ZStack {
-            // Background overlay - don't cover navigation bar
+            // Background overlay - dims the background content
             Color.black.opacity(0.6)
                 .ignoresSafeArea(.container, edges: .bottom)
                 .onTapGesture {
                     // Prevent dismissing by tapping background
                 }
             
-            // Modal content
+            // Modal content container
             VStack(spacing: 24) {
-                // Icon
+                // Success icon
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 60))
                     .foregroundColor(.green)
                 
-                // Title
+                // Modal title
                 Text("Round Complete!")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                // Message
+                // Instructional message
                 Text("Please stand any knocked down kubbs back up and retrieve your batons before starting the next round.")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
-                // Action button
+                // Primary action button
                 Button("Start Next Round") {
                     onStartNextRound()
                 }
@@ -771,42 +841,44 @@ struct RoundCompleteModalView: View {
     }
 }
 
+// MARK: - Target Reached Modal View
+// Modal shown when user reaches their practice target, offering options to continue or end
 struct TargetReachedModalView: View {
-    @Binding var isPresented: Bool
-    let target: Int
-    let onContinuePractice: () -> Void
-    let onEndSession: () -> Void
+    @Binding var isPresented: Bool      // Controls modal visibility
+    let target: Int                     // The target number of batons that was reached
+    let onContinuePractice: () -> Void  // Callback when user chooses to continue practicing
+    let onEndSession: () -> Void        // Callback when user chooses to end the session
     
     var body: some View {
         ZStack {
-            // Background overlay - don't cover navigation bar
+            // Background overlay - dims the background content
             Color.black.opacity(0.6)
                 .ignoresSafeArea(.container, edges: .bottom)
                 .onTapGesture {
                     // Prevent dismissing by tapping background
                 }
             
-            // Modal content
+            // Modal content container
             VStack(spacing: 24) {
-                // Icon
+                // Celebration icon
                 Image(systemName: "trophy.fill")
                     .font(.system(size: 60))
                     .foregroundColor(.yellow)
                 
-                // Title
+                // Modal title
                 Text("Target Reached!")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                // Message
+                // Congratulatory message with target info
                 Text("Congratulations! You've reached your target of \(target) batons! 🎉\n\nWould you like to continue practicing or end your session?")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
-                // Action buttons
+                // Action buttons - two options for the user
                 VStack(spacing: 12) {
                     Button("Continue Practice") {
                         onContinuePractice()

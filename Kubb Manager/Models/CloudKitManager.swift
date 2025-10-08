@@ -9,50 +9,84 @@ import Foundation
 import CloudKit
 import Combine
 
+// MARK: - CloudKit Data Synchronization Manager
+// This class handles all CloudKit operations for syncing app data across devices
+// It manages iCloud authentication, data sync, and provides fallback to local storage
+
 @MainActor
 class CloudKitManager: ObservableObject {
+    // MARK: - Singleton Pattern
+    // Shared instance ensures only one CloudKit connection throughout the app
+    // This prevents multiple sync operations and ensures data consistency
     static let shared = CloudKitManager()
     
+    // MARK: - CloudKit Components
+    // CKContainer represents the app's CloudKit container (like a database)
+    // CKDatabase provides access to the private database (user's personal data)
     private let container: CKContainer
     private let privateDatabase: CKDatabase
+    
+    // Local storage manager for fallback when CloudKit is unavailable
     private let localStorage = LocalStorageManager.shared
     
-    @Published var accountStatus: CKAccountStatus = .couldNotDetermine
-    @Published var isSignedIn: Bool = false
-    @Published var syncStatus: SyncStatus = .idle
+    // MARK: - Published Properties
+    // These properties automatically update the UI when their values change
+    @Published var accountStatus: CKAccountStatus = .couldNotDetermine  // Current iCloud sign-in status
+    @Published var isSignedIn: Bool = false                             // Simplified boolean for UI
+    @Published var syncStatus: SyncStatus = .idle                       // Current sync operation status
     
+    // MARK: - Sync Status Enumeration
+    // Represents the different states of CloudKit synchronization
     enum SyncStatus {
-        case idle
-        case syncing
-        case success
-        case error(String)
+        case idle        // No sync operation in progress
+        case syncing     // Sync operation currently running
+        case success     // Last sync operation completed successfully
+        case error(String) // Last sync operation failed with error message
     }
     
+    // MARK: - Initialization
+    // Private initializer ensures singleton pattern - only one instance can exist
     private init() {
+        // Initialize CloudKit container with the app's unique identifier
+        // This identifier must match what's configured in Apple Developer Console
         container = CKContainer(identifier: "iCloud.ST-Superman.Kubb-Manager")
+        
+        // Get reference to the private database (user's personal data)
+        // Private database requires user to be signed in to iCloud
         privateDatabase = container.privateCloudDatabase
         
+        // Check account status asynchronously when manager is created
+        // This ensures we know the user's iCloud status right away
         Task {
             await checkAccountStatus()
         }
     }
     
-    // MARK: - Account Status
+    // MARK: - Account Status Management
     
+    /// Checks the current iCloud account status and updates UI accordingly
+    /// This method is called automatically on init and can be called manually to refresh status
     func checkAccountStatus() async {
         do {
+            // Request current account status from CloudKit
             accountStatus = try await container.accountStatus()
+            
+            // Store previous sign-in state to detect changes
             let wasSignedIn = isSignedIn
+            
+            // Update sign-in status based on account availability
             isSignedIn = accountStatus == .available
             
             print("CloudKit account status: \(accountStatus.rawValue), isSignedIn: \(isSignedIn)")
             
-            // If we just signed in, try to sync local data to CloudKit
+            // If user just signed in, automatically sync local data to CloudKit
+            // This ensures no data is lost when user enables iCloud sync
             if !wasSignedIn && isSignedIn {
                 print("User just signed in, syncing local data to CloudKit...")
                 await syncLocalDataToCloudKit()
             }
         } catch {
+            // Handle any errors checking account status
             print("Error checking account status: \(error)")
             accountStatus = .couldNotDetermine
             isSignedIn = false

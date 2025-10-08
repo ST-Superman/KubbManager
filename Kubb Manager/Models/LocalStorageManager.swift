@@ -7,52 +7,82 @@
 
 import Foundation
 
+// MARK: - Local Data Storage Manager
+// This class handles all local data persistence using UserDefaults
+// It serves as a fallback when CloudKit is unavailable and manages all session data
+
 @MainActor
 class LocalStorageManager: ObservableObject {
+    // MARK: - Singleton Pattern
+    // Shared instance ensures consistent data access throughout the app
     static let shared = LocalStorageManager()
     
+    // MARK: - Storage Components
+    // UserDefaults provides simple key-value storage for app preferences and data
     private let userDefaults = UserDefaults.standard
+    
+    // Key used to store practice sessions in UserDefaults
+    // This key identifies where session data is stored in the user's device storage
     private let sessionsKey = "PracticeSessions"
     
+    // MARK: - Initialization
+    // Private initializer ensures singleton pattern
     private init() {}
     
-    // MARK: - Session Operations
+    // MARK: - Practice Session Operations
     
+    /// Saves a practice session to local storage
+    /// Updates existing session if it exists, or adds new session if it doesn't
+    /// Sessions are automatically sorted by creation date (newest first)
     func saveSession(_ session: PracticeSession) {
+        // Load all existing sessions from storage
         var sessions = loadSessions()
         
-        // Update existing session or add new one
+        // Check if session already exists (by unique ID)
         if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            // Update existing session at found index
             sessions[index] = session
         } else {
+            // Add new session to the array
             sessions.append(session)
         }
         
-        // Sort by creation date (newest first)
+        // Sort sessions by creation date (newest first) for consistent ordering
         sessions.sort { $0.createdAt > $1.createdAt }
         
+        // Save the updated sessions array back to storage
         saveSessions(sessions)
     }
     
+    /// Loads all practice sessions from local storage
+    /// Returns empty array if no sessions exist or if there's an error
     func loadSessions() -> [PracticeSession] {
+        // Try to get session data from UserDefaults
         guard let data = userDefaults.data(forKey: sessionsKey) else {
+            // No data found - return empty array (first app launch)
             return []
         }
         
         do {
+            // Decode JSON data back into PracticeSession objects
             let sessions = try JSONDecoder().decode([PracticeSession].self, from: data)
             return sessions
         } catch {
+            // Handle decoding errors (corrupted data, format changes, etc.)
             print("Error loading sessions from local storage: \(error)")
             return []
         }
     }
     
+    /// Finds and returns the most recent incomplete practice session
+    /// An incomplete session is one that was started today but not finished
+    /// This allows users to resume their practice session if they close the app
     func fetchIncompleteSession() -> PracticeSession? {
         let sessions = loadSessions()
         print("🔍 Checking for incomplete sessions...")
         print("Total sessions: \(sessions.count)")
         
+        // Debug logging to help troubleshoot session state
         for session in sessions {
             let calendar = Calendar.current
             let isToday = calendar.isDateInToday(session.date)
@@ -69,6 +99,8 @@ class LocalStorageManager: ObservableObject {
             print("  - Is complete: \(session.isComplete)")
         }
         
+        // Find first session that meets incomplete criteria
+        // (started today, target not reached, not marked complete)
         let incompleteSession = sessions.first { $0.isIncomplete }
         if let session = incompleteSession {
             print("✅ Found incomplete session: \(session.id)")

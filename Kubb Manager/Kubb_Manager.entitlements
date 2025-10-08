@@ -1,19 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Kubb Manager App Entitlements
+  
+  This file defines the app's capabilities and permissions required for:
+  - CloudKit data synchronization across devices
+  - Push notifications for training reminders
+  - App sandboxing for security
+  - User file access for data import/export
+  
+  Key entitlements:
+  - CloudKit: Enables iCloud sync for practice sessions and game data
+  - Push Notifications: Allows training reminders and session notifications
+  - App Sandbox: Provides security isolation from other apps
+-->
 <plist version="1.0">
 <dict>
+	<!-- Push notification environment (development/production) -->
 	<key>aps-environment</key>
 	<string>development</string>
+	
+	<!-- CloudKit container identifier for data synchronization -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.ST-Superman.Kubb-Manager</string>
 	</array>
+	
+	<!-- CloudKit services enabled for this app -->
 	<key>com.apple.developer.icloud-services</key>
 	<array>
 		<string>CloudKit</string>
 	</array>
+	
+	<!-- App sandboxing enabled for security -->
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	
+	<!-- Read-only access to user-selected files (for data import) -->
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
 </dict>

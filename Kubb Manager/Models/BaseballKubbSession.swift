@@ -8,12 +8,15 @@
 import Foundation
 import CloudKit
 
+// MARK: - User Team Selection
+// This enum defines which team the user is playing for in a Baseball Kubb game
 enum UserTeam: String, CaseIterable, Codable {
-    case away = "away"
-    case home = "home"
-    case both = "both"
-    case none = "none"
+    case away = "away"  // User plays for the away team
+    case home = "home"  // User plays for the home team
+    case both = "both"  // User practices with both teams (training mode)
+    case none = "none"  // User is just keeping score (scorekeeper mode)
     
+    /// Human-readable display name for the user team selection
     var displayName: String {
         switch self {
         case .away:
@@ -28,37 +31,52 @@ enum UserTeam: String, CaseIterable, Codable {
     }
 }
 
+// MARK: - Baseball Kubb Session Data Model
+// This struct represents a complete Baseball Kubb game session
+// It combines traditional kubb rules with baseball-style innings and scoring
+
 struct BaseballKubbSession: Identifiable, Codable {
-    let id: String
-    let date: Date
-    var awayTeam: String
-    var homeTeam: String
-    var userTeam: UserTeam
-    var currentInning: Int
-    var isTop: Bool // true = top (away), false = bottom (home)
-    var awayScore: Int
-    var homeScore: Int
-    var awayKings: Int
-    var homeKings: Int
-    var fieldKubbs: Int
-    var fieldKubbsAtStartOfHalf: Int
-    var awayBaselineKubbs: Int
-    var homeBaselineKubbs: Int
-    var batonCount: Int
-    var missCount: Int
-    var halfInningRuns: Int
-    var halfInningKings: Int
-    var runsAfterKingHit: Int
-    var kingThrowAttempts: Int
-    var firstThrowKubbsHit: Int
-    var gameOver: Bool
-    var winner: String?
-    var throwHistory: [BaseballKubbThrowState]
-    var halfInningHistory: [BaseballKubbHalfInningState]
-    var scoreboardHistory: [BaseballKubbScoreboardEntry]
-    var isComplete: Bool
-    let createdAt: Date
-    var modifiedAt: Date
+    // MARK: - Basic Properties
+    let id: String              // Unique identifier for this game session
+    let date: Date              // Date when the game was played
+    var awayTeam: String        // Name of the away team
+    var homeTeam: String        // Name of the home team
+    var userTeam: UserTeam      // Which team the user is playing for
+    
+    // MARK: - Game State Properties
+    var currentInning: Int      // Current inning number (1-9+)
+    var isTop: Bool             // true = top half (away team), false = bottom half (home team)
+    var gameOver: Bool          // Whether the game has ended
+    var winner: String?         // Winning team name (nil if game not over)
+    var isComplete: Bool        // Whether the game session is complete
+    
+    // MARK: - Score Tracking
+    var awayScore: Int          // Away team's total runs
+    var homeScore: Int          // Home team's total runs
+    var awayKings: Int          // Away team's total kings
+    var homeKings: Int          // Home team's total kings
+    
+    // MARK: - Current Half-Inning State
+    var fieldKubbs: Int                    // Kubbs currently on the field
+    var fieldKubbsAtStartOfHalf: Int      // Field kubbs at start of current half-inning
+    var awayBaselineKubbs: Int            // Away team's baseline kubbs
+    var homeBaselineKubbs: Int            // Home team's baseline kubbs
+    var batonCount: Int                   // Batons thrown in current half-inning
+    var missCount: Int                    // Misses in current half-inning
+    var halfInningRuns: Int               // Runs scored in current half-inning
+    var halfInningKings: Int              // Kings hit in current half-inning
+    var runsAfterKingHit: Int             // Runs scored after a king hit (for field kubb calculation)
+    var kingThrowAttempts: Int            // Total king throw attempts in game
+    var firstThrowKubbsHit: Int           // Kubbs hit on first throw of half-inning
+    
+    // MARK: - History and Undo Support
+    var throwHistory: [BaseballKubbThrowState]        // State after each throw (for undo)
+    var halfInningHistory: [BaseballKubbHalfInningState] // State at start of each half-inning
+    var scoreboardHistory: [BaseballKubbScoreboardEntry] // Scoreboard data for each half-inning
+    
+    // MARK: - Metadata
+    let createdAt: Date         // When this session was created
+    var modifiedAt: Date        // When this session was last modified
     
     init(id: String = UUID().uuidString, date: Date = Date(), awayTeam: String = "", homeTeam: String = "", userTeam: UserTeam = .away) {
         self.id = id

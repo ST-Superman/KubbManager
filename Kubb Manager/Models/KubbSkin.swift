@@ -9,49 +9,53 @@ import Foundation
 import SwiftUI
 
 // MARK: - Kubb Skin System
+// This file defines the skin system that allows users to customize the appearance
+// of kubb pieces, kings, and batons in the game. Skins can use either colors or images.
 
 struct KubbSkin: Identifiable, Codable, Equatable {
-    let id: String
-    let name: String
-    let description: String
-    let category: SkinCategory
-    let unlockType: UnlockType
-    let unlockRequirement: String
-    let isUnlocked: Bool
-    let isDefault: Bool
+    // MARK: - Basic Properties
+    let id: String              // Unique identifier for the skin
+    let name: String            // Display name shown in the UI
+    let description: String     // Description shown in the UI
+    let category: SkinCategory  // Category for grouping skins (Classic, Modern, etc.)
+    let unlockType: UnlockType  // How the skin is unlocked (default, achievement, etc.)
+    let unlockRequirement: String // Text description of unlock requirement
+    let isUnlocked: Bool        // Whether user has unlocked this skin
+    let isDefault: Bool         // Whether this is a default skin (always unlocked)
     
-    // Visual properties
-    let kubbColor: SkinColor
-    let kubbAccentColor: SkinColor?
-    let kingColor: SkinColor
-    let kingAccentColor: SkinColor?
-    let texture: SkinTexture?
-    let pattern: SkinPattern?
+    // MARK: - Visual Properties (Color-based skins)
+    let kubbColor: SkinColor        // Base color for kubb pieces
+    let kubbAccentColor: SkinColor? // Optional accent color for kubb pieces
+    let kingColor: SkinColor        // Base color for king piece
+    let kingAccentColor: SkinColor? // Optional accent color for king piece
+    let texture: SkinTexture?       // Optional texture effect (wood, metal, etc.)
+    let pattern: SkinPattern?       // Optional pattern effect (stripes, dots, etc.)
     
-    // Image-based skin properties
-    let kubbImageName: String?
-    let kubbImageNames: [String] // Multiple kubb images (1-10)
-    let kubbDownImageName: String?
-    let kubbDownImageNames: [String] // Multiple kubb down images (1-10)
-    let kingImageName: String?
-    let kingImageNames: [String] // Multiple king images (1+)
-    let kingDownImageName: String?
-    let kingDownImageNames: [String] // Multiple king down images (1+)
-    let kubbImageScale: Double
-    let kingImageScale: Double
+    // MARK: - Image-based Skin Properties
+    // These allow skins to use custom images instead of just colors
+    let kubbImageName: String?      // Single image for all kubb pieces
+    let kubbImageNames: [String]    // Multiple images for variety (1-10 pieces)
+    let kubbDownImageName: String?  // Single image for knocked-down kubb pieces
+    let kubbDownImageNames: [String] // Multiple images for knocked-down pieces (1-10)
+    let kingImageName: String?      // Single image for king piece
+    let kingImageNames: [String]    // Multiple images for king piece variety
+    let kingDownImageName: String?  // Single image for knocked-down king
+    let kingDownImageNames: [String] // Multiple images for knocked-down king
+    let kubbImageScale: Double      // Scale factor for kubb images (1.0 = normal size)
+    let kingImageScale: Double      // Scale factor for king images (1.0 = normal size)
     
-    // Baton skin properties
-    let batonColor: SkinColor
-    let batonAccentColor: SkinColor?
-    let batonImageName: String?
-    let batonImageNames: [String] // Multiple baton images (1-6)
-    let batonImageScale: Double
-    let batonHighlightColor: SkinColor
-    let batonHighlightStyle: BatonHighlightStyle
+    // MARK: - Baton Skin Properties
+    let batonColor: SkinColor           // Base color for batons
+    let batonAccentColor: SkinColor?    // Optional accent color for batons
+    let batonImageName: String?         // Single image for all batons
+    let batonImageNames: [String]       // Multiple images for baton variety (1-6 batons)
+    let batonImageScale: Double         // Scale factor for baton images
+    let batonHighlightColor: SkinColor  // Color used when baton is selected/highlighted
+    let batonHighlightStyle: BatonHighlightStyle // Visual style for highlighting (glow, border, etc.)
     
-    // Icon and preview
-    let iconName: String
-    let previewImageName: String?
+    // MARK: - UI Properties
+    let iconName: String        // SF Symbol name for skin selection UI
+    let previewImageName: String? // Optional preview image for skin selection
     
     init(
         id: String,

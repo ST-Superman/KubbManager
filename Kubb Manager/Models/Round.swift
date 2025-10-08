@@ -7,12 +7,23 @@
 
 import Foundation
 
+// MARK: - Round Data Model
+// This struct represents a single round within a practice session
+// A round consists of up to 6 baton throws (5 regular + 1 king throw if all 5 hit)
+
 struct Round: Identifiable, Codable, Equatable {
-    let id: String
-    let roundNumber: Int
-    var batonThrows: [BatonThrow] = []
-    var isComplete: Bool = false
+    // MARK: - Core Properties
+    let id: String              // Unique identifier for this round
+    let roundNumber: Int        // Which round this is (1, 2, 3, etc.)
+    var batonThrows: [BatonThrow] = []  // Array of baton throws in this round
+    var isComplete: Bool = false         // Whether this round is finished
     
+    // MARK: - Initialization
+    
+    /// Creates a new round with the specified number
+    /// - Parameters:
+    ///   - id: Unique identifier (auto-generated if not provided)
+    ///   - roundNumber: The round number (1, 2, 3, etc.)
     init(id: String = UUID().uuidString, roundNumber: Int) {
         self.id = id
         self.roundNumber = roundNumber
@@ -20,28 +31,35 @@ struct Round: Identifiable, Codable, Equatable {
     
     // MARK: - Computed Properties
     
+    /// Total number of baton throws in this round
     var totalBatonThrows: Int {
         return batonThrows.count
     }
     
+    /// Number of successful hits in this round
     var hits: Int {
         return batonThrows.filter { $0.isHit }.count
     }
     
+    /// Number of missed throws in this round
     var misses: Int {
         return batonThrows.filter { !$0.isHit }.count
     }
     
+    /// Hit accuracy percentage for this round (0.0 to 1.0)
     var accuracy: Double {
         guard totalBatonThrows > 0 else { return 0.0 }
         return Double(hits) / Double(totalBatonThrows)
     }
     
+    /// Total kubb pieces knocked down in this round
+    /// In kubb, each hit knocks down one kubb (including king hits)
     var kubbsKnockedDown: Int {
-        // In kubb, each hit knocks down one kubb (including king hits)
         return hits
     }
     
+    /// Whether this round achieved a baseline clear (5 or more hits)
+    /// A baseline clear allows a king throw attempt
     var hasBaselineClear: Bool {
         return hits >= 5
     }
@@ -96,23 +114,38 @@ struct Round: Identifiable, Codable, Equatable {
     }
 }
 
+// MARK: - Baton Throw Data Model
+// This struct represents a single baton throw within a round
+// It tracks whether the throw was successful and what type of throw it was
+
 struct BatonThrow: Identifiable, Codable, Equatable {
-    let id: String
-    let isHit: Bool
-    let throwType: ThrowType
-    let throwNumber: Int
-    let timestamp: Date
+    // MARK: - Core Properties
+    let id: String          // Unique identifier for this throw
+    let isHit: Bool         // Whether this throw was successful (hit a kubb/king)
+    let throwType: ThrowType // Type of throw (regular kubb throw or king throw)
+    let throwNumber: Int     // Which throw this was in the round (1-6)
+    let timestamp: Date     // When this throw was recorded
     
+    // MARK: - Throw Type Enumeration
+    // Defines the different types of throws in kubb
     enum ThrowType: String, Codable, CaseIterable {
-        case kubb = "kubb"
-        case king = "king"
+        case kubb = "kubb"  // Regular throw at kubb pieces
+        case king = "king"  // Throw at the king piece (6th throw after baseline clear)
     }
     
+    // MARK: - Initialization
+    
+    /// Creates a new baton throw record
+    /// - Parameters:
+    ///   - id: Unique identifier (auto-generated if not provided)
+    ///   - isHit: Whether the throw was successful
+    ///   - throwType: Type of throw (kubb or king)
+    ///   - throwNumber: Which throw this was in the round
     init(id: String = UUID().uuidString, isHit: Bool, throwType: ThrowType, throwNumber: Int) {
         self.id = id
         self.isHit = isHit
         self.throwType = throwType
         self.throwNumber = throwNumber
-        self.timestamp = Date()
+        self.timestamp = Date()  // Record when this throw was made
     }
 }

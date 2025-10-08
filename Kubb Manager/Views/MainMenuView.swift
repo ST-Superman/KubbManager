@@ -7,13 +7,18 @@
 
 import SwiftUI
 
+// MARK: - Main Menu View
+// This view serves as the central hub for selecting different training modes
+// It displays available training options and handles navigation to specific training views
+
 struct MainMenuView: View {
-    @State private var selectedMode: TrainingMode?
-    @State private var showingEightMeterTraining = false
-    @State private var showingInkastBlast = false
-    @State private var showingFullGameSim = false
-    @State private var showingOptions = false
-    @StateObject private var settingsManager = SettingsManager.shared
+    // MARK: - State Management
+    @State private var selectedMode: TrainingMode?              // Currently selected training mode
+    @State private var showingEightMeterTraining = false        // Controls 8-meter training modal
+    @State private var showingInkastBlast = false              // Controls inkast blast training modal
+    @State private var showingFullGameSim = false              // Controls full game simulation modal
+    @State private var showingOptions = false                  // Controls options sheet presentation
+    @StateObject private var settingsManager = SettingsManager.shared  // Manages app settings
     
     var body: some View {
         NavigationView {

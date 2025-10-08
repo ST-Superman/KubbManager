@@ -8,17 +8,29 @@
 import Foundation
 import Combine
 
+// MARK: - Practice Session Management
+// This class manages the current practice session state and handles all session operations
+// It coordinates between the UI and CloudKit for data persistence and synchronization
+
 @MainActor
 class SessionManager: ObservableObject {
-    @Published var currentSession: PracticeSession?
-    @Published var isSessionActive: Bool = false
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+    // MARK: - Published Properties
+    // These properties automatically update the UI when their values change
+    @Published var currentSession: PracticeSession?  // The currently active practice session
+    @Published var isSessionActive: Bool = false     // Whether a session is currently running
+    @Published var isLoading: Bool = false           // Whether an async operation is in progress
+    @Published var errorMessage: String?             // Error message to display to user
     
-    private let cloudKitManager = CloudKitManager.shared
-    private var cancellables = Set<AnyCancellable>()
+    // MARK: - Dependencies
+    private let cloudKitManager = CloudKitManager.shared  // Handles CloudKit sync operations
+    private var cancellables = Set<AnyCancellable>()      // Manages Combine subscriptions
     
+    // MARK: - Initialization
+    
+    /// Initializes the SessionManager and loads any incomplete session from storage
     init() {
+        // Load any incomplete session asynchronously on startup
+        // This allows users to resume their practice if they closed the app
         Task {
             await loadIncompleteSession()
         }
@@ -26,6 +38,8 @@ class SessionManager: ObservableObject {
     
     // MARK: - Session Management
     
+    /// Starts a new practice session with the specified target
+    /// - Parameter target: The number of batons the user wants to throw
     func startNewSession(target: Int) async {
         isLoading = true
         errorMessage = nil
@@ -37,16 +51,19 @@ class SessionManager: ObservableObject {
             let newSession = PracticeSession(target: target)
             print("📝 Created session with ID: \(newSession.id)")
             
-            // Pre-save duplicate check
+            // Pre-save duplicate check to prevent CloudKit conflicts
             await performPreSaveDuplicateCheck(for: newSession)
             
+            // Update UI state
             currentSession = newSession
             isSessionActive = true
             
+            // Save to CloudKit for synchronization across devices
             try await cloudKitManager.saveSession(newSession)
             print("✅ Successfully started and saved new session: \(newSession.id)")
             isLoading = false
         } catch {
+            // Handle any errors that occur during session creation
             print("❌ Failed to start new session: \(error)")
             errorMessage = cloudKitManager.handleCloudKitError(error)
             isLoading = false

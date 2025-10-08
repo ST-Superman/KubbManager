@@ -9,16 +9,26 @@ import Foundation
 import SwiftUI
 import Combine
 
+// MARK: - Skin Management System
+// This class manages the visual customization system for kubb pieces, kings, and batons
+// It handles skin selection, unlocking, and provides random image selection for variety
+
 @MainActor
 class SkinManager: ObservableObject {
+    // MARK: - Singleton Pattern
+    // Shared instance ensures consistent skin management throughout the app
     static let shared = SkinManager()
     
-    @Published var selectedKubbSkin: KubbSkin
-    @Published var selectedKingSkin: KubbSkin
-    @Published var selectedBatonSkin: KubbSkin
-    @Published var availableSkins: [KubbSkin] = []
-    @Published var unlockedSkins: Set<String> = []
+    // MARK: - Published Properties
+    // These properties automatically update the UI when their values change
+    @Published var selectedKubbSkin: KubbSkin    // Currently selected skin for kubb pieces
+    @Published var selectedKingSkin: KubbSkin    // Currently selected skin for king piece
+    @Published var selectedBatonSkin: KubbSkin   // Currently selected skin for batons
+    @Published var availableSkins: [KubbSkin] = []  // All available skins in the app
+    @Published var unlockedSkins: Set<String> = []  // Set of unlocked skin IDs
     
+    // MARK: - Storage Keys
+    // UserDefaults keys for persisting skin selections
     private let userDefaults = UserDefaults.standard
     private let selectedKubbSkinKey = "selectedKubbSkin"
     private let selectedKingSkinKey = "selectedKingSkin"

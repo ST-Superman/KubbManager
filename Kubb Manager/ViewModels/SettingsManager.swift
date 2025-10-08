@@ -9,20 +9,30 @@ import Foundation
 import Combine
 import UserNotifications
 
+// MARK: - App Settings Management
+// This class manages all user preferences and settings for the Kubb Manager app
+// It handles persistence using UserDefaults and provides reactive updates to the UI
+
 @MainActor
 class SettingsManager: ObservableObject {
+    // MARK: - Singleton Pattern
+    // Shared instance ensures consistent settings access throughout the app
     static let shared = SettingsManager()
     
     // MARK: - Debug Settings
+    // Controls whether debug tools are visible in the UI
     @Published var showDebugTools: Bool {
         didSet {
+            // Automatically save to UserDefaults when value changes
             UserDefaults.standard.set(showDebugTools, forKey: "showDebugTools")
         }
     }
     
     // MARK: - Cloud Sync Settings
+    // Controls whether data should sync with CloudKit
     @Published var cloudSyncEnabled: Bool {
         didSet {
+            // Automatically save to UserDefaults when value changes
             UserDefaults.standard.set(cloudSyncEnabled, forKey: "cloudSyncEnabled")
         }
     }

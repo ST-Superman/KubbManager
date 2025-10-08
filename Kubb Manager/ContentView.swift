@@ -7,65 +7,75 @@
 
 import SwiftUI
 
+// MARK: - Content View
+// This is the root view that manages the app's main navigation flow
+// It switches between the landing page and the main tabbed interface
+
 struct ContentView: View {
-    @State private var showingMainApp = false
-    @State private var selectedTab = 0
+    // MARK: - State Management
+    @State private var showingMainApp = false  // Controls whether to show main app or landing page
+    @State private var selectedTab = 0         // Tracks which tab is currently selected
     
     var body: some View {
+        // Conditional view rendering based on app state
         if showingMainApp {
+            // Show the main tabbed interface when user has navigated past landing page
             MainTabView(selectedTab: $selectedTab)
         } else {
+            // Show the landing page with app introduction and navigation options
             LandingPageView(showingMainApp: $showingMainApp, selectedTab: $selectedTab)
         }
     }
 }
 
-// MARK: - Landing Page
+// MARK: - Landing Page View
+// The initial screen users see when opening the app
+// Provides navigation to different sections and app information
 struct LandingPageView: View {
-    @Binding var showingMainApp: Bool
-    @Binding var selectedTab: Int
-    @State private var showingOptions = false
-    @StateObject private var settingsManager = SettingsManager.shared
+    @Binding var showingMainApp: Bool  // Controls navigation to main app
+    @Binding var selectedTab: Int      // Controls which tab to show in main app
+    @State private var showingOptions = false  // Controls options sheet presentation
+    @StateObject private var settingsManager = SettingsManager.shared  // Manages app settings
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 40) {
-                    // App Header
+                    // App Header - Logo and description
                     LandingAppHeaderView()
                     
-                    // Main Action Buttons
+                    // Main Action Buttons - Primary navigation options
                     VStack(spacing: 24) {
-                        // Training Button
+                        // Training Button - Navigate to training modes
                         MainActionButton(
                             title: "Training",
                             description: "Practice your kubb skills with various training modes",
                             icon: "figure.strengthtraining.traditional.circle.fill",
                             color: .blue
                         ) {
-                            selectedTab = 1
+                            selectedTab = 1  // Training tab
                             showingMainApp = true
                         }
                         
-                        // Game Logs Button
+                        // Game Logs Button - Navigate to game tracking
                         MainActionButton(
                             title: "Game Logs",
                             description: "Track your game sessions and match results",
                             icon: "play.circle.fill",
                             color: .green
                         ) {
-                            selectedTab = 2
+                            selectedTab = 2  // Game Logs tab
                             showingMainApp = true
                         }
                         
-                        // Stats Button
+                        // Stats Button - Navigate to statistics
                         MainActionButton(
                             title: "Statistics",
                             description: "View your progress and performance analytics",
                             icon: "chart.line.text.clipboard",
                             color: .orange
                         ) {
-                            selectedTab = 3
+                            selectedTab = 3  // Stats tab
                             showingMainApp = true
                         }
                     }
@@ -113,14 +123,18 @@ struct LandingPageView: View {
     }
 }
 
+// MARK: - Landing App Header View
+// Displays the app logo and description on the landing page
 struct LandingAppHeaderView: View {
     var body: some View {
         VStack(spacing: 20) {
+            // App logo image
             Image("kubb1024")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 120, height: 120)
             
+            // App description text
             Text("Improve your kubb skills with training, track your games, and analyze your progress")
                 .font(.title3)
                 .foregroundColor(.secondary)
@@ -131,23 +145,25 @@ struct LandingAppHeaderView: View {
     }
 }
 
+// MARK: - Main Action Button
+// A reusable button component for the main navigation actions on the landing page
 struct MainActionButton: View {
-    let title: String
-    let description: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
+    let title: String        // Button title text
+    let description: String  // Descriptive text below the title
+    let icon: String         // SF Symbol name for the icon
+    let color: Color         // Theme color for the button
+    let action: () -> Void   // Action to perform when button is tapped
     
     var body: some View {
         Button(action: action) {
             HStack(spacing: 20) {
-                // Icon
+                // Icon section
                 Image(systemName: icon)
                     .font(.system(size: 40))
                     .foregroundColor(color)
                     .frame(width: 60, height: 60)
                 
-                // Content
+                // Content section - title and description
                 VStack(alignment: .leading, spacing: 8) {
                     Text(title)
                         .font(.title2)
@@ -162,7 +178,7 @@ struct MainActionButton: View {
                 
                 Spacer()
                 
-                // Arrow
+                // Navigation arrow
                 Image(systemName: "chevron.right")
                     .font(.title2)
                     .foregroundColor(color)
@@ -182,13 +198,14 @@ struct MainActionButton: View {
 }
 
 // MARK: - Main Tab View
+// The main tabbed interface that contains all the app's primary sections
 struct MainTabView: View {
-    @StateObject private var sessionManager = SessionManager()
-    @Binding var selectedTab: Int
+    @StateObject private var sessionManager = SessionManager()  // Manages practice sessions
+    @Binding var selectedTab: Int                               // Controls which tab is selected
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Main Menu Tab
+            // Main Menu Tab - Landing page content within the tabbed interface
             MainMenuTabView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "filemenu.and.selection")
@@ -196,7 +213,7 @@ struct MainTabView: View {
                 }
                 .tag(0)
             
-            // Training Tab
+            // Training Tab - Practice modes and training options
             TrainingTabView()
                 .tabItem {
                     Image(systemName: "figure.strengthtraining.traditional.circle.fill")
@@ -204,7 +221,7 @@ struct MainTabView: View {
                 }
                 .tag(1)
             
-            // Game Logs Tab
+            // Game Logs Tab - Game tracking and match recording
             GameLogsTabView()
                 .tabItem {
                     Image(systemName: "play.circle.fill")
@@ -212,7 +229,7 @@ struct MainTabView: View {
                 }
                 .tag(2)
             
-            // Stats Tab
+            // Stats Tab - Statistics and performance analytics
             StatsTabView()
                 .tabItem {
                     Image(systemName: "chart.line.text.clipboard")
@@ -221,6 +238,7 @@ struct MainTabView: View {
                 .tag(3)
         }
         .environmentObject(sessionManager)
+        // Handle app lifecycle events for session management
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             sessionManager.handleAppWillResignActive()
         }
