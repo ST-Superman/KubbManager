@@ -11,6 +11,7 @@ struct MainMenuView: View {
     @State private var selectedMode: TrainingMode?
     @State private var showingEightMeterTraining = false
     @State private var showingInkastBlast = false
+    @State private var showingFullGameSim = false
     @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
     
@@ -34,6 +35,8 @@ struct MainMenuView: View {
                                         showingEightMeterTraining = true
                                     } else if mode == .inkastBlast {
                                         showingInkastBlast = true
+                                    } else if mode == .fullGameSim {
+                                        showingFullGameSim = true
                                     }
                                 }
                             }
@@ -94,6 +97,12 @@ struct MainMenuView: View {
         }
         .fullScreenCover(isPresented: $showingInkastBlast) {
             InkastBlastView(
+                persistenceController: PersistenceController.shared,
+                cloudKitManager: CloudKitManager.shared
+            )
+        }
+        .fullScreenCover(isPresented: $showingFullGameSim) {
+            FullGameSimView(
                 persistenceController: PersistenceController.shared,
                 cloudKitManager: CloudKitManager.shared
             )
@@ -213,18 +222,18 @@ struct ComingSoonNoticeView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "clock.badge.exclamationmark")
+            Image(systemName: "checkmark.circle.fill")
                 .font(.title2)
-                .foregroundColor(.purple)
+                .foregroundColor(.green)
 
-            Text("More Improvements Coming Soon!")
+            Text("New Feature Available!")
                 .font(.headline)
-                .foregroundColor(.purple)
+                .foregroundColor(.green)
                 .fontWeight(.semibold)
             
-            Text("We're always working to improve the app. Our next project is a Full Game training simulator. Please send me any feedback or new training session ideas.")
+            Text("Full Game Sim training is now available! Experience complete kubb game simulation with inkast, blast, and 8-meter phases. Please send me any feedback or new training session ideas.")
                 .font(.subheadline)
-                .foregroundColor(.purple)
+                .foregroundColor(.green)
                 .multilineTextAlignment(.center)
             
             Button("Send Feedback") {

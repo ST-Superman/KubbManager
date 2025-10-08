@@ -368,7 +368,10 @@ struct TrainingTabView: View {
             )
         }
         .fullScreenCover(isPresented: $showingFullGameSim) {
-            FullGameSimComingSoonView()
+            FullGameSimView(
+                persistenceController: PersistenceController.shared,
+                cloudKitManager: CloudKitManager.shared
+            )
         }
     }
 }

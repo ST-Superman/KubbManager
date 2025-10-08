@@ -270,9 +270,9 @@ struct InkastBlastView: View {
         case .secondAttempt:
             secondAttemptView
         case .secondAttemptResults:
-            secondAttemptResultsView
+            secondAttemptView
         case .neighborCheck:
-            neighborCheckView
+            secondAttemptView
         case .blasting:
             blastingPhaseView
         case .roundComplete:
@@ -306,17 +306,9 @@ struct InkastBlastView: View {
             InkastRecordingView(
                 totalKubbs: sessionManager.currentInkastKubbs,
                 skin: skinManager.selectedKubbSkin,
-                onFirstAttemptResults: { outCount in
-                    sessionManager.kubbsOutFirstAttempt = outCount
-                    sessionManager.roundPhase = outCount > 0 ? .secondAttempt : .neighborCheck
-                    showingInkastRecording = false
-                },
-                onSecondAttemptResults: { outCount in
-                    sessionManager.kubbsOutSecondAttempt = outCount
-                    sessionManager.roundPhase = .neighborCheck
-                    showingInkastRecording = false
-                },
-                onNeighborResults: { neighborCount in
+                onComplete: { firstAttemptOut, secondAttemptOut, neighborCount in
+                    sessionManager.kubbsOutFirstAttempt = firstAttemptOut
+                    sessionManager.kubbsOutSecondAttempt = secondAttemptOut
                     sessionManager.neighborKubbs = neighborCount
                     sessionManager.roundPhase = .blasting
                     showingInkastRecording = false
@@ -326,18 +318,106 @@ struct InkastBlastView: View {
     }
     
     private var firstAttemptResultsView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             Text("First Attempt Results")
-                .font(.title2)
+                .font(.largeTitle)
                 .fontWeight(.bold)
             
             Text("How many kubbs went out of bounds?")
-                .font(.body)
+                .font(.title3)
                 .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
             
-            Stepper("Out of bounds: \(sessionManager.kubbsOutFirstAttempt)", 
-                   value: $sessionManager.kubbsOutFirstAttempt, 
-                   in: 0...sessionManager.currentInkastKubbs)
+            // Compact visual representation of kubbs
+            VStack(spacing: 12) {
+                Text("Pitch View")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                // Compact kubb layout
+                VStack(spacing: 8) {
+                    ForEach(0..<numberOfLinesForKubbs(getTotalKubbsToShow()), id: \.self) { lineIndex in
+                        HStack(spacing: 8) {
+                            ForEach(0..<kubbsForLineCount(getTotalKubbsToShow(), lineIndex), id: \.self) { kubbIndex in
+                                let actualIndex = (lineIndex * 5) + kubbIndex
+                                let isOutOfBounds = getOutOfBoundsCount() > 0 && actualIndex < getOutOfBoundsCount()
+                                let isPenalty = getPenaltyKubbs().contains(actualIndex)
+                                
+                                if !isOutOfBounds {
+                                    KubbVisualLarge(
+                                        skin: skinManager.selectedKubbSkin,
+                                        isKnockedDown: false,
+                                        isOutOfBounds: false,
+                                        isPenalty: isPenalty,
+                                        isNeighbor: false,
+                                        isNewlyKnockedDown: false,
+                                        size: 30
+                                    )
+                                    .foregroundColor(.primary)
+                                } else {
+                                    // Empty space for out-of-bounds kubbs
+                                    Spacer()
+                                        .frame(width: 30, height: 30)
+                                }
+                            }
+                            
+                            // Fill remaining space if needed
+                            let currentLineCount = kubbsForLineCount(getTotalKubbsToShow(), lineIndex)
+                            if currentLineCount < 5 {
+                                ForEach(0..<(5 - currentLineCount), id: \.self) { _ in
+                                    Spacer()
+                                        .frame(width: 30, height: 30)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
+            
+            // Large counter with +/- buttons
+            VStack(spacing: 16) {
+                Text("\(sessionManager.kubbsOutFirstAttempt)")
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                HStack(spacing: 20) {
+                    Button(action: { 
+                        if sessionManager.kubbsOutFirstAttempt > 0 {
+                            sessionManager.kubbsOutFirstAttempt -= 1
+                        }
+                    }) {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(sessionManager.kubbsOutFirstAttempt > 0 ? Color.red : Color.gray)
+                    .cornerRadius(30)
+                    .disabled(sessionManager.kubbsOutFirstAttempt <= 0)
+                    
+                    Button(action: { 
+                        if sessionManager.kubbsOutFirstAttempt < sessionManager.currentInkastKubbs {
+                            sessionManager.kubbsOutFirstAttempt += 1
+                        }
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(sessionManager.kubbsOutFirstAttempt < sessionManager.currentInkastKubbs ? Color.green : Color.gray)
+                    .cornerRadius(30)
+                    .disabled(sessionManager.kubbsOutFirstAttempt >= sessionManager.currentInkastKubbs)
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(16)
             
             Button(sessionManager.kubbsOutFirstAttempt > 0 ? "Second Attempt" : "Check Neighbors") {
                 if sessionManager.kubbsOutFirstAttempt > 0 {
@@ -346,13 +426,18 @@ struct InkastBlastView: View {
                     sessionManager.roundPhase = .neighborCheck
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .font(.title2)
+            .fontWeight(.bold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color.blue)
+            .cornerRadius(16)
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
     
     private var secondAttemptView: some View {
@@ -365,11 +450,10 @@ struct InkastBlastView: View {
                 .font(.body)
                 .multilineTextAlignment(.center)
             
-            Button("Record Second Attempt") {
-                sessionManager.roundPhase = .secondAttemptResults
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            Text("Second attempt phase - handled in main inkast flow")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
         }
         .padding()
         .background(Color(.systemBackground))
@@ -377,31 +461,6 @@ struct InkastBlastView: View {
         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
     
-    private var secondAttemptResultsView: some View {
-        VStack(spacing: 20) {
-            Text("Second Attempt Results")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            Text("How many kubbs are still out of bounds?")
-                .font(.body)
-                .multilineTextAlignment(.center)
-            
-            Stepper("Still out: \(sessionManager.kubbsOutSecondAttempt)", 
-                   value: $sessionManager.kubbsOutSecondAttempt, 
-                   in: 0...sessionManager.kubbsOutFirstAttempt)
-            
-            Button("Check Neighbors") {
-                sessionManager.roundPhase = .neighborCheck
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-    }
     
     private var neighborCheckView: some View {
         VStack(spacing: 20) {
@@ -413,15 +472,10 @@ struct InkastBlastView: View {
                 .font(.body)
                 .multilineTextAlignment(.center)
             
-            Stepper("Neighbor kubbs: \(sessionManager.neighborKubbs)", 
-                   value: $sessionManager.neighborKubbs, 
-                   in: 0...sessionManager.currentInkastKubbs)
-            
-            Button("Start Blasting") {
-                sessionManager.roundPhase = .blasting
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            Text("Neighbor check phase - handled in main inkast flow")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
         }
         .padding()
         .background(Color(.systemBackground))
@@ -451,18 +505,42 @@ struct InkastBlastView: View {
                     totalBatons: 6
                 )
                 
-                HStack(spacing: 20) {
-                    Button("Miss") {
+                HStack(spacing: 30) {
+                    Button(action: {
                         sessionManager.addBatonThrow(isHit: false)
+                    }) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.white)
+                            
+                            Text("MISS")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 140, height: 140)
+                        .background(Color.red)
+                        .cornerRadius(20)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
                     
-                    Button("Hit") {
+                    Button(action: {
                         showingHitRecording = true
+                    }) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.white)
+                            
+                            Text("HIT")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 140, height: 140)
+                        .background(Color.green)
+                        .cornerRadius(20)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
                 }
             }
         }
@@ -472,20 +550,13 @@ struct InkastBlastView: View {
         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         .sheet(isPresented: $showingHitRecording) {
             if let round = sessionManager.currentRound {
-                HitRecordingView(
-                    kubbs: createKubbStates(for: round),
-                    penaltyKubbs: createPenaltyKubbStates(for: round),
+                VisualHitRecordingView(
+                    totalKubbs: round.inkastKubbs - round.penaltyKubbs,
                     skin: skinManager.selectedKubbSkin,
-                    onKubbTap: { index in
-                        // Handle kubb tap
-                    },
-                    onPenaltyKubbTap: { index in
-                        // Handle penalty kubb tap
-                    },
-                    onConfirm: { kubbsHit, penaltyKubbsHit in
-                        // Record hit with knocked down kubbs
-                        let totalHitCount = kubbsHit + penaltyKubbsHit
-                        sessionManager.addBatonThrow(isHit: true, kubbsHit: totalHitCount)
+                    previouslyKnockedDownKubbs: sessionManager.knockedDownKubbs,
+                    onConfirm: { kubbsHit in
+                        // Record hit with number of kubbs hit
+                        sessionManager.addBatonThrow(isHit: true, kubbsHit: kubbsHit)
                         showingHitRecording = false
                     },
                     onCancel: {
@@ -521,19 +592,29 @@ struct InkastBlastView: View {
                 }
             }
             
-            HStack(spacing: 16) {
+            HStack(spacing: 20) {
                 Button("Next Round") {
                     sessionManager.startNextRound()
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.blue)
+                .cornerRadius(16)
                 
                 Button("End Session") {
                     sessionManager.endSession()
                     showingSessionSummary = true
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.orange)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(16)
             }
         }
         .padding()
@@ -544,28 +625,38 @@ struct InkastBlastView: View {
     
     // MARK: - Helper Functions
     
-    private func createKubbStates(for round: InkastBlastRoundData) -> [KubbState] {
-        let totalKubbs = round.inkastKubbs - round.penaltyKubbs
-        let previouslyKnockedDown = round.totalKubbsKnockedDown
-        
-        return Array(0..<totalKubbs).map { index in
-            let isPreviouslyKnockedDown = index < previouslyKnockedDown
-            let isCurrentlyTappable = index >= previouslyKnockedDown
-            
-            return KubbState(
-                isKnockedDown: isPreviouslyKnockedDown,
-                isTappable: isCurrentlyTappable
-            )
+    private func getOutOfBoundsCount() -> Int {
+        switch sessionManager.roundPhase {
+        case .firstAttemptResults:
+            return sessionManager.kubbsOutFirstAttempt
+        case .secondAttemptResults:
+            return sessionManager.kubbsOutSecondAttempt
+        case .neighborCheck:
+            return 0 // No out-of-bounds kubbs shown during neighbor check
+        default:
+            return 0
         }
     }
     
-    private func createPenaltyKubbStates(for round: InkastBlastRoundData) -> [KubbState] {
-        return Array(0..<round.penaltyKubbs).map { _ in
-            KubbState(
-                isKnockedDown: false,
-                isTappable: true
-            )
-        }
+    private func getTotalKubbsToShow() -> Int {
+        return sessionManager.currentInkastKubbs
+    }
+    
+    private func numberOfLinesForKubbs(_ kubbCount: Int) -> Int {
+        (kubbCount + 4) / 5 // Round up division
+    }
+    
+    private func kubbsForLineCount(_ totalKubbs: Int, _ lineIndex: Int) -> Int {
+        let startIndex = lineIndex * 5
+        let endIndex = min(startIndex + 5, totalKubbs)
+        return endIndex - startIndex
+    }
+    
+    private func getPenaltyKubbs() -> Set<Int> {
+        // Penalty kubbs are those that were out of bounds after the second attempt
+        // This would be calculated based on kubbsOutSecondAttempt
+        // For now, return empty set - this will be populated when we have the data
+        return Set<Int>()
     }
 }
 
