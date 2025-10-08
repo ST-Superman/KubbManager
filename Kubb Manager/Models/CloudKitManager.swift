@@ -239,6 +239,46 @@ class CloudKitManager: ObservableObject {
         print("InkastBlast_Session local data cleared successfully")
     }
     
+    func clearFullGameSimSessionData() async {
+        guard isSignedIn else { 
+            print("Not signed in to iCloud, cannot clear FullGameSim_Session data")
+            return 
+        }
+        
+        print("Clearing FullGameSim_Session CloudKit data...")
+        
+        do {
+            // Use createdAt field for FullGameSim_Session
+            let startDate = Date(timeIntervalSince1970: 0)
+            let predicate = NSPredicate(format: "createdAt >= %@", startDate as NSDate)
+            let query = CKQuery(recordType: FullGameSimSessionStruct.recordType, predicate: predicate)
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            print("Found \(matchResults.count) FullGameSim_Session records to delete")
+            
+            for (recordID, result) in matchResults {
+                switch result {
+                case .success:
+                    let _ = try await privateDatabase.deleteRecord(withID: recordID)
+                    print("Deleted FullGameSim_Session record: \(recordID)")
+                case .failure(let error):
+                    print("Error deleting FullGameSim_Session record: \(error)")
+                }
+            }
+            
+            print("FullGameSim_Session CloudKit data cleared successfully")
+        } catch {
+            print("Error clearing FullGameSim_Session CloudKit data: \(error)")
+        }
+        
+        // Also clear local data
+        let allSessions = localStorage.loadFullGameSimSessions()
+        for session in allSessions {
+            localStorage.deleteFullGameSimSession(session)
+        }
+        print("FullGameSim_Session local data cleared successfully")
+    }
+    
     
     func clearPracticeSessionDataLegacy() async {
         guard isSignedIn else { 
@@ -1697,6 +1737,87 @@ class CloudKitManager: ObservableObject {
             }
         } catch {
             print("❌ Failed to delete BaseballKubbSession from CloudKit: \(error)")
+        }
+    }
+    
+    // MARK: - Full Game Sim CloudKit Methods
+    
+    func saveFullGameSimSession(_ session: FullGameSimSessionStruct) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping FullGameSimSession save")
+            return
+        }
+        
+        do {
+            let record = session.toCKRecord()
+            try await privateDatabase.save(record)
+            print("✅ Successfully saved FullGameSimSession to CloudKit: \(session.id)")
+        } catch {
+            print("❌ Failed to save FullGameSimSession to CloudKit: \(error)")
+        }
+    }
+    
+    func fetchFullGameSimSessions() async -> [FullGameSimSessionStruct] {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, returning empty FullGameSimSessions")
+            return []
+        }
+        
+        do {
+            // Fetch all FullGameSim sessions (both complete and incomplete)
+            print("Fetching FullGameSimSessions from CloudKit using createdAt query...")
+            let predicate = NSPredicate(format: "createdAt >= %@", Date(timeIntervalSince1970: 0) as NSDate)
+            let query = CKQuery(recordType: FullGameSimSessionStruct.recordType, predicate: predicate)
+            
+            let (matchResults, _) = try await privateDatabase.records(matching: query)
+            
+            var sessions: [FullGameSimSessionStruct] = []
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    if let session = FullGameSimSessionStruct(from: record) {
+                        sessions.append(session)
+                    }
+                case .failure(let error):
+                    print("Error converting record to FullGameSimSession: \(error)")
+                }
+            }
+            
+            // Sort by date (newest first) since we can't use sort descriptors in CloudKit
+            sessions.sort { $0.createdAt > $1.createdAt }
+            
+            print("✅ Successfully fetched \(sessions.count) FullGameSimSessions from CloudKit")
+            return sessions
+            
+        } catch {
+            print("❌ Failed to fetch FullGameSimSessions from CloudKit: \(error)")
+            return []
+        }
+    }
+    
+    func deleteFullGameSimSession(_ session: FullGameSimSessionStruct) async {
+        guard isSignedIn else {
+            print("⚠️ Not signed in to CloudKit, skipping FullGameSimSession delete")
+            return
+        }
+        
+        do {
+            // First, try to find the record by querying with our custom ID
+            let query = CKQuery(recordType: FullGameSimSessionStruct.recordType, predicate: NSPredicate(format: "sessionId == %@", session.id))
+            let result = try await privateDatabase.records(matching: query)
+            
+            for (recordID, result) in result.matchResults {
+                switch result {
+                case .success:
+                    try await privateDatabase.deleteRecord(withID: recordID)
+                    print("✅ Successfully deleted FullGameSimSession from CloudKit: \(session.id)")
+                case .failure(let error):
+                    print("❌ Failed to delete FullGameSimSession record: \(error)")
+                }
+            }
+        } catch {
+            print("❌ Failed to delete FullGameSimSession from CloudKit: \(error)")
         }
     }
     

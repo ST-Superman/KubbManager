@@ -24,6 +24,8 @@ struct UnifiedSessionDetailView: View {
                         PracticeSessionDetailView(session: practiceSession)
                     case .inkastBlast(let inkastBlastSession):
                         InkastBlastSessionDetailView(session: inkastBlastSession)
+                    case .fullGameSim(let fullGameSimSession):
+                        FullGameSimSessionDetailView(session: fullGameSimSession)
                     case .baseballKubb(let baseballKubbSession):
                         BaseballKubbSessionDetailView(session: baseballKubbSession)
                     }
@@ -281,6 +283,192 @@ struct InkastBlastSessionDetailView: View {
             .padding()
             .background(Color(.systemGray6))
             .cornerRadius(12)
+        }
+    }
+}
+
+struct FullGameSimSessionDetailView: View {
+    let session: FullGameSimSessionStruct
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Session Overview
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Game Overview")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    DetailStatCard(
+                        title: "Outcome",
+                        value: session.outcome,
+                        icon: session.outcome == "Victory" ? "checkmark.circle" : "xmark.circle",
+                        color: session.outcome == "Victory" ? .green : .red
+                    )
+                    
+                    DetailStatCard(
+                        title: "Total Rounds",
+                        value: "\(session.totalRounds)",
+                        icon: "repeat",
+                        color: .blue
+                    )
+                    
+                    DetailStatCard(
+                        title: "Overall Handicap",
+                        value: formatHandicap(session.overallHandicap),
+                        icon: "target",
+                        color: handicapColor(session.overallHandicap)
+                    )
+                    
+                    DetailStatCard(
+                        title: "Inkast Kubbs",
+                        value: "\(session.totalInkastKubbs)",
+                        icon: "bolt.fill",
+                        color: .purple
+                    )
+                    
+                    DetailStatCard(
+                        title: "Blast Kubbs",
+                        value: "\(session.totalBlastKubbs)",
+                        icon: "flame.fill",
+                        color: .red
+                    )
+                    
+                    DetailStatCard(
+                        title: "8-Meter Accuracy",
+                        value: "\(Int(session.eightMeterAccuracy * 100))%",
+                        icon: "arrow.up.right.circle",
+                        color: .blue
+                    )
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+            
+            // Round Details
+            if !session.rounds.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Round Details")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    ForEach(Array(session.rounds.enumerated()), id: \.offset) { index, round in
+                        FullGameSimRoundDetailRow(round: round, roundNumber: index + 1)
+                    }
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
+        }
+    }
+    
+    private func formatHandicap(_ handicap: Double) -> String {
+        let sign = handicap >= 0 ? "+" : ""
+        return "\(sign)\(String(format: "%.1f", handicap))"
+    }
+    
+    private func handicapColor(_ handicap: Double) -> Color {
+        if handicap < -0.5 {
+            return .green  // Under target = good
+        } else if handicap > 0.5 {
+            return .red    // Over target = bad
+        } else {
+            return .orange // Near target = ok
+        }
+    }
+}
+
+struct FullGameSimRoundDetailRow: View {
+    let round: FullGameSimRoundStruct
+    let roundNumber: Int
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Round \(roundNumber)")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                Text(round.gamePhase().rawValue)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(gamePhaseColor(round.gamePhase()).opacity(0.2))
+                    .foregroundColor(gamePhaseColor(round.gamePhase()))
+                    .cornerRadius(4)
+            }
+            
+            HStack(spacing: 16) {
+                VStack(alignment: .leading) {
+                    Text("Inkast")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text("\(round.inkastData.inkastKubbs) kubbs")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                }
+                
+                if let handicap = round.handicap {
+                    VStack(alignment: .leading) {
+                        Text("Handicap")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(formatHandicap(Double(handicap)))
+                            .font(.caption)
+                            .foregroundColor(handicapColor(Double(handicap)))
+                    }
+                }
+                
+                VStack(alignment: .leading) {
+                    Text("Misses")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text("\(round.fieldClearingMisses)")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+                
+                Spacer()
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+    }
+    
+    private func gamePhaseColor(_ phase: GamePhase) -> Color {
+        switch phase {
+        case .early:
+            return .green
+        case .mid:
+            return .orange
+        case .end:
+            return .red
+        case .all:
+            return .blue
+        }
+    }
+    
+    private func formatHandicap(_ handicap: Double) -> String {
+        let sign = handicap >= 0 ? "+" : ""
+        return "\(sign)\(String(format: "%.1f", handicap))"
+    }
+    
+    private func handicapColor(_ handicap: Double) -> Color {
+        if handicap < -0.5 {
+            return .green  // Under target = good
+        } else if handicap > 0.5 {
+            return .red    // Over target = bad
+        } else {
+            return .orange // Near target = ok
         }
     }
 }

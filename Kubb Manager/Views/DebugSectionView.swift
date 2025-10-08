@@ -72,6 +72,13 @@ struct DebugSectionView: View {
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 
+                Button("Clear FullGameSim_Session") {
+                    Task {
+                        await cloudKitManager.clearFullGameSimSessionData()
+                    }
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                
                 Button("Clear Practice_Session (Legacy)") {
                     Task {
                         await cloudKitManager.clearPracticeSessionDataLegacy()

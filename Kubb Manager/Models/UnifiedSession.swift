@@ -10,6 +10,7 @@ import Foundation
 enum SessionType: String, CaseIterable {
     case practice = "8M Training"
     case inkastBlast = "Inkast & Blast"
+    case fullGameSim = "Full Game Sim"
     case baseballKubb = "Baseball Kubb"
     
     var color: Color {
@@ -18,6 +19,8 @@ enum SessionType: String, CaseIterable {
             return .blue
         case .inkastBlast:
             return .green
+        case .fullGameSim:
+            return .orange
         case .baseballKubb:
             return .purple
         }
@@ -29,6 +32,8 @@ enum SessionType: String, CaseIterable {
             return "target"
         case .inkastBlast:
             return "bolt.fill"
+        case .fullGameSim:
+            return "flag.fill"
         case .baseballKubb:
             return "baseball"
         }
@@ -38,6 +43,7 @@ enum SessionType: String, CaseIterable {
 enum UnifiedSession: Identifiable {
     case practice(PracticeSession)
     case inkastBlast(InkastBlastSessionData)
+    case fullGameSim(FullGameSimSessionStruct)
     case baseballKubb(BaseballKubbSession)
     
     var id: String {
@@ -45,6 +51,8 @@ enum UnifiedSession: Identifiable {
         case .practice(let session):
             return session.id
         case .inkastBlast(let session):
+            return session.id
+        case .fullGameSim(let session):
             return session.id
         case .baseballKubb(let session):
             return session.id
@@ -57,6 +65,8 @@ enum UnifiedSession: Identifiable {
             return session.date
         case .inkastBlast(let session):
             return session.date
+        case .fullGameSim(let session):
+            return session.createdAt
         case .baseballKubb(let session):
             return session.date
         }
@@ -68,6 +78,8 @@ enum UnifiedSession: Identifiable {
             return .practice
         case .inkastBlast:
             return .inkastBlast
+        case .fullGameSim:
+            return .fullGameSim
         case .baseballKubb:
             return .baseballKubb
         }
@@ -79,6 +91,8 @@ enum UnifiedSession: Identifiable {
             return "8M Training Session"
         case .inkastBlast(let session):
             return "Inkast & Blast - \(session.gamePhase.rawValue)"
+        case .fullGameSim(let session):
+            return "Full Game Sim - \(session.outcome)"
         case .baseballKubb(let session):
             return "\(session.awayTeam) vs \(session.homeTeam)"
         }
@@ -90,6 +104,8 @@ enum UnifiedSession: Identifiable {
             return "Target: \(session.target) kubbs"
         case .inkastBlast(let session):
             return "\(session.totalRounds) rounds"
+        case .fullGameSim(let session):
+            return "\(session.totalRounds) rounds"
         case .baseballKubb(let session):
             return "Inning \(session.currentInning)\(session.isTop ? " (Top)" : " (Bottom)")"
         }
@@ -100,6 +116,8 @@ enum UnifiedSession: Identifiable {
         case .practice(let session):
             return session.isComplete
         case .inkastBlast(let session):
+            return session.isComplete
+        case .fullGameSim(let session):
             return session.isComplete
         case .baseballKubb(let session):
             return session.isComplete
@@ -118,6 +136,11 @@ enum UnifiedSession: Identifiable {
                 return endTime.timeIntervalSince(session.startTime)
             }
             return nil
+        case .fullGameSim(let session):
+            if let endTime = session.endTime {
+                return endTime.timeIntervalSince(session.createdAt)
+            }
+            return nil
         case .baseballKubb(let session):
             // Estimate duration based on innings played
             return Double(session.currentInning) * 10 * 60 // 10 minutes per inning
@@ -130,6 +153,8 @@ enum UnifiedSession: Identifiable {
             return "\(session.totalBatons)/\(session.target)"
         case .inkastBlast(let session):
             return "\(session.totalInkastKubbs) kubbs"
+        case .fullGameSim(let session):
+            return "\(session.totalKubbsKnockedDown) kubbs"
         case .baseballKubb(let session):
             return "\(session.awayScore)-\(session.homeScore)"
         }
@@ -140,6 +165,8 @@ enum UnifiedSession: Identifiable {
         case .practice(let session):
             return String(format: "%.1f%%", session.accuracy * 100)
         case .inkastBlast(let session):
+            return "\(session.totalBatonsUsed) batons"
+        case .fullGameSim(let session):
             return "\(session.totalBatonsUsed) batons"
         case .baseballKubb(let session):
             return "\(session.batonCount) batons"
@@ -152,6 +179,8 @@ enum UnifiedSession: Identifiable {
             return session.accuracy
         case .inkastBlast(let session):
             return session.totalInkastKubbs > 0 ? Double(session.totalInkastKubbs) / Double(session.totalBatonsUsed) : nil
+        case .fullGameSim(let session):
+            return session.totalBatonsUsed > 0 ? Double(session.totalKubbsKnockedDown) / Double(session.totalBatonsUsed) : nil
         case .baseballKubb(let session):
             return session.batonCount > 0 ? Double(session.userScore) / Double(session.batonCount) : nil
         }

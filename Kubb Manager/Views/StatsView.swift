@@ -42,6 +42,7 @@ struct StatsView: View {
         case trainingOverview = "Training Overview"
         case practice = "8 Meters"
         case inkastBlast = "Inkast & Blast"
+        case fullGameSim = "Full Game Sim"
         case gameLogs = "Game Logs"
         case baseballKubb = "Baseball Kubb"
     }
@@ -122,6 +123,14 @@ struct StatsView: View {
                             }
                     case .inkastBlast:
                         InkastBlastStatsSection()
+                            .environmentObject(unifiedStatsManager)
+                            .onAppear {
+                                Task {
+                                    await unifiedStatsManager.loadAllSessionsIfNeeded()
+                                }
+                            }
+                    case .fullGameSim:
+                        FullGameSimStatsSection()
                             .environmentObject(unifiedStatsManager)
                             .onAppear {
                                 Task {
@@ -241,14 +250,6 @@ struct TrainingOverviewStatsSection: View {
                     icon: "person.2.fill",
                     color: .yellow,
                     description: "The total number of neighbor kubbs you've thrown during Inkast & Blast sessions. A Neighbor means that an inkasted kubb has landed on top of another kubb (or kubbs) and is not touching the ground at all."
-                )
-                
-                TrainingStatCard(
-                    title: "Blast Efficiency",
-                    value: String(format: "%.1f", statsManager.trainingStats.blastEfficiency),
-                    icon: "bolt.fill",
-                    color: .indigo,
-                    description: "The average number of field kubbs knocked down with your first baton throw during Inkast & Blast sessions. Higher values indicate better blast efficiency."
                 )
                 
                 TrainingStatCard(
@@ -618,13 +619,6 @@ struct InkastBlastStatsSection: View {
                     description: "The percentage of inkast kubbs that land inbounds on the first attempt. Higher percentages indicate better inkast accuracy and control."
                 )
                 
-                TrainingStatCard(
-                    title: "Blast Efficiency",
-                    value: String(format: "%.1f", stats.blastEfficiency),
-                    icon: "bolt.fill",
-                    color: .orange,
-                    description: "The average number of field kubbs knocked down with your first baton throw. Higher values indicate better blast efficiency and power."
-                )
             }
             
             // Phase-specific statistics
@@ -668,6 +662,15 @@ struct InkastBlastStatsSection: View {
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                         }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Rounds")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text("\(stats.earlyGameTotalRounds)")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
                     }
                     .padding()
                     .background(Color.blue.opacity(0.1))
@@ -708,6 +711,15 @@ struct InkastBlastStatsSection: View {
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                         }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Rounds")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text("\(stats.midGameTotalRounds)")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
                     }
                     .padding()
                     .background(Color.orange.opacity(0.1))
@@ -745,6 +757,15 @@ struct InkastBlastStatsSection: View {
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             Text(String(format: "%.1f", stats.endGameBlastEfficiency))
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Rounds")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text("\(stats.endGameTotalRounds)")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                         }
@@ -1374,6 +1395,233 @@ struct TrellisChartView: View {
                 }
             }
             .padding(.horizontal)
+        }
+    }
+}
+
+// MARK: - Full Game Sim Stats Section
+struct FullGameSimStatsSection: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            Text("Full Game Sim Sessions")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            let sessions = statsManager.fullGameSimSessions.sorted { $0.date > $1.date }
+            
+            if sessions.isEmpty {
+                // Empty state
+                VStack(spacing: 16) {
+                    Image(systemName: "crown")
+                        .font(.system(size: 60))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No Full Game Sim sessions yet")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Play a Full Game Sim session to see your statistics here!")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                // Summary Stats Card
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Summary Statistics")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    // Top-level stats
+                    HStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Sessions")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(sessions.count)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Total Rounds")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(sessions.reduce(0) { $0 + $1.totalRounds })")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.green)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("8M Accuracy")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            let totalHits = sessions.reduce(0) { $0 + $1.totalEightMeterHits }
+                            let totalBatons = sessions.reduce(0) { $0 + $1.totalEightMeterBatons }
+                            let accuracy = totalBatons > 0 ? Double(totalHits) / Double(totalBatons) : 0.0
+                            Text(String(format: "%.1f%%", accuracy * 100))
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.purple)
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // Inkast & Blast stats from Full Game Sim
+                    HStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Inkast Success")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            let totalInkast = sessions.reduce(0) { $0 + $1.totalInkastKubbs }
+                            let penalties = sessions.reduce(0) { $0 + $1.totalPenaltyKubbs }
+                            let successRate = totalInkast > 0 ? Double(totalInkast - penalties) / Double(totalInkast) : 0.0
+                            Text(String(format: "%.1f%%", successRate * 100))
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.orange)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Kubbs Cleared")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(sessions.reduce(0) { $0 + $1.totalKubbsClearedFirstThrow })")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Total Batons")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(sessions.reduce(0) { $0 + $1.totalBatonsUsed })")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                
+                // Recent Sessions List
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Recent Sessions")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    LazyVStack(spacing: 8) {
+                        ForEach(sessions.prefix(10), id: \.id) { session in
+                            FullGameSimSessionRow(session: session)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.bottom)
+    }
+}
+
+// MARK: - Full Game Sim Session Row
+struct FullGameSimSessionRow: View {
+    let session: FullGameSimSessionStruct
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                // Session Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Full Game Sim")
+                        .font(.headline)
+                        .fontWeight(.medium)
+                    
+                    Text(session.date.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Round count
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(session.totalRounds)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+                    Text("rounds")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Stats row
+            HStack(spacing: 16) {
+                // Game Status
+                HStack(spacing: 4) {
+                    Image(systemName: session.outcome == "Victory" ? "checkmark.circle.fill" : 
+                                     session.outcome == "In Progress" ? "clock.fill" : "xmark.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(session.outcome == "Victory" ? .green : 
+                                       session.outcome == "In Progress" ? .orange : .red)
+                    Text(session.outcome)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                // 8-meter accuracy
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up.right.circle")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                    let accuracy = session.totalEightMeterBatons > 0 ? 
+                        Double(session.totalEightMeterHits) / Double(session.totalEightMeterBatons) : 0.0
+                    Text(String(format: "%.0f%%", accuracy * 100))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                // Handicap
+                HStack(spacing: 4) {
+                    Image(systemName: "target")
+                        .font(.caption)
+                        .foregroundColor(handicapColor(session.overallHandicap))
+                    Text(formatHandicap(session.overallHandicap))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+    
+    private func formatHandicap(_ handicap: Double) -> String {
+        let sign = handicap >= 0 ? "+" : ""
+        return "\(sign)\(String(format: "%.1f", handicap))"
+    }
+    
+    private func handicapColor(_ handicap: Double) -> Color {
+        if handicap < -0.5 {
+            return .green  // Under target = good
+        } else if handicap > 0.5 {
+            return .red    // Over target = bad
+        } else {
+            return .orange // Near target = ok
         }
     }
 }

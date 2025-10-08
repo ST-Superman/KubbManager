@@ -203,4 +203,75 @@ class LocalStorageManager: ObservableObject {
             return []
         }
     }
+    
+    // MARK: - Full Game Sim Sessions
+    
+    func saveFullGameSimSession(_ session: FullGameSimSessionStruct) {
+        var sessions = loadFullGameSimSessions()
+        
+        print("💾 LocalStorage: Saving Full Game Sim session \(session.id)")
+        print("   - Current storage has \(sessions.count) sessions")
+        
+        // Update existing session or add new one
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            print("   - Updating existing session at index \(index)")
+            sessions[index] = session
+        } else {
+            print("   - Adding new session")
+            sessions.append(session)
+        }
+        
+        // Deduplicate before saving (safety measure)
+        let deduplicated = deduplicateFullGameSimSessions(sessions)
+        if deduplicated.count != sessions.count {
+            print("   ⚠️ Removed \(sessions.count - deduplicated.count) duplicates during save")
+        }
+        
+        saveFullGameSimSessions(deduplicated)
+        print("   ✅ Saved \(deduplicated.count) sessions to local storage")
+    }
+    
+    private func deduplicateFullGameSimSessions(_ sessions: [FullGameSimSessionStruct]) -> [FullGameSimSessionStruct] {
+        let grouped = Dictionary(grouping: sessions) { $0.id }
+        
+        return grouped.map { (_, sessionGroup) in
+            // If multiple sessions with same ID, keep the one with highest round number
+            // or most recent modifiedAt if rounds are equal
+            sessionGroup.max { s1, s2 in
+                if s1.currentRound != s2.currentRound {
+                    return s1.currentRound < s2.currentRound
+                }
+                return s1.modifiedAt < s2.modifiedAt
+            } ?? sessionGroup[0]
+        }
+    }
+    
+    func saveFullGameSimSessions(_ sessions: [FullGameSimSessionStruct]) {
+        do {
+            let data = try JSONEncoder().encode(sessions)
+            userDefaults.set(data, forKey: "FullGameSimSessions")
+        } catch {
+            print("Error saving Full Game Sim sessions to local storage: \(error)")
+        }
+    }
+    
+    func deleteFullGameSimSession(_ session: FullGameSimSessionStruct) {
+        var sessions = loadFullGameSimSessions()
+        sessions.removeAll { $0.id == session.id }
+        saveFullGameSimSessions(sessions)
+    }
+    
+    func loadFullGameSimSessions() -> [FullGameSimSessionStruct] {
+        guard let data = userDefaults.data(forKey: "FullGameSimSessions") else {
+            return []
+        }
+        
+        do {
+            let sessions = try JSONDecoder().decode([FullGameSimSessionStruct].self, from: data)
+            return sessions
+        } catch {
+            print("Error loading Full Game Sim sessions from local storage: \(error)")
+            return []
+        }
+    }
 }

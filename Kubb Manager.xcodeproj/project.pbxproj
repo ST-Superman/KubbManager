@@ -27,6 +27,7 @@
 		4C0B90632E87349800D30FC1 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
+		4C89FAA92E946BF20009D357 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C9898CF2E8733C80053F2A8 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4CB367BE2E8B108100EE221F /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4CBCD3912E8A450E0022C75E /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
@@ -94,6 +95,11 @@
 			isa = PBXGroup;
 			children = (
 			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4C89FAAE2E946BF20009D357 /* Products */ = {
+			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
 		};
@@ -250,16 +256,24 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 4C1E98B22E89BE61007F9A57 /* Products */;
-					ProjectRef = 4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */;
-				},
-				{
-					ProductGroup = 4C0B90682E87349800D30FC1 /* Products */;
-					ProjectRef = 4C0B90632E87349800D30FC1 /* Kubb Manager.xcodeproj */;
+					ProductGroup = 4C89FAAE2E946BF20009D357 /* Products */;
+					ProjectRef = 4C89FAA92E946BF20009D357 /* Kubb Manager.xcodeproj */;
 				},
 				{
 					ProductGroup = 4C5FD0B42E871A7E0079A805 /* Products */;
 					ProjectRef = 4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */;
+				},
+				{
+					ProductGroup = 4CBCD3962E8A450E0022C75E /* Products */;
+					ProjectRef = 4CBCD3912E8A450E0022C75E /* Kubb Manager.xcodeproj */;
+				},
+				{
+					ProductGroup = 4CC2B51F2E8B1CB2008A8234 /* Products */;
+					ProjectRef = 4CC2B51A2E8B1CB2008A8234 /* Kubb Manager.xcodeproj */;
+				},
+				{
+					ProductGroup = 4C0B90682E87349800D30FC1 /* Products */;
+					ProjectRef = 4C0B90632E87349800D30FC1 /* Kubb Manager.xcodeproj */;
 				},
 				{
 					ProductGroup = 4C9898D02E8733C80053F2A8 /* Products */;
@@ -270,16 +284,12 @@
 					ProjectRef = 4CF1296A2E8DC44100694719 /* Kubb Manager.xcodeproj */;
 				},
 				{
-					ProductGroup = 4CBCD3962E8A450E0022C75E /* Products */;
-					ProjectRef = 4CBCD3912E8A450E0022C75E /* Kubb Manager.xcodeproj */;
-				},
-				{
 					ProductGroup = 4CB367C32E8B108100EE221F /* Products */;
 					ProjectRef = 4CB367BE2E8B108100EE221F /* Kubb Manager.xcodeproj */;
 				},
 				{
-					ProductGroup = 4CC2B51F2E8B1CB2008A8234 /* Products */;
-					ProjectRef = 4CC2B51A2E8B1CB2008A8234 /* Kubb Manager.xcodeproj */;
+					ProductGroup = 4C1E98B22E89BE61007F9A57 /* Products */;
+					ProjectRef = 4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */;
 				},
 			);
 			projectRoot = "";

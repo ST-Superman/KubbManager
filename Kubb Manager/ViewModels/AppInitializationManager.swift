@@ -81,11 +81,68 @@ class AppInitializationManager: ObservableObject {
             print("📥 Downloaded \(baseballKubbSessions.count) baseball kubb sessions")
             localStorage.saveBaseballKubbSessionsBulk(baseballKubbSessions)
             
+            // Download full game sim sessions
+            let fullGameSimSessions = await cloudKitManager.fetchFullGameSimSessions()
+            print("📥 Downloaded \(fullGameSimSessions.count) full game sim sessions")
+            
+            // Deduplicate before saving
+            let dedupedFullGameSim = deduplicateFullGameSimSessions(fullGameSimSessions)
+            print("🧹 Deduplicated to \(dedupedFullGameSim.count) full game sim sessions")
+            localStorage.saveFullGameSimSessions(dedupedFullGameSim)
+            
         } catch {
             print("❌ Error downloading CloudKit data: \(error)")
         }
     }
     
+    
+    // MARK: - Deduplication
+    
+    private func deduplicateFullGameSimSessions(_ sessions: [FullGameSimSessionStruct]) -> [FullGameSimSessionStruct] {
+        // Group by ID
+        let grouped = Dictionary(grouping: sessions) { $0.id }
+        
+        var deduplicated: [FullGameSimSessionStruct] = []
+        
+        for (sessionId, sessionGroup) in grouped {
+            if sessionGroup.count == 1 {
+                // No duplicates
+                deduplicated.append(sessionGroup[0])
+            } else {
+                // Multiple sessions with same ID - pick the best one
+                print("⚠️ Found \(sessionGroup.count) duplicates for session ID: \(sessionId)")
+                
+                let bestSession = selectBestFullGameSimSession(from: sessionGroup)
+                deduplicated.append(bestSession)
+                
+                print("✅ Kept session: round=\(bestSession.currentRound), isComplete=\(bestSession.isComplete), isPaused=\(bestSession.isPaused), modifiedAt=\(bestSession.modifiedAt)")
+            }
+        }
+        
+        return deduplicated
+    }
+    
+    private func selectBestFullGameSimSession(from sessions: [FullGameSimSessionStruct]) -> FullGameSimSessionStruct {
+        // Priority logic:
+        // 1. Prefer completed sessions
+        // 2. If both incomplete, prefer higher currentRound (more progress)
+        // 3. If same round, prefer most recent modifiedAt
+        
+        return sessions.max { session1, session2 in
+            // If completion status differs, prefer complete
+            if session1.isComplete != session2.isComplete {
+                return !session1.isComplete // session2 is complete, so it wins
+            }
+            
+            // If both have same completion status, prefer higher round number
+            if session1.currentRound != session2.currentRound {
+                return session1.currentRound < session2.currentRound
+            }
+            
+            // If same round, prefer most recent modification
+            return session1.modifiedAt < session2.modifiedAt
+        } ?? sessions[0]
+    }
     
     private func loadFromLocalStorage() async {
         print("📱 Loading from local storage only...")

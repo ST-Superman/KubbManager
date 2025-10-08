@@ -46,10 +46,91 @@
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="InkastBlastRound" inverseName="batonThrows" inverseEntity="InkastBlastRound"/>
     </entity>
+    <entity name="FullGameSimSession" representedClassName="FullGameSimSession" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String" defaultValueString="" usesScalarValueType="NO"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="endTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isComplete" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isPaused" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="currentRound" optional="NO" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="currentPhase" optional="NO" attributeType="String" defaultValueString="8 Meter" usesScalarValueType="NO"/>
+        <attribute name="totalRounds" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalInkastKubbs" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalKubbsClearedFirstThrow" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalBatonsUsed" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalPenaltyKubbs" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalNeighborKubbs" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalMisses" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalEightMeterHits" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalEightMeterBatons" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="rounds" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="FullGameSimRound" inverseName="session" inverseEntity="FullGameSimRound"/>
+    </entity>
+    <entity name="FullGameSimRound" representedClassName="FullGameSimRound" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String" defaultValueString="" usesScalarValueType="NO"/>
+        <attribute name="roundNumber" optional="NO" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="isComplete" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FullGameSimSession" inverseName="rounds" inverseEntity="FullGameSimSession"/>
+        <relationship name="eightMeterData" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="EightMeterRoundData" inverseName="round" inverseEntity="EightMeterRoundData"/>
+        <relationship name="inkastData" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="InkastRoundData" inverseName="round" inverseEntity="InkastRoundData"/>
+        <relationship name="blastData" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="BlastRoundData" inverseName="round" inverseEntity="BlastRoundData"/>
+    </entity>
+    <entity name="EightMeterRoundData" representedClassName="EightMeterRoundData" syncable="YES" codeGenerationType="class">
+        <attribute name="hits" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="misses" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="batonsUsed" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FullGameSimRound" inverseName="eightMeterData" inverseEntity="FullGameSimRound"/>
+        <relationship name="batonThrows" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="EightMeterBatonThrow" inverseName="round" inverseEntity="EightMeterBatonThrow"/>
+    </entity>
+    <entity name="InkastRoundData" representedClassName="InkastRoundData" syncable="YES" codeGenerationType="class">
+        <attribute name="inkastKubbs" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="kubbsOutFirstAttempt" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="kubbsOutSecondAttempt" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="penaltyKubbs" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="neighborKubbs" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="hits" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="misses" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="batonsUsed" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FullGameSimRound" inverseName="inkastData" inverseEntity="FullGameSimRound"/>
+        <relationship name="batonThrows" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="InkastBatonThrow" inverseName="round" inverseEntity="InkastBatonThrow"/>
+    </entity>
+    <entity name="BlastRoundData" representedClassName="BlastRoundData" syncable="YES" codeGenerationType="class">
+        <attribute name="kubbsClearedFirstThrow" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="hits" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="misses" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="batonsUsed" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FullGameSimRound" inverseName="blastData" inverseEntity="FullGameSimRound"/>
+        <relationship name="batonThrows" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="BlastBatonThrow" inverseName="round" inverseEntity="BlastBatonThrow"/>
+    </entity>
+    <entity name="EightMeterBatonThrow" representedClassName="EightMeterBatonThrow" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String" defaultValueString="" usesScalarValueType="NO"/>
+        <attribute name="isHit" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="throwNumber" optional="NO" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="EightMeterRoundData" inverseName="batonThrows" inverseEntity="EightMeterRoundData"/>
+    </entity>
+    <entity name="BlastBatonThrow" representedClassName="BlastBatonThrow" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String" defaultValueString="" usesScalarValueType="NO"/>
+        <attribute name="isHit" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="kubbsHit" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="throwNumber" optional="NO" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BlastRoundData" inverseName="batonThrows" inverseEntity="BlastRoundData"/>
+    </entity>
     <elements>
         <element name="Item" positionX="-63" positionY="-18" width="128" height="44"/>
         <element name="InkastBlastSession" positionX="-63" positionY="18" width="128" height="119"/>
         <element name="InkastBlastRound" positionX="144" positionY="18" width="128" height="104"/>
         <element name="InkastBatonThrow" positionX="351" positionY="18" width="128" height="74"/>
+        <element name="FullGameSimSession" positionX="-63" positionY="162" width="128" height="134"/>
+        <element name="FullGameSimRound" positionX="144" positionY="162" width="128" height="89"/>
+        <element name="EightMeterRoundData" positionX="351" positionY="162" width="128" height="59"/>
+        <element name="InkastRoundData" positionX="351" positionY="246" width="128" height="89"/>
+        <element name="BlastRoundData" positionX="351" positionY="360" width="128" height="59"/>
+        <element name="EightMeterBatonThrow" positionX="558" positionY="162" width="128" height="59"/>
+        <element name="BlastBatonThrow" positionX="558" positionY="360" width="128" height="59"/>
     </elements>
 </model>

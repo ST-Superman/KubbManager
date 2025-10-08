@@ -46,9 +46,10 @@ class UnifiedHistoryManager: ObservableObject {
         // Load all session types from local storage (source of truth)
         let practiceSessions = localStorage.loadSessions()
         let inkastBlastSessions = localStorage.loadInkastBlastSessions()
+        let fullGameSimSessions = localStorage.loadFullGameSimSessions()
         let baseballKubbSessions = localStorage.loadBaseballKubbSessions()
         
-        print("📊 Local storage counts - Practice: \(practiceSessions.count), InkastBlast: \(inkastBlastSessions.count), BaseballKubb: \(baseballKubbSessions.count)")
+        print("📊 Local storage counts - Practice: \(practiceSessions.count), InkastBlast: \(inkastBlastSessions.count), FullGameSim: \(fullGameSimSessions.count), BaseballKubb: \(baseballKubbSessions.count)")
         
         // Convert to unified sessions
         var allSessions: [UnifiedSession] = []
@@ -63,6 +64,12 @@ class UnifiedHistoryManager: ObservableObject {
         for session in inkastBlastSessions {
             print("⚡ Adding inkast blast session: \(session.id) (complete: \(session.isComplete))")
             allSessions.append(.inkastBlast(session))
+        }
+        
+        // Add full game sim sessions
+        for session in fullGameSimSessions {
+            print("🎯 Adding full game sim session: \(session.id) (complete: \(session.isComplete))")
+            allSessions.append(.fullGameSim(session))
         }
         
         // Add baseball kubb sessions
@@ -100,6 +107,8 @@ class UnifiedHistoryManager: ObservableObject {
             case .inkastBlast(let inkastSession):
                 // For Inkast & Blast, group by sessionId AND gamePhase
                 groupKey = "\(session.sessionType.rawValue)-\(inkastSession.id)-\(inkastSession.gamePhase.rawValue)"
+            case .fullGameSim(let fullGameSimSession):
+                groupKey = "\(session.sessionType.rawValue)-\(fullGameSimSession.id)"
             case .baseballKubb(let baseballSession):
                 groupKey = "\(session.sessionType.rawValue)-\(baseballSession.id)"
             }
@@ -151,8 +160,8 @@ class UnifiedHistoryManager: ObservableObject {
             switch sessionType {
             case .inkastBlast:
                 return selectBestInkastBlastSession(from: sessions)
-            case .practice, .baseballKubb:
-                // For practice and baseball kubb, use most recent date
+            case .practice, .fullGameSim, .baseballKubb:
+                // For practice, full game sim, and baseball kubb, use most recent date
                 return sessions.max { $0.date < $1.date } ?? sessions[0]
             }
         }
@@ -194,6 +203,8 @@ class UnifiedHistoryManager: ObservableObject {
             await historyManager.deleteSession(practiceSession)
         case .inkastBlast(let inkastBlastSession):
             await cloudKitManager.deleteInkastBlastSession(inkastBlastSession)
+        case .fullGameSim(let fullGameSimSession):
+            await cloudKitManager.deleteFullGameSimSession(fullGameSimSession)
         case .baseballKubb(let baseballKubbSession):
             await cloudKitManager.deleteBaseballKubbSession(baseballKubbSession)
         }
@@ -220,6 +231,13 @@ class UnifiedHistoryManager: ObservableObject {
         }.count
     }
     
+    var totalFullGameSimSessions: Int {
+        sessions.filter { 
+            if case .fullGameSim = $0 { return true }
+            return false
+        }.count
+    }
+    
     var totalBaseballKubbSessions: Int {
         sessions.filter { 
             if case .baseballKubb = $0 { return true }
@@ -238,6 +256,8 @@ class UnifiedHistoryManager: ObservableObject {
                 return total + practiceSession.totalKubbs
             case .inkastBlast(let inkastBlastSession):
                 return total + inkastBlastSession.totalInkastKubbs
+            case .fullGameSim(let fullGameSimSession):
+                return total + fullGameSimSession.totalKubbsKnockedDown
             case .baseballKubb(let baseballKubbSession):
                 return total + baseballKubbSession.userScore
             }

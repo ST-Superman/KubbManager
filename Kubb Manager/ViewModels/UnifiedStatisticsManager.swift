@@ -21,6 +21,7 @@ class UnifiedStatisticsManager: ObservableObject {
     @Published var practiceSessions: [PracticeSession] = []
     @Published var inkastBlastSessions: [InkastBlastSessionData] = []
     @Published var baseballKubbSessions: [BaseballKubbSession] = []
+    @Published var fullGameSimSessions: [FullGameSimSessionStruct] = []
     
     // Statistics
     @Published var trainingStats: TrainingStatistics = TrainingStatistics(
@@ -60,12 +61,15 @@ class UnifiedStatisticsManager: ObservableObject {
             earlyGameHandicap: 0,
             earlyGameFirstInkastRate: 0,
             earlyGameBlastEfficiency: 0,
+            earlyGameTotalRounds: 0,
             midGameHandicap: 0,
             midGameFirstInkastRate: 0,
             midGameBlastEfficiency: 0,
+            midGameTotalRounds: 0,
             endGameHandicap: 0,
             endGameFirstInkastRate: 0,
-            endGameBlastEfficiency: 0
+            endGameBlastEfficiency: 0,
+            endGameTotalRounds: 0
         ),
         baseballKubbStats: BaseballKubbStatistics(
             totalGames: 0,
@@ -159,6 +163,11 @@ class UnifiedStatisticsManager: ObservableObject {
         baseballKubbSessions = localStorage.loadBaseballKubbSessions()
         print("📊 Loaded \(baseballKubbSessions.count) Baseball Kubb sessions")
         
+        // Load Full Game Sim sessions from local storage
+        print("📊 Loading Full Game Sim sessions...")
+        fullGameSimSessions = localStorage.loadFullGameSimSessions()
+        print("📊 Loaded \(fullGameSimSessions.count) Full Game Sim sessions")
+        
         // Calculate statistics
         print("📊 Calculating statistics...")
         calculateTrainingStatistics()
@@ -167,7 +176,7 @@ class UnifiedStatisticsManager: ObservableObject {
         
         // Update cache timestamp
         lastLoadTime = Date()
-        print("✅ Stats data loaded and cached successfully - Total sessions: \(practiceSessions.count + inkastBlastSessions.count + baseballKubbSessions.count)")
+        print("✅ Stats data loaded and cached successfully - Total sessions: \(practiceSessions.count + inkastBlastSessions.count + baseballKubbSessions.count + fullGameSimSessions.count)")
         
         isLoading = false
         isCurrentlyLoading = false
@@ -204,12 +213,17 @@ class UnifiedStatisticsManager: ObservableObject {
         print("   - Practice Sessions: \(practiceSessions.count)")
         print("   - Inkast Blast Sessions: \(inkastBlastSessions.count)")
         print("   - Baseball Kubb Sessions: \(baseballKubbSessions.count)")
+        print("   - Full Game Sim Sessions: \(fullGameSimSessions.count)")
         print("   - Last Load Time: \(lastLoadTime?.description ?? "Never")")
         print("   - Is Currently Loading: \(isCurrentlyLoading)")
         
         if !practiceSessions.isEmpty {
             print("   - First Practice Session: \(practiceSessions.first?.id ?? "Unknown")")
             print("   - Last Practice Session: \(practiceSessions.last?.id ?? "Unknown")")
+        }
+        
+        if !fullGameSimSessions.isEmpty {
+            print("   - Full Game Sim Rounds: \(fullGameSimSessions.reduce(0) { $0 + $1.rounds.count })")
         }
     }
     
@@ -274,7 +288,7 @@ class UnifiedStatisticsManager: ObservableObject {
     
     private func calculateTrainingStatistics() {
         let newStats = TrainingStatistics(
-            totalTrainingSessions: practiceSessions.count + inkastBlastSessions.count,
+            totalTrainingSessions: practiceSessions.count + inkastBlastSessions.count + fullGameSimSessions.count,
             maxTrainingStreak: calculateMaxTrainingStreak(),
             currentTrainingStreak: calculateCurrentTrainingStreak(),
             totalEightMeterThrows: calculateTotalEightMeterThrows(),
@@ -326,7 +340,7 @@ class UnifiedStatisticsManager: ObservableObject {
     // MARK: - Training Statistics Helper Methods
     
     private func calculateMaxTrainingStreak() -> Int {
-        let allSessions = (practiceSessions + inkastBlastSessions.map { $0.toPracticeSession() })
+        let allSessions = (practiceSessions + inkastBlastSessions.map { $0.toPracticeSession() } + fullGameSimSessions.map { $0.toPracticeSession() })
             .sorted { $0.startTime < $1.startTime }
         
         var maxStreak = 0
@@ -357,7 +371,7 @@ class UnifiedStatisticsManager: ObservableObject {
     }
     
     private func calculateCurrentTrainingStreak() -> Int {
-        let allSessions = (practiceSessions + inkastBlastSessions.map { $0.toPracticeSession() })
+        let allSessions = (practiceSessions + inkastBlastSessions.map { $0.toPracticeSession() } + fullGameSimSessions.map { $0.toPracticeSession() })
             .sorted { $0.startTime > $1.startTime } // Most recent first
         
         var currentStreak = 0
@@ -392,11 +406,15 @@ class UnifiedStatisticsManager: ObservableObject {
     }
     
     private func calculateTotalEightMeterThrows() -> Int {
-        return practiceSessions.reduce(0) { $0 + $1.totalBatons }
+        let practiceThrows = practiceSessions.reduce(0) { $0 + $1.totalBatons }
+        let fullGameSimThrows = fullGameSimSessions.reduce(0) { $0 + $1.totalEightMeterBatons }
+        return practiceThrows + fullGameSimThrows
     }
     
     private func calculateEightMeterAccuracy() -> Double {
-        let totalKubbs = practiceSessions.reduce(0) { $0 + $1.totalKubbs }
+        let practiceKubbs = practiceSessions.reduce(0) { $0 + $1.totalKubbs }
+        let fullGameSimKubbs = fullGameSimSessions.reduce(0) { $0 + $1.totalEightMeterHits }
+        let totalKubbs = practiceKubbs + fullGameSimKubbs
         let totalBatons = calculateTotalEightMeterThrows()
         
         guard totalBatons > 0 else { return 0.0 }
@@ -404,26 +422,45 @@ class UnifiedStatisticsManager: ObservableObject {
     }
     
     private func calculateTotalInkastKubbs() -> Int {
-        return inkastBlastSessions.reduce(0) { $0 + $1.totalKubbsKnockedDown }
+        let inkastBlastKubbs = inkastBlastSessions.reduce(0) { $0 + $1.totalKubbsKnockedDown }
+        let fullGameSimKubbs = fullGameSimSessions.reduce(0) { $0 + $1.totalKubbsKnockedDown }
+        return inkastBlastKubbs + fullGameSimKubbs
     }
     
     private func calculateTotalPenaltyKubbs() -> Int {
-        return inkastBlastSessions.reduce(0) { $0 + $1.totalPenaltyKubbsCount }
+        let inkastBlastPenalties = inkastBlastSessions.reduce(0) { $0 + $1.totalPenaltyKubbsCount }
+        let fullGameSimPenalties = fullGameSimSessions.reduce(0) { $0 + $1.totalPenaltyKubbs }
+        return inkastBlastPenalties + fullGameSimPenalties
     }
     
     private func calculateTotalNeighbors() -> Int {
-        return inkastBlastSessions.reduce(0) { $0 + $1.totalNeighbors }
+        let inkastBlastNeighbors = inkastBlastSessions.reduce(0) { $0 + $1.totalNeighbors }
+        let fullGameSimNeighbors = fullGameSimSessions.reduce(0) { $0 + $1.totalNeighborKubbs }
+        return inkastBlastNeighbors + fullGameSimNeighbors
     }
     
     private func calculateBlastEfficiency() -> Double {
         var totalFirstThrowKubbs = 0
         var totalFirstThrows = 0
         
+        // Include Inkast & Blast sessions
         for session in inkastBlastSessions {
             for round in session.rounds {
                 if round.batonThrows.count > 0 {
                     totalFirstThrows += 1
                     if let firstThrow = round.batonThrows.first(where: { $0.throwNumber == 1 }) {
+                        totalFirstThrowKubbs += firstThrow.kubbsHit
+                    }
+                }
+            }
+        }
+        
+        // Include Full Game Sim sessions (blast phase only, rounds 2+)
+        for session in fullGameSimSessions {
+            for round in session.rounds where round.roundNumber > 1 {
+                if round.blastData.batonThrows.count > 0 {
+                    totalFirstThrows += 1
+                    if let firstThrow = round.blastData.batonThrows.first(where: { $0.throwNumber == 1 }) {
                         totalFirstThrowKubbs += firstThrow.kubbsHit
                     }
                 }
@@ -438,6 +475,7 @@ class UnifiedStatisticsManager: ObservableObject {
         var totalHandicap = 0.0
         var totalRounds = 0
         
+        // Include Inkast & Blast sessions
         for session in inkastBlastSessions {
             for round in session.rounds {
                 let target = round.targetBatons
@@ -446,6 +484,21 @@ class UnifiedStatisticsManager: ObservableObject {
                 
                 totalHandicap += Double(handicap)
                 totalRounds += 1
+            }
+        }
+        
+        // Include Full Game Sim sessions (rounds 2+)
+        for session in fullGameSimSessions {
+            for round in session.rounds where round.roundNumber > 1 {
+                // Convert Full Game Sim round to Inkast & Blast format to get target batons
+                if let inkastBlastRound = round.toInkastBlastRound() {
+                    let target = inkastBlastRound.targetBatons
+                    let actual = inkastBlastRound.batonsUsed
+                    let handicap = actual - target
+                    
+                    totalHandicap += Double(handicap)
+                    totalRounds += 1
+                }
             }
         }
         
@@ -504,12 +557,15 @@ class UnifiedStatisticsManager: ObservableObject {
             earlyGameHandicap: earlyGameStats.handicap,
             earlyGameFirstInkastRate: earlyGameStats.firstInkastRate,
             earlyGameBlastEfficiency: earlyGameStats.blastEfficiency,
+            earlyGameTotalRounds: earlyGameStats.totalRounds,
             midGameHandicap: midGameStats.handicap,
             midGameFirstInkastRate: midGameStats.firstInkastRate,
             midGameBlastEfficiency: midGameStats.blastEfficiency,
+            midGameTotalRounds: midGameStats.totalRounds,
             endGameHandicap: endGameStats.handicap,
             endGameFirstInkastRate: endGameStats.firstInkastRate,
-            endGameBlastEfficiency: endGameStats.blastEfficiency
+            endGameBlastEfficiency: endGameStats.blastEfficiency,
+            endGameTotalRounds: endGameStats.totalRounds
         )
     }
     
@@ -528,7 +584,7 @@ class UnifiedStatisticsManager: ObservableObject {
         return Double(successfulInkasts) / Double(totalInkastAttempts)
     }
     
-    private func calculatePhaseStats(_ phase: GamePhase) -> (handicap: Double, firstInkastRate: Double, blastEfficiency: Double) {
+    private func calculatePhaseStats(_ phase: GamePhase) -> (handicap: Double, firstInkastRate: Double, blastEfficiency: Double, totalRounds: Int) {
         // Include sessions that match the phase OR sessions with "All Phases" that have rounds for this phase
         let relevantSessions = inkastBlastSessions.filter { session in
             session.gamePhase == phase || session.gamePhase == .all
@@ -541,6 +597,7 @@ class UnifiedStatisticsManager: ObservableObject {
         var totalFirstThrowKubbs = 0
         var totalFirstThrows = 0
         
+        // Process Inkast & Blast sessions
         for session in relevantSessions {
             for round in session.rounds {
                 // For "All Phases" sessions, only include rounds that belong to this phase
@@ -571,11 +628,43 @@ class UnifiedStatisticsManager: ObservableObject {
             }
         }
         
+        // Process Full Game Sim sessions (rounds 2+ only, since round 1 has no inkast)
+        for session in fullGameSimSessions {
+            for round in session.rounds where round.roundNumber > 1 {
+                // Check if this round belongs to the current phase
+                let roundPhase = round.gamePhase()
+                if roundPhase != phase {
+                    continue // Skip rounds that don't belong to this phase
+                }
+                
+                // Convert to InkastBlastRound for consistent calculations
+                if let inkastBlastRound = round.toInkastBlastRound() {
+                    // Handicap calculation
+                    let target = inkastBlastRound.targetBatons
+                    let actual = inkastBlastRound.batonsUsed
+                    totalHandicap += Double(actual - target)
+                    totalRounds += 1
+                    
+                    // First inkast rate
+                    totalInkastAttempts += inkastBlastRound.inkastKubbs
+                    successfulInkasts += inkastBlastRound.inkastKubbs - inkastBlastRound.penaltyKubbs
+                    
+                    // Blast efficiency
+                    if inkastBlastRound.batonThrows.count > 0 {
+                        totalFirstThrows += 1
+                        if let firstThrow = inkastBlastRound.batonThrows.first(where: { $0.throwNumber == 1 }) {
+                            totalFirstThrowKubbs += firstThrow.kubbsHit
+                        }
+                    }
+                }
+            }
+        }
+        
         let handicap = totalRounds > 0 ? totalHandicap / Double(totalRounds) : 0.0
         let firstInkastRate = totalInkastAttempts > 0 ? Double(successfulInkasts) / Double(totalInkastAttempts) : 0.0
         let blastEfficiency = totalFirstThrows > 0 ? Double(totalFirstThrowKubbs) / Double(totalFirstThrows) : 0.0
         
-        return (handicap, firstInkastRate, blastEfficiency)
+        return (handicap, firstInkastRate, blastEfficiency, totalRounds)
     }
     
     private func determineGamePhaseForRound(_ round: InkastBlastRoundData) -> GamePhase {
@@ -684,12 +773,15 @@ struct InkastBlastStatistics {
     let earlyGameHandicap: Double
     let earlyGameFirstInkastRate: Double
     let earlyGameBlastEfficiency: Double
+    let earlyGameTotalRounds: Int
     let midGameHandicap: Double
     let midGameFirstInkastRate: Double
     let midGameBlastEfficiency: Double
+    let midGameTotalRounds: Int
     let endGameHandicap: Double
     let endGameFirstInkastRate: Double
     let endGameBlastEfficiency: Double
+    let endGameTotalRounds: Int
 }
 
 struct BaseballKubbStatistics {
