@@ -175,6 +175,24 @@ struct InkastBlastView: View {
             roundPhaseView
             
             Spacer()
+            
+            // Watch Control Panel (at bottom)
+            WatchSessionControlPanel(
+                sessionType: "Inkast & Blast",
+                onStartWatchInput: {
+                    sessionManager.requestWatchInput()
+                },
+                onSendSessionState: {
+                    sessionManager.sendSessionStateToWatch()
+                }
+            )
+        }
+        .onAppear {
+            // Ensure watch connectivity is set up when active session view appears
+            if sessionManager.isSessionActive {
+                sessionManager.setupWatchConnectivity()
+                sessionManager.sendSessionStateToWatch()
+            }
         }
     }
     
@@ -293,6 +311,8 @@ struct InkastBlastView: View {
                 .multilineTextAlignment(.center)
             
             Button("Record Results") {
+                // Request input from watch first
+                sessionManager.requestWatchInput()
                 showingInkastRecording = true
             }
             .buttonStyle(.borderedProminent)

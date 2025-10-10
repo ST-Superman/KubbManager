@@ -54,6 +54,17 @@ struct PracticeView: View {
                         // Session Controls Section - Round management and session controls
                         SessionControlsSection()
                             .environmentObject(sessionManager)
+                        
+                        // Watch Control Panel
+                        WatchSessionControlPanel(
+                            sessionType: "8M Training",
+                            onStartWatchInput: {
+                                sessionManager.requestWatchBatonInput()
+                            },
+                            onSendSessionState: {
+                                sessionManager.sendSessionStateToWatch()
+                            }
+                        )
                     }
                     .padding()
                 }
@@ -61,6 +72,13 @@ struct PracticeView: View {
             // Set navigation title for the practice session
             .navigationTitle("Practice Session")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                // Ensure watch connectivity is set up when practice view appears
+                if sessionManager.isSessionActive {
+                    sessionManager.setupWatchConnectivity()
+                    sessionManager.sendSessionStateToWatch()
+                }
+            }
             .toolbar {
                 // Left toolbar item - Pause session button
                 ToolbarItem(placement: .navigationBarLeading) {

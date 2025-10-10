@@ -34,6 +34,8 @@ struct FullGameSimSessionStruct: Identifiable, Codable {
     var totalEightMeterBatons: Int
     var team1BaselineKubbs: Int // Team 1's remaining baseline kubbs
     var team2BaselineKubbs: Int // Team 2's remaining baseline kubbs
+    var team1UnclearedKubbs: Int = 0 // Field kubbs Team 1 left uncleared (carry to their next attacking round)
+    var team2UnclearedKubbs: Int = 0 // Field kubbs Team 2 left uncleared (carry to their next attacking round)
     var kingHit: Bool // Game ends when king is hit
     var rounds: [FullGameSimRoundStruct]
     let createdAt: Date
@@ -59,6 +61,8 @@ struct FullGameSimSessionStruct: Identifiable, Codable {
         self.totalEightMeterBatons = 0
         self.team1BaselineKubbs = 5 // Start with 5 baseline kubbs for each team
         self.team2BaselineKubbs = 5
+        self.team1UnclearedKubbs = 0 // No uncleared kubbs at start
+        self.team2UnclearedKubbs = 0
         self.kingHit = false // Game hasn't ended yet
         self.rounds = []
         self.createdAt = Date()
@@ -281,6 +285,8 @@ struct FullGameSimSessionStruct: Identifiable, Codable {
         self.totalEightMeterBatons = Int(totalEightMeterBatons)
         self.team1BaselineKubbs = Int(record["team1BaselineKubbs"] as? Int64 ?? 5)
         self.team2BaselineKubbs = Int(record["team2BaselineKubbs"] as? Int64 ?? 5)
+        self.team1UnclearedKubbs = Int(record["team1UnclearedKubbs"] as? Int64 ?? 0)
+        self.team2UnclearedKubbs = Int(record["team2UnclearedKubbs"] as? Int64 ?? 0)
         self.kingHit = (record["kingHit"] as? Int64 ?? 0) == 1
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
@@ -316,6 +322,8 @@ struct FullGameSimSessionStruct: Identifiable, Codable {
         record["totalEightMeterBatons"] = Int64(totalEightMeterBatons)
         record["team1BaselineKubbs"] = Int64(team1BaselineKubbs)
         record["team2BaselineKubbs"] = Int64(team2BaselineKubbs)
+        record["team1UnclearedKubbs"] = Int64(team1UnclearedKubbs)
+        record["team2UnclearedKubbs"] = Int64(team2UnclearedKubbs)
         record["kingHit"] = kingHit ? 1 : 0
         record["createdAt"] = createdAt
         record["modifiedAt"] = modifiedAt

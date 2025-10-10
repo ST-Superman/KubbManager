@@ -115,6 +115,11 @@ class FullGameSimSessionManager: ObservableObject {
         isSessionActive = true
         isPaused = false
         generateNewRound()
+        
+        // Setup watch connectivity and notify watch
+        setupWatchConnectivity()
+        notifyWatchSessionStarted()
+        sendSessionStateToWatch()
     }
     
     func pauseSession() {
@@ -136,6 +141,12 @@ class FullGameSimSessionManager: ObservableObject {
         session.resumeSession()
         currentSession = session
         isPaused = false
+        
+        // Setup watch connectivity when resuming
+        setupWatchConnectivity()
+        notifyWatchSessionStarted()
+        sendSessionStateToWatch()
+        
         saveSession()
     }
     
@@ -190,7 +201,7 @@ class FullGameSimSessionManager: ObservableObject {
     }
     
     private func generateInkastKubbs() {
-        guard var round = currentRound else { return }
+        guard var round = currentRound, var session = currentSession else { return }
         
         // For round 1, no inkast kubbs needed (only 8-meter phase)
         if currentRoundNumber == 1 {
@@ -199,12 +210,44 @@ class FullGameSimSessionManager: ObservableObject {
             return
         }
         
+        // Determine current attacking team and opponent team
+        let currentTeam = session.currentAttackingTeam
+        let opponentTeam = currentTeam == 1 ? 2 : 1
+        
+        // Check if opponent left uncleared kubbs in the previous round (which gives us A-Line)
+        let opponentUnclearedKubbs = opponentTeam == 1 ? session.team1UnclearedKubbs : session.team2UnclearedKubbs
+        
+        // Check if current team has carried-forward uncleared kubbs from 2 rounds ago
+        let carriedForwardKubbs = currentTeam == 1 ? session.team1UnclearedKubbs : session.team2UnclearedKubbs
+        
         // For subsequent rounds, inkast kubbs = field kubbs + baseline kubbs knocked down in previous round
-        if let previousRound = currentSession?.rounds.last {
+        if let previousRound = session.rounds.last {
             let fieldKubbsKnockedDown = previousRound.blastData.kubbsClearedFirstThrow
             let baselineKubbsKnockedDown = previousRound.baselineKubbsHit
-            let totalKubbsKnockedDown = fieldKubbsKnockedDown + baselineKubbsKnockedDown
-            round.inkastData.inkastKubbs = totalKubbsKnockedDown
+            let newInkastKubbs = fieldKubbsKnockedDown + baselineKubbsKnockedDown
+            
+            // Total inkast kubbs = new kubbs + carried-forward kubbs from this team's last attack
+            let totalInkastKubbs = newInkastKubbs + carriedForwardKubbs
+            
+            print("📱 Generating inkast for Round \(currentRoundNumber) - Team \(currentTeam) attacking:")
+            print("   - Previous round: \(previousRound.roundNumber) (Team \(opponentTeam))")
+            print("   - Field kubbs cleared by opponent: \(fieldKubbsKnockedDown)")
+            print("   - Baseline kubbs hit by opponent: \(baselineKubbsKnockedDown)")
+            print("   - New inkast kubbs: \(newInkastKubbs)")
+            print("   - Carried-forward uncleared kubbs (from round \(currentRoundNumber - 2)): \(carriedForwardKubbs)")
+            print("   - Total inkast kubbs: \(totalInkastKubbs)")
+            
+            round.inkastData.inkastKubbs = totalInkastKubbs
+            
+            // Set A-Line status if opponent left kubbs uncleared
+            if opponentUnclearedKubbs > 0 {
+                round.hasALine = true
+                round.gamePhaseWhenALineAwarded = previousRound.gamePhase()
+                print("   - ⚡ A-Line ACTIVE! Opponent left \(opponentUnclearedKubbs) kubbs (game phase: \(previousRound.gamePhase()))")
+            } else {
+                round.hasALine = false
+                print("   - 📏 No A-Line - attack from baseline")
+            }
         } else {
             // Fallback: if no previous round, use 1 kubb
             round.inkastData.inkastKubbs = 1
@@ -215,16 +258,20 @@ class FullGameSimSessionManager: ObservableObject {
     
     // MARK: - Eight Meter Phase
     
-    func addEightMeterBatonThrow(isHit: Bool) {
+    func addEightMeterBatonThrow(isHit: Bool, fromALine: Bool = false) {
         guard var round = currentRound else { return }
         
-        round.eightMeterData.addBatonThrow(isHit: isHit)
+        round.eightMeterData.addBatonThrow(isHit: isHit, fromALine: fromALine)
         currentRound = round
+        
+        print("📱 addEightMeterBatonThrow: batonsUsed=\(round.eightMeterData.batonsUsed), limit=\(getBatonLimitForRound(round.roundNumber)), fromALine=\(fromALine)")
         
         // Check if round is complete
         if currentRoundNumber == 1 {
             // Round 1: Check if 8-meter phase is complete
-            if isEightMeterPhaseComplete(round) {
+            let isComplete = isEightMeterPhaseComplete(round)
+            print("📱 Round 1 - isEightMeterPhaseComplete: \(isComplete)")
+            if isComplete {
                 completeCurrentRound()
             }
         } else {
@@ -309,7 +356,9 @@ class FullGameSimSessionManager: ObservableObject {
             }
         }
         
-        round.blastData.addBatonThrow(isHit: isHit, kubbsHit: kubbsHit)
+        // Blasting phase throws from A-Line if round has A-Line active
+        let fromALine = round.hasALine
+        round.blastData.addBatonThrow(isHit: isHit, kubbsHit: kubbsHit, fromALine: fromALine)
         currentRound = round
         
         // Check if round is complete after this baton throw
@@ -323,21 +372,42 @@ class FullGameSimSessionManager: ObservableObject {
     func addBlastBatonThrowWithFieldAndBaseline(fieldKubbsHit: Int, baselineKubbsHit: Int, kingHit: Bool) {
         guard var round = currentRound, var session = currentSession else { return }
         
+        print("📱 addBlastBatonThrowWithFieldAndBaseline: field=\(fieldKubbsHit), baseline=\(baselineKubbsHit), king=\(kingHit)")
+        
         // Determine which phase this baton throw belongs to based on what's being hit
         let hasFieldKubbs = fieldKubbsHit > 0
         let hasBaselineKubbs = baselineKubbsHit > 0
         let hasKingHit = kingHit
         
+        // Update knocked down kubbs set for field kubbs (critical for accurate tracking!)
+        if hasFieldKubbs {
+            let totalKubbs = round.inkastData.totalKubbsInBounds
+            let startIndex = knockedDownKubbs.count
+            let endIndex = min(startIndex + fieldKubbsHit, totalKubbs)
+            
+            for i in startIndex..<endIndex {
+                knockedDownKubbs.insert(i)
+            }
+        }
+        
+        // Determine if throwing from A-Line
+        // Field kubb throws and baseline throws are from A-Line if round has A-Line active
+        // EXCEPT king shots which must always be from baseline
+        let fromALine = round.hasALine && !hasKingHit
+        
         // Single baton throw - only count as 1 baton regardless of how many kubbs it hits
         if hasFieldKubbs {
             // Field kubbs hit - count as blast phase baton
-            round.blastData.addBatonThrow(isHit: true, kubbsHit: fieldKubbsHit)
+            round.blastData.addBatonThrow(isHit: true, kubbsHit: fieldKubbsHit, fromALine: fromALine)
+            print("📱 Added to blast phase: batonsUsed=\(round.blastData.batonsUsed), fromALine=\(fromALine)")
         } else if hasBaselineKubbs {
             // Only baseline kubbs hit - count as 8-meter phase baton
-            round.eightMeterData.addBatonThrow(isHit: true)
+            round.eightMeterData.addBatonThrow(isHit: true, fromALine: fromALine)
+            print("📱 Added to 8-meter phase: batonsUsed=\(round.eightMeterData.batonsUsed), fromALine=\(fromALine)")
         } else if hasKingHit {
-            // Only king hit - count as 8-meter phase baton
-            round.eightMeterData.addBatonThrow(isHit: true)
+            // Only king hit - count as 8-meter phase baton (always from baseline!)
+            round.eightMeterData.addBatonThrow(isHit: true, fromALine: false)
+            print("📱 Added king hit to 8-meter phase: batonsUsed=\(round.eightMeterData.batonsUsed), fromBaseline=true")
         }
         
         // Track the kubbs hit (separate from baton counting)
@@ -357,11 +427,21 @@ class FullGameSimSessionManager: ObservableObject {
         
         // Check if game is over (king hit) or round is complete
         if kingHit {
-            // King hit - end the game immediately
+            // King hit - save the current round first, then end the game
+            print("📱 King hit - saving final round and ending session")
+            round.completeRound()
+            session.addRound(round)
+            currentSession = session
+            currentRound = nil
+            
             endSession()
-        } else if isRoundComplete(round) {
-            // Round complete but king not hit - continue to next round
-            completeCurrentRound()
+        } else {
+            let roundComplete = isRoundComplete(round)
+            print("📱 isRoundComplete check: \(roundComplete), round=\(round.roundNumber), blast=\(round.blastData.batonsUsed), 8m=\(round.eightMeterData.batonsUsed)")
+            if roundComplete {
+                // Round complete but king not hit - continue to next round
+                completeCurrentRound()
+            }
         }
     }
     
@@ -423,8 +503,40 @@ class FullGameSimSessionManager: ObservableObject {
         guard var session = currentSession,
               var round = currentRound else { return }
         
+        // Check for uncleared field kubbs (only for rounds 2+)
+        if round.roundNumber > 1 {
+            let totalFieldKubbs = round.inkastData.totalFieldKubbsForAttacking
+            let clearedFieldKubbs = round.blastData.kubbsClearedFirstThrow
+            let unclearedKubbs = totalFieldKubbs - clearedFieldKubbs
+            
+            if unclearedKubbs > 0 {
+                // Team left field kubbs uncleared
+                round.unclearedFieldKubbs = unclearedKubbs
+                
+                // Store uncleared kubbs for the current attacking team (they'll need to clear these in 2 rounds)
+                if session.currentAttackingTeam == 1 {
+                    session.team1UnclearedKubbs = unclearedKubbs
+                } else {
+                    session.team2UnclearedKubbs = unclearedKubbs
+                }
+                
+                print("📱 Round \(round.roundNumber): Team \(session.currentAttackingTeam) left \(unclearedKubbs) field kubbs uncleared")
+                print("📱 Opponent (Team \(session.currentAttackingTeam == 1 ? 2 : 1)) will have A-Line advantage in next round")
+            } else {
+                // All field kubbs cleared - no A-Line for opponent
+                if session.currentAttackingTeam == 1 {
+                    session.team1UnclearedKubbs = 0
+                } else {
+                    session.team2UnclearedKubbs = 0
+                }
+                print("📱 Round \(round.roundNumber): Team \(session.currentAttackingTeam) cleared all field kubbs - no A-Line for opponent")
+            }
+        }
+        
         round.completeRound()
         session.addRound(round)
+        
+        print("📱 Completing round \(currentRoundNumber)")
         
         // Move to next round
         currentRoundNumber += 1
@@ -432,7 +544,7 @@ class FullGameSimSessionManager: ObservableObject {
         
         currentSession = session
         
-        // Automatically start next round instead of stopping at roundComplete
+        // Automatically start next round
         generateNewRound()
         
         // Save session
@@ -558,6 +670,10 @@ class FullGameSimSessionManager: ObservableObject {
             currentPhase = incompleteSession.currentPhase
             isSessionActive = false // Don't auto-start, wait for user to choose
             isPaused = true
+            
+            // Don't setup watch connectivity yet - wait until user actually resumes
+            // setupWatchConnectivity() will be called in resumeSession()
+            
             updateSessionStats()
             print("✅ Loaded incomplete Full Game Sim session from local storage: \(incompleteSession.id)")
             print("   - Round: \(incompleteSession.currentRound)")

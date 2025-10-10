@@ -17,6 +17,11 @@ struct FullGameSimRoundStruct: Identifiable, Codable {
     var isComplete: Bool
     let createdAt: Date
     
+    // A-Line (Advantage Line) tracking
+    var hasALine: Bool = false // Whether this round has A-Line advantage
+    var unclearedFieldKubbs: Int = 0 // Field kubbs left uncleared after this round completes
+    var gamePhaseWhenALineAwarded: GamePhase? = nil // Phase when opponent earned A-Line
+    
     init(id: String = UUID().uuidString, roundNumber: Int) {
         self.id = id
         self.roundNumber = roundNumber
@@ -26,6 +31,9 @@ struct FullGameSimRoundStruct: Identifiable, Codable {
         self.baselineKubbsHit = 0
         self.isComplete = false
         self.createdAt = Date()
+        self.hasALine = false
+        self.unclearedFieldKubbs = 0
+        self.gamePhaseWhenALineAwarded = nil
     }
     
     // MARK: - Computed Properties
@@ -97,13 +105,16 @@ struct FullGameSimRoundStruct: Identifiable, Codable {
     // MARK: - Conversion Methods for Statistics
     
     /// Determines which game phase this round belongs to for statistics purposes
+    /// Based on the number of inkast kubbs in play
     func gamePhase() -> GamePhase {
-        switch roundNumber {
-        case 1...3:
+        let kubbCount = inkastData.inkastKubbs
+        
+        switch kubbCount {
+        case 0..<4:
             return .early
         case 4...6:
             return .mid
-        default:
+        default: // 7+
             return .end
         }
     }
@@ -164,6 +175,11 @@ struct EightMeterRoundDataStruct: Codable {
     var batonsUsed: Int = 0
     var batonThrows: [EightMeterBatonThrowStruct] = []
     
+    // A-Line statistics
+    var hitsFromALine: Int = 0
+    var missesFromALine: Int = 0
+    var batonsUsedFromALine: Int = 0
+    
     var isComplete: Bool {
         return batonsUsed >= 2 // 8-meter training uses 2 batons
     }
@@ -173,10 +189,16 @@ struct EightMeterRoundDataStruct: Codable {
         return Double(hits) / Double(batonsUsed)
     }
     
-    mutating func addBatonThrow(isHit: Bool) {
+    var accuracyFromALine: Double {
+        guard batonsUsedFromALine > 0 else { return 0.0 }
+        return Double(hitsFromALine) / Double(batonsUsedFromALine)
+    }
+    
+    mutating func addBatonThrow(isHit: Bool, fromALine: Bool = false) {
         let batonThrow = EightMeterBatonThrowStruct(
             isHit: isHit,
-            throwNumber: batonThrows.count + 1
+            throwNumber: batonThrows.count + 1,
+            fromALine: fromALine
         )
         batonThrows.append(batonThrow)
         
@@ -186,6 +208,16 @@ struct EightMeterRoundDataStruct: Codable {
             hits += 1
         } else {
             misses += 1
+        }
+        
+        // Track A-Line statistics separately
+        if fromALine {
+            batonsUsedFromALine += 1
+            if isHit {
+                hitsFromALine += 1
+            } else {
+                missesFromALine += 1
+            }
         }
     }
 }
@@ -250,6 +282,11 @@ struct BlastRoundDataStruct: Codable {
     var batonsUsed: Int = 0
     var batonThrows: [BlastBatonThrowStruct] = []
     
+    // A-Line statistics
+    var hitsFromALine: Int = 0
+    var missesFromALine: Int = 0
+    var batonsUsedFromALine: Int = 0
+    
     var isComplete: Bool {
         return kubbsClearedFirstThrow >= 5 // All field kubbs cleared
     }
@@ -265,11 +302,17 @@ struct BlastRoundDataStruct: Codable {
         return Double(hits) / Double(batonsUsed)
     }
     
-    mutating func addBatonThrow(isHit: Bool, kubbsHit: Int = 0) {
+    var accuracyFromALine: Double {
+        guard batonsUsedFromALine > 0 else { return 0.0 }
+        return Double(hitsFromALine) / Double(batonsUsedFromALine)
+    }
+    
+    mutating func addBatonThrow(isHit: Bool, kubbsHit: Int = 0, fromALine: Bool = false) {
         let batonThrow = BlastBatonThrowStruct(
             isHit: isHit,
             kubbsHit: kubbsHit,
-            throwNumber: batonThrows.count + 1
+            throwNumber: batonThrows.count + 1,
+            fromALine: fromALine
         )
         batonThrows.append(batonThrow)
         
@@ -281,6 +324,16 @@ struct BlastRoundDataStruct: Codable {
         } else {
             misses += 1
         }
+        
+        // Track A-Line statistics separately
+        if fromALine {
+            batonsUsedFromALine += 1
+            if isHit {
+                hitsFromALine += 1
+            } else {
+                missesFromALine += 1
+            }
+        }
     }
 }
 
@@ -291,12 +344,14 @@ struct EightMeterBatonThrowStruct: Identifiable, Codable {
     let isHit: Bool
     let throwNumber: Int
     let timestamp: Date
+    let fromALine: Bool
     
-    init(id: String = UUID().uuidString, isHit: Bool, throwNumber: Int) {
+    init(id: String = UUID().uuidString, isHit: Bool, throwNumber: Int, fromALine: Bool = false) {
         self.id = id
         self.isHit = isHit
         self.throwNumber = throwNumber
         self.timestamp = Date()
+        self.fromALine = fromALine
     }
 }
 
@@ -322,12 +377,14 @@ struct BlastBatonThrowStruct: Identifiable, Codable {
     let kubbsHit: Int
     let throwNumber: Int
     let timestamp: Date
+    let fromALine: Bool
     
-    init(id: String = UUID().uuidString, isHit: Bool, kubbsHit: Int, throwNumber: Int) {
+    init(id: String = UUID().uuidString, isHit: Bool, kubbsHit: Int, throwNumber: Int, fromALine: Bool = false) {
         self.id = id
         self.isHit = isHit
         self.kubbsHit = kubbsHit
         self.throwNumber = throwNumber
         self.timestamp = Date()
+        self.fromALine = fromALine
     }
 }

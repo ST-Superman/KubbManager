@@ -58,6 +58,11 @@ class SessionManager: ObservableObject {
             currentSession = newSession
             isSessionActive = true
             
+            // Setup watch connectivity and notify watch
+            setupWatchConnectivity()
+            notifyWatchSessionStarted()
+            sendSessionStateToWatch()
+            
             // Save to CloudKit for synchronization across devices
             try await cloudKitManager.saveSession(newSession)
             print("✅ Successfully started and saved new session: \(newSession.id)")
@@ -109,6 +114,9 @@ class SessionManager: ObservableObject {
                 if autoCompletedSession.isIncomplete {
                     currentSession = autoCompletedSession
                     isSessionActive = true
+                    
+                    // Don't setup watch connectivity yet - wait until user actually resumes
+                    // setupWatchConnectivity() will be called in resumeSession()
                 } else {
                     // Session was auto-completed, save it and clear current session
                     try await cloudKitManager.saveSession(autoCompletedSession)
@@ -197,6 +205,11 @@ class SessionManager: ObservableObject {
         var updatedSession = session
         updatedSession.resumeSession()
         currentSession = updatedSession
+        
+        // Setup watch connectivity when resuming
+        setupWatchConnectivity()
+        notifyWatchSessionStarted()
+        sendSessionStateToWatch()
         
         // Save session state
         await saveSession()

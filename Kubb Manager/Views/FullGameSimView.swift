@@ -151,7 +151,7 @@ struct FullGameSimView: View {
         VStack(spacing: 24) {
             // Header Card
             VStack(spacing: 16) {
-                Image("baseball_kubb")
+                Image("king")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 120)
@@ -181,18 +181,18 @@ struct FullGameSimView: View {
                 
                 VStack(alignment: .leading, spacing: 12) {
                     GameRuleRow(
-                        round: "Round 1",
-                        description: "8-meter training only (2 batons)"
+                        round: "Setup",
+                        description: "Full kubb pitch"
                     )
                     
                     GameRuleRow(
-                        round: "Round 2",
-                        description: "Inkast → Blast → 8-meter (4 batons)"
+                        round: "Play",
+                        description: "Play a standard game against yourself"
                     )
                     
                     GameRuleRow(
-                        round: "Round 3+",
-                        description: "Inkast → Blast → 8-meter (6 batons)"
+                        round: "Stats",
+                        description: "Kubb Manager will track your stats for Inkasting, blasting, and 8 meter throws"
                     )
                 }
             }
@@ -229,11 +229,29 @@ struct FullGameSimView: View {
             // Session Header
             sessionHeaderView
             
-            
             // Phase Content
             phaseContentView
             
             Spacer()
+            
+            // Watch Control Panel (at bottom)
+            WatchSessionControlPanel(
+                sessionType: "Full Game Sim",
+                onStartWatchInput: {
+                    sessionManager.requestWatchInput()
+                },
+                onSendSessionState: {
+                    sessionManager.sendSessionStateToWatch()
+                }
+            )
+        }
+        .onAppear {
+            // Ensure watch connectivity is set up when active session view appears
+            // This handles cases where the session was loaded but not formally "resumed"
+            if sessionManager.isSessionActive {
+                sessionManager.setupWatchConnectivity()
+                sessionManager.sendSessionStateToWatch()
+            }
         }
     }
     
@@ -267,7 +285,41 @@ struct FullGameSimView: View {
                 }
             }
             
-            // Debug: Show both teams' baseline kubb counts
+            // A-Line Status Indicator
+            if let round = sessionManager.currentRound, sessionManager.currentRoundNumber > 1 {
+                if round.hasALine {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.fill")
+                            .foregroundColor(.yellow)
+                        Text("A-Line Active!")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        if let phase = round.gamePhaseWhenALineAwarded {
+                            Text("(earned in \(phase.rawValue.capitalized) phase)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.yellow.opacity(0.2))
+                    .cornerRadius(8)
+                } else {
+                    HStack(spacing: 6) {
+                        Image(systemName: "ruler")
+                            .foregroundColor(.gray)
+                        Text("Attacking from Baseline")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                }
+            }
+            
+            // Show both teams' baseline kubb counts
             if let session = sessionManager.currentSession {
                 HStack(spacing: 20) {
                     VStack(spacing: 4) {
@@ -278,6 +330,11 @@ struct FullGameSimView: View {
                         Text("\(session.team1BaselineKubbs) baseline")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                        if session.team1UnclearedKubbs > 0 {
+                            Text("\(session.team1UnclearedKubbs) uncleared")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
                     }
                     
                     VStack(spacing: 4) {
@@ -288,6 +345,11 @@ struct FullGameSimView: View {
                         Text("\(session.team2BaselineKubbs) baseline")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                        if session.team2UnclearedKubbs > 0 {
+                            Text("\(session.team2UnclearedKubbs) uncleared")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
                     }
                 }
                 .padding(.horizontal, 16)

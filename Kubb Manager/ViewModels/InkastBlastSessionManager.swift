@@ -73,6 +73,11 @@ class InkastBlastSessionManager: ObservableObject {
         isSessionActive = true
         isPaused = false
         generateNewRound()
+        
+        // Setup watch connectivity and notify watch
+        setupWatchConnectivity()
+        notifyWatchSessionStarted()
+        sendSessionStateToWatch()
     }
     
     func pauseSession() {
@@ -88,6 +93,12 @@ class InkastBlastSessionManager: ObservableObject {
         session.resumeSession()
         currentSession = session
         isPaused = false
+        
+        // Setup watch connectivity when resuming
+        setupWatchConnectivity()
+        notifyWatchSessionStarted()
+        sendSessionStateToWatch()
+        
         saveSession()
     }
     
@@ -314,6 +325,10 @@ class InkastBlastSessionManager: ObservableObject {
                 currentSession = sessionData
                 isSessionActive = true
                 isPaused = true
+                
+                // Don't setup watch connectivity yet - wait until user actually resumes
+                // setupWatchConnectivity() will be called in resumeSession()
+                
                 updateSessionStats()
             }
         } catch {

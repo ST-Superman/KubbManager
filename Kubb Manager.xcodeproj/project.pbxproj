@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4C27FDCD2E96B64F0013A26A /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C27FDCC2E96B64F0013A26A /* WatchConnectivity.framework */; };
+		4CF1B76D2E96CF2900BEF17F /* Kubb Manager Watch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 4CF1B74D2E96CF2700BEF17F /* Kubb Manager Watch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		4CCE1BAA2E82DEFA0045735D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,11 +26,48 @@
 			remoteGlobalIDString = 4CCE1B942E82DEF80045735D;
 			remoteInfo = "Kubb Manager";
 		};
+		4CF1B75A2E96CF2900BEF17F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CCE1B8D2E82DEF80045735D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4CF1B74C2E96CF2700BEF17F;
+			remoteInfo = "Kubb Manager Watch Watch App";
+		};
+		4CF1B7642E96CF2900BEF17F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CCE1B8D2E82DEF80045735D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4CF1B74C2E96CF2700BEF17F;
+			remoteInfo = "Kubb Manager Watch Watch App";
+		};
+		4CF1B76B2E96CF2900BEF17F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CCE1B8D2E82DEF80045735D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4CF1B74C2E96CF2700BEF17F;
+			remoteInfo = "Kubb Manager Watch Watch App";
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4CF1B7712E96CF2900BEF17F /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				4CF1B76D2E96CF2900BEF17F /* Kubb Manager Watch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		4C0B90632E87349800D30FC1 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
+		4C27FD5F2E95F4F70013A26A /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
+		4C27FDCC2E96B64F0013A26A /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
 		4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C89FAA92E946BF20009D357 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C9898CF2E8733C80053F2A8 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
@@ -36,11 +78,27 @@
 		4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb ManagerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CF1296A2E8DC44100694719 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
+		4CF1B74D2E96CF2700BEF17F /* Kubb Manager Watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kubb Manager Watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CF1B7592E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb Manager Watch Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CF1B7632E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb Manager Watch Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4CF1B7832E96CFDB00BEF17F /* Exceptions for "Kubb Manager" folder in "Kubb Manager Watch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/WatchCommunication.swift,
+			);
+			target = 4CF1B74C2E96CF2700BEF17F /* Kubb Manager Watch Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4CCE1B972E82DEF80045735D /* Kubb Manager */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4CF1B7832E96CFDB00BEF17F /* Exceptions for "Kubb Manager" folder in "Kubb Manager Watch Watch App" target */,
+			);
 			path = "Kubb Manager";
 			sourceTree = "<group>";
 		};
@@ -54,6 +112,21 @@
 			path = "Kubb ManagerUITests";
 			sourceTree = "<group>";
 		};
+		4CF1B74E2E96CF2700BEF17F /* Kubb Manager Watch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Kubb Manager Watch Watch App";
+			sourceTree = "<group>";
+		};
+		4CF1B75C2E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Kubb Manager Watch Watch AppTests";
+			sourceTree = "<group>";
+		};
+		4CF1B7662E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Kubb Manager Watch Watch AppUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +134,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C27FDCD2E96B64F0013A26A /* WatchConnectivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +152,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4CF1B74A2E96CF2700BEF17F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CF1B7562E96CF2900BEF17F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CF1B7602E96CF2900BEF17F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -89,6 +184,19 @@
 		4C1E98B22E89BE61007F9A57 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
+			sourceTree = "<group>";
+		};
+		4C27FD642E95F4F70013A26A /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4C27FDCB2E96B64E0013A26A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4C27FDCC2E96B64F0013A26A /* WatchConnectivity.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		4C5FD0B42E871A7E0079A805 /* Products */ = {
@@ -129,6 +237,10 @@
 				4CCE1B972E82DEF80045735D /* Kubb Manager */,
 				4CCE1BAC2E82DEFA0045735D /* Kubb ManagerTests */,
 				4CCE1BB62E82DEFA0045735D /* Kubb ManagerUITests */,
+				4CF1B74E2E96CF2700BEF17F /* Kubb Manager Watch Watch App */,
+				4CF1B75C2E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests */,
+				4CF1B7662E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests */,
+				4C27FDCB2E96B64E0013A26A /* Frameworks */,
 				4CCE1B962E82DEF80045735D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -139,6 +251,9 @@
 				4CCE1B952E82DEF80045735D /* Kubb Manager.app */,
 				4CCE1BA92E82DEFA0045735D /* Kubb ManagerTests.xctest */,
 				4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */,
+				4CF1B74D2E96CF2700BEF17F /* Kubb Manager Watch Watch App.app */,
+				4CF1B7592E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests.xctest */,
+				4CF1B7632E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -158,10 +273,12 @@
 				4CCE1B912E82DEF80045735D /* Sources */,
 				4CCE1B922E82DEF80045735D /* Frameworks */,
 				4CCE1B932E82DEF80045735D /* Resources */,
+				4CF1B7712E96CF2900BEF17F /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4CF1B76C2E96CF2900BEF17F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4CCE1B972E82DEF80045735D /* Kubb Manager */,
@@ -219,6 +336,74 @@
 			productReference = 4CCE1BB32E82DEFA0045735D /* Kubb ManagerUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		4CF1B74C2E96CF2700BEF17F /* Kubb Manager Watch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CF1B76E2E96CF2900BEF17F /* Build configuration list for PBXNativeTarget "Kubb Manager Watch Watch App" */;
+			buildPhases = (
+				4CF1B7492E96CF2700BEF17F /* Sources */,
+				4CF1B74A2E96CF2700BEF17F /* Frameworks */,
+				4CF1B74B2E96CF2700BEF17F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4CF1B74E2E96CF2700BEF17F /* Kubb Manager Watch Watch App */,
+			);
+			name = "Kubb Manager Watch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "Kubb Manager Watch Watch App";
+			productReference = 4CF1B74D2E96CF2700BEF17F /* Kubb Manager Watch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		4CF1B7582E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CF1B7722E96CF2900BEF17F /* Build configuration list for PBXNativeTarget "Kubb Manager Watch Watch AppTests" */;
+			buildPhases = (
+				4CF1B7552E96CF2900BEF17F /* Sources */,
+				4CF1B7562E96CF2900BEF17F /* Frameworks */,
+				4CF1B7572E96CF2900BEF17F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4CF1B75B2E96CF2900BEF17F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4CF1B75C2E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests */,
+			);
+			name = "Kubb Manager Watch Watch AppTests";
+			packageProductDependencies = (
+			);
+			productName = "Kubb Manager Watch Watch AppTests";
+			productReference = 4CF1B7592E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		4CF1B7622E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CF1B7752E96CF2900BEF17F /* Build configuration list for PBXNativeTarget "Kubb Manager Watch Watch AppUITests" */;
+			buildPhases = (
+				4CF1B75F2E96CF2900BEF17F /* Sources */,
+				4CF1B7602E96CF2900BEF17F /* Frameworks */,
+				4CF1B7612E96CF2900BEF17F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4CF1B7652E96CF2900BEF17F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4CF1B7662E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests */,
+			);
+			name = "Kubb Manager Watch Watch AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "Kubb Manager Watch Watch AppUITests";
+			productReference = 4CF1B7632E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -239,6 +424,17 @@
 					4CCE1BB22E82DEFA0045735D = {
 						CreatedOnToolsVersion = 16.4;
 						TestTargetID = 4CCE1B942E82DEF80045735D;
+					};
+					4CF1B74C2E96CF2700BEF17F = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					4CF1B7582E96CF2900BEF17F = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 4CF1B74C2E96CF2700BEF17F;
+					};
+					4CF1B7622E96CF2900BEF17F = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 4CF1B74C2E96CF2700BEF17F;
 					};
 				};
 			};
@@ -284,6 +480,10 @@
 					ProjectRef = 4CF1296A2E8DC44100694719 /* Kubb Manager.xcodeproj */;
 				},
 				{
+					ProductGroup = 4C27FD642E95F4F70013A26A /* Products */;
+					ProjectRef = 4C27FD5F2E95F4F70013A26A /* Kubb Manager.xcodeproj */;
+				},
+				{
 					ProductGroup = 4CB367C32E8B108100EE221F /* Products */;
 					ProjectRef = 4CB367BE2E8B108100EE221F /* Kubb Manager.xcodeproj */;
 				},
@@ -297,6 +497,9 @@
 				4CCE1B942E82DEF80045735D /* Kubb Manager */,
 				4CCE1BA82E82DEFA0045735D /* Kubb ManagerTests */,
 				4CCE1BB22E82DEFA0045735D /* Kubb ManagerUITests */,
+				4CF1B74C2E96CF2700BEF17F /* Kubb Manager Watch Watch App */,
+				4CF1B7582E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests */,
+				4CF1B7622E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -317,6 +520,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4CCE1BB12E82DEFA0045735D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CF1B74B2E96CF2700BEF17F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CF1B7572E96CF2900BEF17F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CF1B7612E96CF2900BEF17F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -347,6 +571,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4CF1B7492E96CF2700BEF17F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CF1B7552E96CF2900BEF17F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CF1B75F2E96CF2900BEF17F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -359,6 +604,21 @@
 			isa = PBXTargetDependency;
 			target = 4CCE1B942E82DEF80045735D /* Kubb Manager */;
 			targetProxy = 4CCE1BB42E82DEFA0045735D /* PBXContainerItemProxy */;
+		};
+		4CF1B75B2E96CF2900BEF17F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4CF1B74C2E96CF2700BEF17F /* Kubb Manager Watch Watch App */;
+			targetProxy = 4CF1B75A2E96CF2900BEF17F /* PBXContainerItemProxy */;
+		};
+		4CF1B7652E96CF2900BEF17F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4CF1B74C2E96CF2700BEF17F /* Kubb Manager Watch Watch App */;
+			targetProxy = 4CF1B7642E96CF2900BEF17F /* PBXContainerItemProxy */;
+		};
+		4CF1B76C2E96CF2900BEF17F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4CF1B74C2E96CF2700BEF17F /* Kubb Manager Watch Watch App */;
+			targetProxy = 4CF1B76B2E96CF2900BEF17F /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -375,6 +635,8 @@
 				ENABLE_PREVIEWS = YES;
 				EXECUTABLE_NAME = "Kubb Manager";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kubb Manager";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -405,6 +667,8 @@
 				ENABLE_PREVIEWS = YES;
 				EXECUTABLE_NAME = "Kubb Manager";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kubb Manager";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -620,6 +884,142 @@
 			};
 			name = Release;
 		};
+		4CF1B76F2E96CF2900BEF17F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kubb Manager Watch";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "ST-Superman.Kubb-Manager";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
+		4CF1B7702E96CF2900BEF17F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kubb Manager Watch";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "ST-Superman.Kubb-Manager";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
+		4CF1B7732E96CF2900BEF17F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager-Watch-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Kubb Manager Watch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Kubb Manager Watch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
+		4CF1B7742E96CF2900BEF17F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager-Watch-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Kubb Manager Watch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Kubb Manager Watch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
+		4CF1B7762E96CF2900BEF17F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager-Watch-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "Kubb Manager Watch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
+		4CF1B7772E96CF2900BEF17F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KU56QJD48N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ST-Superman.Kubb-Manager-Watch-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "Kubb Manager Watch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -655,6 +1055,33 @@
 			buildConfigurations = (
 				4CCE1BC52E82DEFA0045735D /* Debug */,
 				4CCE1BC62E82DEFA0045735D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4CF1B76E2E96CF2900BEF17F /* Build configuration list for PBXNativeTarget "Kubb Manager Watch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4CF1B76F2E96CF2900BEF17F /* Debug */,
+				4CF1B7702E96CF2900BEF17F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4CF1B7722E96CF2900BEF17F /* Build configuration list for PBXNativeTarget "Kubb Manager Watch Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4CF1B7732E96CF2900BEF17F /* Debug */,
+				4CF1B7742E96CF2900BEF17F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4CF1B7752E96CF2900BEF17F /* Build configuration list for PBXNativeTarget "Kubb Manager Watch Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4CF1B7762E96CF2900BEF17F /* Debug */,
+				4CF1B7772E96CF2900BEF17F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

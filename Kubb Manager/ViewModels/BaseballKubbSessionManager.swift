@@ -35,6 +35,11 @@ class BaseballKubbSessionManager: ObservableObject {
         let newSession = BaseballKubbSession(awayTeam: awayTeam, homeTeam: homeTeam, userTeam: userTeam)
         currentSession = newSession
         
+        // Setup watch connectivity and notify watch
+        setupWatchConnectivity()
+        notifyWatchSessionStarted()
+        sendSessionStateToWatch()
+        
         // Save to local storage immediately
         localStorage.saveBaseballKubbSession(newSession)
         
@@ -58,6 +63,11 @@ class BaseballKubbSessionManager: ObservableObject {
         
         print("🔄 Resuming incomplete Baseball Kubb game: \(incompleteSession.id)")
         currentSession = incompleteSession
+        
+        // Setup watch connectivity when resuming
+        setupWatchConnectivity()
+        notifyWatchSessionStarted()
+        sendSessionStateToWatch()
     }
     
     func abandonGame() {
@@ -106,6 +116,9 @@ class BaseballKubbSessionManager: ObservableObject {
         currentSession = session
         lastSession = session
         
+        // Notify watch that session ended
+        notifyWatchSessionEnded()
+        
         // Save to local storage
         localStorage.saveBaseballKubbSession(session)
         
@@ -118,6 +131,7 @@ class BaseballKubbSessionManager: ObservableObject {
     
     func resetSession() {
         print("🔄 Resetting Baseball Kubb session")
+        notifyWatchSessionEnded()
         currentSession = nil
     }
     
@@ -269,6 +283,10 @@ class BaseballKubbSessionManager: ObservableObject {
                 // Only set as incomplete if it's not completed
                 if !localSession.isComplete {
                     incompleteSession = localSession
+                    
+                    // Don't setup watch connectivity yet - wait until user actually resumes
+                    // setupWatchConnectivity() will be called in resumeIncompleteGame()
+                    
                     print("📱 Loaded incomplete session from local storage: \(localSession.id)")
                 }
             }

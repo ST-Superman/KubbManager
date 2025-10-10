@@ -325,8 +325,25 @@ struct BaseballKubbGameView: View {
                 
                 // Throw Controls
                 BaseballKubbThrowControlsView(sessionManager: sessionManager, showingHitModal: $showingHitModal, showingHalfSummary: $showingHalfSummary)
+                
+                // Watch Control Panel
+                WatchSessionControlPanel(
+                    sessionType: "Baseball Kubb",
+                    onStartWatchInput: {
+                        sessionManager.requestWatchBatonInput()
+                    },
+                    onSendSessionState: {
+                        sessionManager.sendSessionStateToWatch()
+                    }
+                )
+                .padding(.top, 8)
             }
             .padding()
+        }
+        .onAppear {
+            // Ensure watch connectivity is set up when game view appears
+            sessionManager.setupWatchConnectivity()
+            sessionManager.sendSessionStateToWatch()
         }
     }
 }

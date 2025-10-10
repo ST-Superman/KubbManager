@@ -20,12 +20,9 @@ enum TrainingMode: String, CaseIterable {
     /// Used to show/hide training options in the UI
     var isAvailable: Bool {
         switch self {
-        case .eightMeter, .inkastBlast:
+        case .eightMeter, .inkastBlast, .fullGameSim:
             // These modes are fully implemented and available
             return true
-        case .fullGameSim:
-            // This mode is still in development
-            return false
         }
     }
     
@@ -38,7 +35,7 @@ enum TrainingMode: String, CaseIterable {
         case .inkastBlast:
             return "Practice inkast and blast techniques with various game phases"
         case .fullGameSim:
-            return "Coming Soon - Full game simulation training"
+            return "Full game simulation with inkast, blast, and 8-meter phases"
         }
     }
     
