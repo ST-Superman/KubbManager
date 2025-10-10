@@ -325,8 +325,25 @@ struct BaseballKubbGameView: View {
                 
                 // Throw Controls
                 BaseballKubbThrowControlsView(sessionManager: sessionManager, showingHitModal: $showingHitModal, showingHalfSummary: $showingHalfSummary)
+                
+                // Watch Control Panel
+                WatchSessionControlPanel(
+                    sessionType: "Baseball Kubb",
+                    onStartWatchInput: {
+                        sessionManager.requestWatchBatonInput()
+                    },
+                    onSendSessionState: {
+                        sessionManager.sendSessionStateToWatch()
+                    }
+                )
+                .padding(.top, 8)
             }
             .padding()
+        }
+        .onAppear {
+            // Ensure watch connectivity is set up when game view appears
+            sessionManager.setupWatchConnectivity()
+            sessionManager.sendSessionStateToWatch()
         }
     }
 }
@@ -1371,7 +1388,7 @@ struct BaseballKubbVisualHitView: View {
                         
                         HStack(spacing: 12) {
                             ForEach(0..<(sessionManager.currentSession?.currentBaselineKubbs ?? 0), id: \.self) { index in
-                                KubbVisualView(
+                                BaseballKubbVisualView(
                                     skin: skinManager.selectedKubbSkin,
                                     isHit: baselineKubbsHitSet.contains(index),
                                     isEnabled: canHitBaseline,
@@ -1399,7 +1416,7 @@ struct BaseballKubbVisualHitView: View {
                         
                         HStack(spacing: 12) {
                             ForEach(0..<(sessionManager.currentSession?.fieldKubbs ?? 0), id: \.self) { index in
-                                KubbVisualView(
+                                BaseballKubbVisualView(
                                     skin: skinManager.selectedKubbSkin,
                                     isHit: fieldKubbsHitSet.contains(index),
                                     isEnabled: true,
@@ -1450,7 +1467,7 @@ struct BaseballKubbVisualHitView: View {
 
 // MARK: - Kubb Visual Components
 
-struct KubbVisualView: View {
+struct BaseballKubbVisualView: View {
     let skin: KubbSkin
     let isHit: Bool
     let isEnabled: Bool
@@ -1504,7 +1521,7 @@ struct KubbVisualView: View {
     private func selectImage() {
         // Use SkinManager for consistent multi-skin selection across all views
         let skinManager = SkinManager.shared
-        selectedImageName = skinManager.getRandomKubbImageName(for: 0) // Default to index 0 for KubbVisualView
+        selectedImageName = skinManager.getRandomKubbImageName(for: 0) // Default to index 0 for BaseballKubbVisualView
     }
 }
 
