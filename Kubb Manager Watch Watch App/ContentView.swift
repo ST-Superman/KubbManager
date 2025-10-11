@@ -146,6 +146,9 @@ struct ContentView: View {
     
     private func actionButton(for phase: String, state: WatchSessionState) -> some View {
         Button(action: {
+            // Don't allow new input while sending
+            guard !connectivityManager.isSendingResult else { return }
+            
             WKInterfaceDevice.current().play(.click)
             if connectivityManager.pendingBatonContext != nil {
                 showingBatonInput = true
@@ -230,6 +233,13 @@ struct ContentView: View {
                 } else {
                     Text("TAP TO RECORD")
                 }
+            } else if connectivityManager.isSendingResult {
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("SENDING...")
+                }
+                .foregroundColor(.white.opacity(0.9))
             } else {
                 Text("Waiting...")
                     .foregroundColor(.white.opacity(0.6))

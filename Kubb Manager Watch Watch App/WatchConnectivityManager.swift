@@ -3,13 +3,14 @@
 //  Kubb Manager Watch
 //
 //  Created by AI Assistant on 10/8/25.
+//  Enhanced for production reliability on 10/11/25
 //
 
 import Foundation
 import WatchConnectivity
 import WatchKit
 
-/// Manages communication between Apple Watch and iPhone
+/// Manages communication between Apple Watch and iPhone with robust error handling
 class WatchConnectivityManager: NSObject, ObservableObject {
     
     // MARK: - Singleton
@@ -24,10 +25,15 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     @Published var pendingInkastContext: InkastContext?
     @Published var lastError: String?
     @Published var isWatchMode: Bool = false
+    @Published var isSendingResult: Bool = false // Track if we're currently sending
     
     // MARK: - Properties
     
     private var session: WCSession?
+    private var messageRetryTimer: Timer?
+    private var pendingResultMessage: [String: Any]?
+    private var resultSendAttempts = 0
+    private let maxRetries = 3
     
     var hasPendingInput: Bool {
         return pendingBatonContext != nil || pendingInkastContext != nil
@@ -42,7 +48,21 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             session = WCSession.default
             session?.delegate = self
             session?.activate()
+            log("⌚️ Watch session initializing...")
+        } else {
+            log("❌ WCSession not supported")
         }
+        
+        // Request session state when app launches
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.requestSessionState()
+        }
+    }
+    
+    // MARK: - Logging
+    
+    private func log(_ message: String) {
+        print("⌚️ [Watch] \(message)")
     }
     
     // MARK: - Session State
@@ -61,37 +81,118 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     func sendBatonThrowResult(_ result: BatonThrowResult) {
         var message = result.toDictionary()
         message["messageType"] = WatchMessage.batonThrowResult.rawValue
+        message["timestamp"] = Date().timeIntervalSince1970
         
-        sendMessage(message)
+        // Store message for retry
+        pendingResultMessage = message
+        resultSendAttempts = 0
+        isSendingResult = true
         
-        // Clear pending context
-        pendingBatonContext = nil
+        sendResultWithRetry()
         
-        print("⌚️ Sent baton throw result to phone: isHit=\(result.isHit), kubbs=\(result.kubbsHit)")
+        log("Sending baton throw result: isHit=\(result.isHit), kubbs=\(result.kubbsHit)")
     }
     
     /// Sends an inkast result to the phone
     func sendInkastResult(_ result: InkastResult) {
         var message = result.toDictionary()
         message["messageType"] = WatchMessage.inkastResult.rawValue
+        message["timestamp"] = Date().timeIntervalSince1970
         
-        sendMessage(message)
+        // Store message for retry
+        pendingResultMessage = message
+        resultSendAttempts = 0
+        isSendingResult = true
         
-        // Clear pending context
+        sendResultWithRetry()
+        
+        log("Sending inkast result: count=\(result.count), type=\(result.inkastType)")
+    }
+    
+    private func sendResultWithRetry() {
+        guard let message = pendingResultMessage else { return }
+        guard canSendMessages else {
+            log("❌ Cannot send result: Phone not reachable")
+            // Retry after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.sendResultWithRetry()
+            }
+            return
+        }
+        
+        guard let session = session else { return }
+        
+        resultSendAttempts += 1
+        log("Sending result (attempt \(resultSendAttempts)/\(maxRetries))...")
+        
+        session.sendMessage(message, replyHandler: { [weak self] reply in
+            DispatchQueue.main.async {
+                self?.log("✅ Result delivered successfully")
+                self?.handleResultSent()
+                self?.handleReply(reply)
+            }
+        }, errorHandler: { [weak self] error in
+            DispatchQueue.main.async {
+                self?.log("❌ Error sending result: \(error.localizedDescription)")
+                self?.handleResultSendError(error)
+            }
+        })
+    }
+    
+    private func handleResultSent() {
+        // Clear pending result
+        pendingResultMessage = nil
+        isSendingResult = false
+        resultSendAttempts = 0
+        
+        // Clear pending input contexts
+        pendingBatonContext = nil
         pendingInkastContext = nil
         
-        print("⌚️ Sent inkast result to phone: count=\(result.count), type=\(result.inkastType)")
+        // Provide haptic feedback
+        WKInterfaceDevice.current().play(.success)
+        
+        log("✅ Result sent and cleared")
+        
+        // In Watch Mode, phone will automatically send next input
+        // No need to request it here
+    }
+    
+    private func handleResultSendError(_ error: Error) {
+        lastError = error.localizedDescription
+        
+        // Retry if we haven't exceeded max attempts
+        if resultSendAttempts < maxRetries {
+            log("🔄 Retrying result send...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                self?.sendResultWithRetry()
+            }
+        } else {
+            log("❌ Failed to send result after \(maxRetries) attempts")
+            isSendingResult = false
+            pendingResultMessage = nil
+            
+            // Show error to user
+            WKInterfaceDevice.current().play(.failure)
+            
+            // Clear the pending contexts so user can try again manually
+            // Don't clear them - let user see what they entered
+        }
     }
     
     /// Requests current session state from phone
     func requestSessionState() {
+        guard canSendMessages else {
+            log("⏸️ Cannot request state: Phone not reachable")
+            return
+        }
+        
         let message: [String: Any] = [
             "messageType": WatchMessage.requestSessionState.rawValue
         ]
         
-        sendMessage(message)
-        
-        print("⌚️ Requested session state from phone")
+        sendMessageAsync(message)
+        log("Requested session state from phone")
     }
     
     // MARK: - Watch Mode Actions
@@ -102,9 +203,8 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             "messageType": WatchMessage.nextPhase.rawValue
         ]
         
-        sendMessage(message)
-        
-        print("⌚️ Requested next phase from phone")
+        sendMessageAsync(message)
+        log("Requested next phase from phone")
     }
     
     /// Requests to start next round
@@ -113,9 +213,8 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             "messageType": WatchMessage.nextRound.rawValue
         ]
         
-        sendMessage(message)
-        
-        print("⌚️ Requested next round from phone")
+        sendMessageAsync(message)
+        log("Requested next round from phone")
     }
     
     /// Requests to end the session
@@ -124,9 +223,8 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             "messageType": WatchMessage.endSession.rawValue
         ]
         
-        sendMessage(message)
-        
-        print("⌚️ Requested to end session")
+        sendMessageAsync(message)
+        log("Requested to end session")
     }
     
     /// Ends the current session (convenience method)
@@ -141,20 +239,25 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     
     // MARK: - Send Messages
     
-    /// Sends a message to the phone
-    private func sendMessage(_ message: [String: Any]) {
+    /// Sends a message asynchronously without blocking
+    private func sendMessageAsync(_ message: [String: Any]) {
         guard let session = session, session.isReachable else {
             lastError = "iPhone is not reachable"
-            print("❌ Cannot send message: iPhone not reachable")
+            log("❌ Cannot send message: iPhone not reachable")
             return
         }
         
+        // Send message without waiting for reply
         session.sendMessage(message, replyHandler: { reply in
-            print("⌚️ Received reply from phone: \(reply)")
-            self.handleReply(reply)
+            self.log("📱 Received reply from phone")
+            DispatchQueue.main.async {
+                self.handleReply(reply)
+            }
         }, errorHandler: { error in
-            self.lastError = error.localizedDescription
-            print("❌ Error sending message to phone: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.lastError = error.localizedDescription
+                self.log("❌ Error sending message: \(error.localizedDescription)")
+            }
         })
     }
     
@@ -162,12 +265,12 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     
     private func handleReply(_ reply: [String: Any]) {
         guard let messageType = reply["messageType"] as? String else {
-            print("❌ Invalid reply: missing messageType")
+            log("❌ Invalid reply: missing messageType")
             return
         }
         
         if messageType == WatchMessage.acknowledgment.rawValue {
-            print("✅ Phone acknowledged message")
+            log("✅ Phone acknowledged message")
         }
     }
     
@@ -176,7 +279,7 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     private func handleIncomingMessage(_ message: [String: Any]) {
         guard let messageTypeString = message["messageType"] as? String,
               let messageType = WatchMessage(rawValue: messageTypeString) else {
-            print("❌ Invalid message: missing or invalid messageType")
+            log("❌ Invalid message: missing or invalid messageType")
             return
         }
         
@@ -201,18 +304,17 @@ class WatchConnectivityManager: NSObject, ObservableObject {
                 self.handleDisableWatchMode()
                 
             case .acknowledgment:
-                // Acknowledgment received - no action needed
-                // (These are also handled in handleReply when sent as reply)
+                // Acknowledgment received
                 break
                 
             case .error:
                 if let errorMessage = message["error"] as? String {
                     self.lastError = errorMessage
-                    print("❌ Phone error: \(errorMessage)")
+                    self.log("❌ Phone error: \(errorMessage)")
                 }
                 
             default:
-                print("⚠️ Unhandled message type: \(messageType)")
+                self.log("⚠️ Unhandled message type: \(messageType)")
             }
         }
     }
@@ -220,7 +322,11 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     private func handleSessionStarted(_ message: [String: Any]) {
         if let state = WatchSessionState.fromDictionary(message) {
             currentSessionState = state
-            print("⌚️ Session started: \(state.sessionType)")
+            isWatchMode = state.isWatchMode
+            log("Session started: \(state.sessionType), watch mode: \(state.isWatchMode)")
+            
+            // Haptic feedback
+            WKInterfaceDevice.current().play(.start)
         }
     }
     
@@ -228,12 +334,24 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         currentSessionState = nil
         pendingBatonContext = nil
         pendingInkastContext = nil
-        print("⌚️ Session ended")
+        isWatchMode = false
+        isSendingResult = false
+        pendingResultMessage = nil
+        log("Session ended")
+        
+        // Haptic feedback
+        WKInterfaceDevice.current().play(.stop)
     }
     
     private func handleInputRequest(_ message: [String: Any]) {
         guard let inputType = message["inputType"] as? String else {
-            print("❌ Invalid input request: missing inputType")
+            log("❌ Invalid input request: missing inputType")
+            return
+        }
+        
+        // Don't accept new input if we're still sending a result
+        if isSendingResult {
+            log("⚠️ Ignoring input request while sending result")
             return
         }
         
@@ -247,7 +365,7 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     private func handleBatonThrowRequest(_ message: [String: Any]) {
         guard let promptText = message["promptText"] as? String,
               let allowKubbCount = message["allowKubbCount"] as? Bool else {
-            print("❌ Invalid baton throw request")
+            log("❌ Invalid baton throw request")
             return
         }
         
@@ -265,7 +383,7 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         // Haptic notification
         WKInterfaceDevice.current().play(.notification)
         
-        print("⌚️ Received baton throw request: \(promptText)")
+        log("Received baton throw request: \(promptText)")
     }
     
     private func handleInkastRequest(_ message: [String: Any]) {
@@ -273,7 +391,7 @@ class WatchConnectivityManager: NSObject, ObservableObject {
               let maxCount = message["maxCount"] as? Int,
               let inkastTypeString = message["inkastType"] as? String,
               let inkastType = InkastInputType(rawValue: inkastTypeString) else {
-            print("❌ Invalid inkast request")
+            log("❌ Invalid inkast request")
             return
         }
         
@@ -289,25 +407,26 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         // Haptic notification
         WKInterfaceDevice.current().play(.notification)
         
-        print("⌚️ Received inkast request: \(promptText)")
+        log("Received inkast request: \(promptText)")
     }
     
     private func handleSessionStateUpdate(_ message: [String: Any]) {
         if let state = WatchSessionState.fromDictionary(message) {
             currentSessionState = state
             isWatchMode = state.isWatchMode
-            print("⌚️ Session state updated: \(state.sessionType), active: \(state.isActive), watch mode: \(state.isWatchMode)")
+            log("Session state updated: \(state.sessionType), active: \(state.isActive), watch mode: \(state.isWatchMode)")
         }
     }
     
     private func handleEnableWatchMode() {
         isWatchMode = true
-        print("⌚️ Watch Mode enabled - watch will drive session flow")
+        log("Watch Mode enabled - watch will drive session flow")
+        WKInterfaceDevice.current().play(.success)
     }
     
     private func handleDisableWatchMode() {
         isWatchMode = false
-        print("⌚️ Watch Mode disabled - phone controls session flow")
+        log("Watch Mode disabled - phone controls session flow")
     }
 }
 
@@ -319,16 +438,19 @@ extension WatchConnectivityManager: WCSessionDelegate {
         DispatchQueue.main.async {
             if let error = error {
                 self.lastError = error.localizedDescription
-                print("❌ Watch session activation error: \(error.localizedDescription)")
+                self.log("❌ Watch session activation error: \(error.localizedDescription)")
             } else {
-                print("✅ Watch session activated: \(activationState.rawValue)")
+                self.log("✅ Watch session activated: \(activationState.rawValue)")
             }
             
             self.updatePhoneState()
             
             // Request current session state on activation
             if activationState == .activated && session.isReachable {
-                self.requestSessionState()
+                // Delay to ensure phone session is ready
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.requestSessionState()
+                }
             }
         }
     }
@@ -336,23 +458,33 @@ extension WatchConnectivityManager: WCSessionDelegate {
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async {
             self.updatePhoneState()
-            
-            print("⌚️ Phone reachability changed: \(session.isReachable)")
+            self.log("📱 Phone reachability changed: \(session.isReachable)")
             
             // Request session state when phone becomes reachable
             if session.isReachable {
-                self.requestSessionState()
+                // Delay slightly to allow phone to be ready
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.requestSessionState()
+                }
+                
+                // Retry sending pending result if we have one
+                if self.pendingResultMessage != nil && !self.isSendingResult {
+                    self.log("🔄 Phone reachable - retrying pending result send")
+                    self.isSendingResult = true
+                    self.resultSendAttempts = 0
+                    self.sendResultWithRetry()
+                }
             }
         }
     }
     
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        print("⌚️ Received message from phone: \(message)")
+        log("Received message from phone")
         handleIncomingMessage(message)
     }
     
     func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
-        print("⌚️ Received message from phone (with reply): \(message)")
+        log("Received message from phone (with reply handler)")
         handleIncomingMessage(message)
         
         // Send acknowledgment reply

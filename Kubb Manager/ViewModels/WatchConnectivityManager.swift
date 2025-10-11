@@ -3,12 +3,13 @@
 //  Kubb Manager
 //
 //  Created by AI Assistant on 10/8/25.
+//  Enhanced for production reliability on 10/11/25
 //
 
 import Foundation
 import WatchConnectivity
 
-/// Manages communication between iPhone and Apple Watch
+/// Manages communication between iPhone and Apple Watch with robust error handling and retry logic
 class WatchConnectivityManager: NSObject, ObservableObject {
     
     // MARK: - Singleton
@@ -27,15 +28,23 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     weak var delegate: WatchCommunicationDelegate? {
         didSet {
             if delegate == nil {
-                print("⚠️ WatchConnectivityManager delegate was set to nil")
+                log("⚠️ Delegate was set to nil")
             } else {
-                print("✅ WatchConnectivityManager delegate set to: \(String(describing: type(of: delegate)))")
+                log("✅ Delegate set to: \(String(describing: type(of: delegate)))")
             }
         }
     }
+    
     private var session: WCSession?
     private var pendingInputRequest: WatchInputType?
     @Published var isWatchMode: Bool = false
+    
+    // Message reliability improvements
+    private var messageQueue: [PendingMessage] = []
+    private var messageRetryTimer: Timer?
+    private let maxRetries = 3
+    private let messageTimeout: TimeInterval = 5.0
+    private var isProcessingQueue = false
     
     // MARK: - Initialization
     
@@ -46,7 +55,13 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             session = WCSession.default
             session?.delegate = self
             session?.activate()
+            log("📱 Watch session initializing...")
+        } else {
+            log("❌ WCSession not supported on this device")
         }
+        
+        // Start message queue processor
+        startMessageQueueProcessor()
     }
     
     // MARK: - Session State
@@ -59,17 +74,23 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         return isSessionActive && isWatchReachable
     }
     
+    // MARK: - Logging
+    
+    private func log(_ message: String) {
+        print("📱 [iPhone] \(message)")
+    }
+    
     // MARK: - Send Session Updates
     
     /// Notifies watch that a session has started
     func notifySessionStarted(sessionType: String) {
         let state = WatchSessionState(
             sessionType: sessionType,
-            isActive: true
+            isActive: true,
+            isWatchMode: isWatchMode
         )
         sendSessionState(state)
-        
-        print("📱 Notified watch: Session started - \(sessionType)")
+        log("Notified watch: Session started - \(sessionType)")
     }
     
     /// Notifies watch that a session has ended
@@ -77,9 +98,8 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         let message: [String: Any] = [
             "messageType": WatchMessage.sessionEnded.rawValue
         ]
-        sendMessage(message)
-        
-        print("📱 Notified watch: Session ended")
+        queueMessage(message, priority: .high, requiresReply: false)
+        log("Notified watch: Session ended")
     }
     
     /// Sends current session state to watch
@@ -89,7 +109,8 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         ]
         message.merge(state.toDictionary()) { (_, new) in new }
         
-        sendMessage(message)
+        queueMessage(message, priority: .high, requiresReply: false)
+        log("Sending session state update")
     }
     
     // MARK: - Watch Mode Management
@@ -98,17 +119,15 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     func enableWatchMode() {
         isWatchMode = true
         
-        // Ensure delegate is set before enabling watch mode
         if delegate == nil {
-            print("⚠️ WARNING: Enabling Watch Mode but no delegate is set!")
-            print("⚠️ Make sure the session is resumed/started before enabling Watch Mode")
+            log("⚠️ WARNING: Enabling Watch Mode but no delegate is set!")
         }
         
         let message: [String: Any] = [
             "messageType": WatchMessage.enableWatchMode.rawValue
         ]
-        sendMessage(message)
-        print("📱 Watch Mode enabled - watch will drive session flow")
+        queueMessage(message, priority: .high, requiresReply: true)
+        log("Watch Mode enabled - watch will drive session flow")
     }
     
     /// Disables Watch Mode - phone controls the session flow
@@ -117,8 +136,8 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         let message: [String: Any] = [
             "messageType": WatchMessage.disableWatchMode.rawValue
         ]
-        sendMessage(message)
-        print("📱 Watch Mode disabled - phone controls session flow")
+        queueMessage(message, priority: .high, requiresReply: false)
+        log("Watch Mode disabled - phone controls session flow")
     }
     
     // MARK: - Request Input from Watch
@@ -139,14 +158,16 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     private func requestInput(_ inputType: WatchInputType) {
         guard canSendMessages else {
             lastError = "Watch is not reachable"
-            print("❌ Cannot send input request: Watch not reachable")
+            log("❌ Cannot send input request: Watch not reachable")
+            // Fall back to transfer user info for when watch wakes up
             return
         }
         
         pendingInputRequest = inputType
         
         var message: [String: Any] = [
-            "messageType": WatchMessage.requestInput.rawValue
+            "messageType": WatchMessage.requestInput.rawValue,
+            "timestamp": Date().timeIntervalSince1970
         ]
         
         // Add input type data
@@ -172,147 +193,256 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             message["inkastType"] = context.inkastType.rawValue
         }
         
-        sendMessage(message)
-        
-        print("📱 Requested input from watch: \(inputType)")
+        // Queue with high priority and require acknowledgment
+        queueMessage(message, priority: .high, requiresReply: true)
+        log("Requested input from watch: \(inputType)")
     }
     
-    // MARK: - Send Messages
+    // MARK: - Message Queue System
     
-    /// Sends a message to the watch
-    private func sendMessage(_ message: [String: Any]) {
-        guard let session = session, session.isReachable else {
-            lastError = "Watch is not reachable"
-            print("❌ Cannot send message: Watch not reachable")
+    private struct PendingMessage {
+        let id: UUID
+        let message: [String: Any]
+        let priority: MessagePriority
+        let requiresReply: Bool
+        var retryCount: Int
+        let timestamp: Date
+        var timeoutDate: Date
+        
+        init(message: [String: Any], priority: MessagePriority, requiresReply: Bool) {
+            self.id = UUID()
+            self.message = message
+            self.priority = priority
+            self.requiresReply = requiresReply
+            self.retryCount = 0
+            self.timestamp = Date()
+            self.timeoutDate = Date().addingTimeInterval(5.0)
+        }
+    }
+    
+    private enum MessagePriority: Int, Comparable {
+        case low = 0
+        case normal = 1
+        case high = 2
+        
+        static func < (lhs: MessagePriority, rhs: MessagePriority) -> Bool {
+            return lhs.rawValue < rhs.rawValue
+        }
+    }
+    
+    private func queueMessage(_ message: [String: Any], priority: MessagePriority, requiresReply: Bool) {
+        let pendingMessage = PendingMessage(message: message, priority: priority, requiresReply: requiresReply)
+        
+        DispatchQueue.main.async {
+            // Insert based on priority
+            if let index = self.messageQueue.firstIndex(where: { $0.priority < priority }) {
+                self.messageQueue.insert(pendingMessage, at: index)
+            } else {
+                self.messageQueue.append(pendingMessage)
+            }
+            
+            self.log("Queued message (priority: \(priority), queue size: \(self.messageQueue.count))")
+            self.processMessageQueue()
+        }
+    }
+    
+    private func startMessageQueueProcessor() {
+        // Process queue every 0.5 seconds
+        messageRetryTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            self?.processMessageQueue()
+        }
+    }
+    
+    private func processMessageQueue() {
+        guard !isProcessingQueue else { return }
+        guard !messageQueue.isEmpty else { return }
+        guard canSendMessages else {
+            log("⏸️ Cannot process queue: Watch not reachable")
             return
         }
         
-        session.sendMessage(message, replyHandler: { reply in
-            print("📱 Received reply from watch: \(reply)")
-            self.handleReply(reply)
-        }, errorHandler: { error in
-            self.lastError = error.localizedDescription
-            print("❌ Error sending message to watch: \(error.localizedDescription)")
-        })
+        isProcessingQueue = true
+        
+        // Get highest priority message
+        guard var pendingMessage = messageQueue.first else {
+            isProcessingQueue = false
+            return
+        }
+        
+        // Check for timeout
+        if Date() > pendingMessage.timeoutDate {
+            log("⏱️ Message timed out, retry count: \(pendingMessage.retryCount)")
+            messageQueue.removeFirst()
+            
+            if pendingMessage.retryCount < maxRetries {
+                pendingMessage.retryCount += 1
+                pendingMessage.timeoutDate = Date().addingTimeInterval(messageTimeout)
+                messageQueue.append(pendingMessage)
+                log("📤 Retrying message (attempt \(pendingMessage.retryCount + 1)/\(maxRetries))")
+            } else {
+                log("❌ Message failed after \(maxRetries) retries")
+                lastError = "Failed to communicate with watch after \(maxRetries) attempts"
+            }
+            
+            isProcessingQueue = false
+            return
+        }
+        
+        // Send the message
+        sendMessageNow(pendingMessage)
     }
     
-    /// Sends message using transfer user info (for when watch is not reachable)
-    private func transferUserInfo(_ userInfo: [String: Any]) {
-        guard let session = session else { return }
-        session.transferUserInfo(userInfo)
-        print("📱 Transferred user info to watch (queued)")
+    private func sendMessageNow(_ pendingMessage: PendingMessage) {
+        guard let session = session, session.isReachable else {
+            log("❌ Session not reachable when trying to send")
+            isProcessingQueue = false
+            return
+        }
+        
+        let messageId = pendingMessage.id
+        
+        // Send with timeout handling
+        session.sendMessage(pendingMessage.message, replyHandler: { [weak self] reply in
+            DispatchQueue.main.async {
+                self?.log("✅ Received reply for message")
+                self?.handleReply(reply)
+                self?.removeMessageFromQueue(messageId)
+                self?.isProcessingQueue = false
+                // Process next message
+                self?.processMessageQueue()
+            }
+        }, errorHandler: { [weak self] error in
+            DispatchQueue.main.async {
+                self?.log("❌ Error sending message: \(error.localizedDescription)")
+                self?.lastError = error.localizedDescription
+                
+                // Don't remove from queue - will retry
+                self?.isProcessingQueue = false
+                
+                // If it's a critical error, remove from queue
+                if (error as NSError).code == 7012 { // Message not delivered
+                    self?.removeMessageFromQueue(messageId)
+                }
+            }
+        })
+        
+        // If message doesn't require reply, remove it immediately
+        if !pendingMessage.requiresReply {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.removeMessageFromQueue(messageId)
+                self?.isProcessingQueue = false
+                self?.processMessageQueue()
+            }
+        }
+    }
+    
+    private func removeMessageFromQueue(_ messageId: UUID) {
+        messageQueue.removeAll { $0.id == messageId }
+        log("📭 Message removed from queue (remaining: \(messageQueue.count))")
     }
     
     // MARK: - Handle Replies
     
     private func handleReply(_ reply: [String: Any]) {
         guard let messageType = reply["messageType"] as? String else {
-            print("❌ Invalid reply: missing messageType")
+            log("❌ Invalid reply: missing messageType")
             return
         }
         
         if messageType == WatchMessage.acknowledgment.rawValue {
-            print("✅ Watch acknowledged message")
+            log("✅ Watch acknowledged message")
         }
     }
     
     // MARK: - Handle Incoming Messages
     
-    private func handleIncomingMessage(_ message: [String: Any]) {
+    private func handleIncomingMessage(_ message: [String: Any], replyHandler: (([String: Any]) -> Void)?) {
         guard let messageTypeString = message["messageType"] as? String,
               let messageType = WatchMessage(rawValue: messageTypeString) else {
-            print("❌ Invalid message: missing or invalid messageType")
+            log("❌ Invalid message: missing or invalid messageType")
+            replyHandler?(["messageType": WatchMessage.error.rawValue, "error": "Invalid message type"])
             return
         }
         
-        switch messageType {
-        case .batonThrowResult:
-            handleBatonThrowResult(message)
-            
-        case .inkastResult:
-            handleInkastResult(message)
-            
-        case .requestSessionState:
-            delegate?.didRequestSessionState()
-            
-        case .nextPhase:
-            delegate?.didRequestNextPhase()
-            
-        case .nextRound:
-            delegate?.didRequestNextRound()
-            
-        case .endSession:
-            delegate?.didRequestEndSession()
-            
-        case .error:
-            if let errorMessage = message["error"] as? String {
-                lastError = errorMessage
-                print("❌ Watch error: \(errorMessage)")
+        // Send acknowledgment immediately
+        replyHandler?([
+            "messageType": WatchMessage.acknowledgment.rawValue
+        ])
+        
+        DispatchQueue.main.async {
+            switch messageType {
+            case .batonThrowResult:
+                self.handleBatonThrowResult(message)
+                
+            case .inkastResult:
+                self.handleInkastResult(message)
+                
+            case .requestSessionState:
+                self.handleSessionStateRequest()
+                
+            case .nextPhase:
+                self.handleNextPhaseRequest()
+                
+            case .nextRound:
+                self.handleNextRoundRequest()
+                
+            case .endSession:
+                self.handleEndSessionRequest()
+                
+            default:
+                self.log("⚠️ Unhandled message type: \(messageType)")
             }
-            
-        default:
-            print("⚠️ Unhandled message type: \(messageType)")
         }
     }
     
     private func handleBatonThrowResult(_ message: [String: Any]) {
         guard let result = BatonThrowResult.fromDictionary(message) else {
-            print("❌ Invalid baton throw result")
+            log("❌ Invalid baton throw result")
             return
         }
         
-        print("📱 WatchConnectivityManager received baton throw result: isHit=\(result.isHit), kubbs=\(result.kubbsHit)")
-        
-        // Check if delegate is set
-        if delegate == nil {
-            print("❌ ERROR: No delegate set! Cannot process baton throw result!")
-        } else {
-            print("📱 Delegate is set, notifying delegate...")
-        }
+        log("Received baton throw result: isHit=\(result.isHit), kubbs=\(result.kubbsHit)")
         
         // Clear pending request
         pendingInputRequest = nil
         
-        // Notify delegate on main thread
-        DispatchQueue.main.async {
-            self.delegate?.didReceiveBatonThrowResult(result)
-            print("📱 Delegate notified of baton throw result")
-        }
-        
-        // Send acknowledgment
-        sendAcknowledgment()
+        // Notify delegate
+        delegate?.didReceiveBatonThrowResult(result)
     }
     
     private func handleInkastResult(_ message: [String: Any]) {
         guard let result = InkastResult.fromDictionary(message) else {
-            print("❌ Invalid inkast result")
+            log("❌ Invalid inkast result")
             return
         }
         
-        print("📱 Received inkast result: count=\(result.count), type=\(result.inkastType)")
+        log("Received inkast result: count=\(result.count), type=\(result.inkastType)")
         
         // Clear pending request
         pendingInputRequest = nil
         
-        // Notify delegate on main thread
-        DispatchQueue.main.async {
-            self.delegate?.didReceiveInkastResult(result)
-        }
-        
-        // Send acknowledgment
-        sendAcknowledgment()
+        // Notify delegate
+        delegate?.didReceiveInkastResult(result)
     }
     
-    private func sendAcknowledgment() {
-        let message: [String: Any] = [
-            "messageType": WatchMessage.acknowledgment.rawValue
-        ]
-        
-        guard let session = session, session.isReachable else { return }
-        
-        session.sendMessage(message, replyHandler: nil, errorHandler: { error in
-            print("❌ Error sending acknowledgment: \(error.localizedDescription)")
-        })
+    private func handleSessionStateRequest() {
+        log("Watch requested session state")
+        delegate?.didRequestSessionState()
+    }
+    
+    private func handleNextPhaseRequest() {
+        log("Watch requested next phase")
+        delegate?.didRequestNextPhase()
+    }
+    
+    private func handleNextRoundRequest() {
+        log("Watch requested next round")
+        delegate?.didRequestNextRound()
+    }
+    
+    private func handleEndSessionRequest() {
+        log("Watch requested to end session")
+        delegate?.didRequestEndSession()
     }
 }
 
@@ -320,66 +450,61 @@ class WatchConnectivityManager: NSObject, ObservableObject {
 
 extension WatchConnectivityManager: WCSessionDelegate {
     
+    func sessionDidBecomeInactive(_ session: WCSession) {
+        log("⚠️ Session became inactive")
+    }
+    
+    func sessionDidDeactivate(_ session: WCSession) {
+        log("⚠️ Session deactivated, reactivating...")
+        session.activate()
+    }
+    
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         DispatchQueue.main.async {
             if let error = error {
                 self.lastError = error.localizedDescription
-                print("❌ Watch session activation error: \(error.localizedDescription)")
+                self.log("❌ Session activation error: \(error.localizedDescription)")
             } else {
-                print("✅ Watch session activated: \(activationState.rawValue)")
+                self.log("✅ Session activated: \(activationState.rawValue)")
             }
             
             self.updateWatchState()
+            
+            // Process any queued messages
+            if activationState == .activated {
+                self.processMessageQueue()
+            }
         }
     }
     
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async {
             self.updateWatchState()
-            self.delegate?.watchConnectivityDidChange(isReachable: session.isReachable)
+            self.log("⌚️ Watch reachability changed: \(session.isReachable)")
             
-            print("⌚️ Watch reachability changed: \(session.isReachable)")
+            // Process queued messages when watch becomes reachable
+            if session.isReachable {
+                self.processMessageQueue()
+            }
         }
     }
     
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        print("📱 Received message from watch: \(message)")
-        handleIncomingMessage(message)
+        log("Received message from watch (no reply handler)")
+        handleIncomingMessage(message, replyHandler: nil)
     }
     
     func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
-        print("📱 Received message from watch (with reply): \(message)")
-        handleIncomingMessage(message)
-        
-        // Send acknowledgment reply
-        replyHandler([
-            "messageType": WatchMessage.acknowledgment.rawValue
-        ])
+        log("Received message from watch (with reply handler)")
+        handleIncomingMessage(message, replyHandler: replyHandler)
     }
-    
-    // iOS-specific delegate methods
-    #if os(iOS)
-    func sessionDidBecomeInactive(_ session: WCSession) {
-        print("⌚️ Watch session became inactive")
-    }
-    
-    func sessionDidDeactivate(_ session: WCSession) {
-        print("⌚️ Watch session deactivated")
-        // Reactivate the session
-        session.activate()
-    }
-    #endif
     
     // MARK: - Helper Methods
     
     private func updateWatchState() {
         guard let session = session else { return }
-        
         isWatchReachable = session.isReachable
-        
-        #if os(iOS)
         isWatchPaired = session.isPaired
         isWatchAppInstalled = session.isWatchAppInstalled
-        #endif
     }
 }
