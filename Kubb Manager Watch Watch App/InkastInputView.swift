@@ -12,6 +12,7 @@ enum InkastInputState {
     case firstAttempt(context: InkastContext)
     case secondAttempt(context: InkastContext)
     case neighbors(context: InkastContext)
+    case confirmation
 }
 
 struct InkastInputView: View {
@@ -23,6 +24,7 @@ struct InkastInputView: View {
     @State private var currentState: InkastInputState
     @State private var count = 0
     @State private var isSending = false
+    @State private var resultSent = false
     
     init(context: InkastContext) {
         self.context = context
@@ -51,6 +53,8 @@ struct InkastInputView: View {
                         attemptInputView
                     case .neighbors:
                         neighborInputView
+                    case .confirmation:
+                        confirmationView
                     }
                 }
                 .padding(.horizontal, 12)
@@ -354,8 +358,90 @@ struct InkastInputView: View {
         WKInterfaceDevice.current().play(.success)
         connectivityManager.sendInkastResult(result)
         
+        // Show confirmation screen instead of dismissing
+        currentState = .confirmation
+    }
+    
+    // MARK: - Confirmation View
+    
+    private var confirmationView: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            // Success icon
+            VStack(spacing: 12) {
+                if connectivityManager.isSendingResult {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.blue)
+                    
+                    Text("Sending...")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                } else if resultSent {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 50, weight: .medium))
+                        .foregroundColor(.green)
+                    
+                    Text("Inkast Complete!")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.primary)
+                        .padding(.top, 8)
+                    
+                    Text("Results sent")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            // Continue button (only show after result is sent)
+            if resultSent && !connectivityManager.isSendingResult {
+                Button(action: {
+                    WKInterfaceDevice.current().play(.click)
+                    dismiss()
+                }) {
+                    HStack(spacing: 6) {
+                        Text("Done")
+                            .font(.system(size: 14, weight: .semibold))
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.blue)
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 8)
+            }
+        }
+        .onAppear {
+            // Watch for result to be sent
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if !connectivityManager.isSendingResult {
+                    resultSent = true
+                } else {
+                    // Check again in a moment
+                    checkIfSent()
+                }
+            }
+        }
+    }
+    
+    private func checkIfSent() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            dismiss()
+            if !connectivityManager.isSendingResult {
+                resultSent = true
+            } else {
+                // Keep checking
+                checkIfSent()
+            }
         }
     }
     

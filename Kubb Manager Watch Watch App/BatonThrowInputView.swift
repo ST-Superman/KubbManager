@@ -10,6 +10,7 @@ import SwiftUI
 enum BatonThrowState {
     case hitMiss
     case kubbCount
+    case confirmation
 }
 
 struct BatonThrowInputView: View {
@@ -22,6 +23,7 @@ struct BatonThrowInputView: View {
     @State private var isHit = false
     @State private var kubbsHit = 1
     @State private var isSending = false
+    @State private var resultSent = false
     
     var body: some View {
         NavigationView {
@@ -43,6 +45,8 @@ struct BatonThrowInputView: View {
                         hitMissView
                     case .kubbCount:
                         kubbCountView
+                    case .confirmation:
+                        confirmationView
                     }
                 }
                 .padding(.horizontal, 12)
@@ -283,6 +287,95 @@ struct BatonThrowInputView: View {
         }
     }
     
+    // MARK: - Confirmation View
+    
+    private var confirmationView: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            // Success icon
+            VStack(spacing: 12) {
+                if connectivityManager.isSendingResult {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.blue)
+                    
+                    Text("Sending...")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                } else if resultSent {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 50, weight: .medium))
+                        .foregroundColor(.green)
+                    
+                    Text("Result Sent!")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.primary)
+                        .padding(.top, 8)
+                    
+                    if isHit {
+                        Text("Hit \(kubbsHit) kubb\(kubbsHit != 1 ? "s" : "")")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Recorded miss")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            // Continue button (only show after result is sent)
+            if resultSent && !connectivityManager.isSendingResult {
+                Button(action: {
+                    WKInterfaceDevice.current().play(.click)
+                    dismiss()
+                }) {
+                    HStack(spacing: 6) {
+                        Text("Done")
+                            .font(.system(size: 14, weight: .semibold))
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.blue)
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 8)
+            }
+        }
+        .onAppear {
+            // Watch for result to be sent
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if !connectivityManager.isSendingResult {
+                    resultSent = true
+                } else {
+                    // Check again in a moment
+                    checkIfSent()
+                }
+            }
+        }
+    }
+    
+    private func checkIfSent() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if !connectivityManager.isSendingResult {
+                resultSent = true
+            } else {
+                // Keep checking
+                checkIfSent()
+            }
+        }
+    }
+    
     // MARK: - Send Result
     
     private func sendResult() {
@@ -298,9 +391,8 @@ struct BatonThrowInputView: View {
         WKInterfaceDevice.current().play(.success)
         connectivityManager.sendBatonThrowResult(result)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            dismiss()
-        }
+        // Show confirmation screen instead of dismissing
+        currentState = .confirmation
     }
 }
 
