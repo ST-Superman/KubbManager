@@ -218,14 +218,18 @@ struct TrainingOverviewSection: View {
 
             // Baseball Kubb Card
             if statsManager.baseballKubbSessions.count > 0 {
+                let totalRuns = statsManager.modeSpecificStats.baseballKubbStats.totalRuns
+                let totalGames = statsManager.modeSpecificStats.baseballKubbStats.totalGames
+                let avgRuns = totalGames > 0 ? Double(totalRuns) / Double(totalGames) : 0.0
+
                 TrainingModeCard(
                     title: "Baseball Kubb",
                     icon: "baseball.fill",
                     color: AppTheme.baseballKubb,
                     stats: [
                         ("Games", "\(statsManager.baseballKubbSessions.count)"),
-                        ("Innings", "\(statsManager.modeSpecificStats.baseballKubbStats.totalInnings)"),
-                        ("Avg Score", String(format: "%.1f", statsManager.modeSpecificStats.baseballKubbStats.averageScore))
+                        ("Total Runs", "\(totalRuns)"),
+                        ("Avg Runs", String(format: "%.1f", avgRuns))
                     ]
                 )
             }
