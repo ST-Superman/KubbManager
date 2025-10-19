@@ -38,7 +38,7 @@ struct StatsViewRedesigned: View {
         var color: Color {
             switch self {
             case .trainingOverview: return AppTheme.primary
-            case .practice: return AppTheme.eightMeter
+            case .practice: return AppTheme.eightMeterTraining
             case .inkastBlast: return AppTheme.inkastBlast
             case .fullGameSim: return AppTheme.fullGameSim
             case .baseballKubb: return AppTheme.baseballKubb
@@ -174,11 +174,11 @@ struct TrainingOverviewSection: View {
                 TrainingModeCard(
                     title: "8-Meter Practice",
                     icon: "target",
-                    color: AppTheme.eightMeter,
+                    color: AppTheme.eightMeterTraining,
                     stats: [
                         ("Sessions", "\(statsManager.practiceSessions.count)"),
-                        ("Accuracy", String(format: "%.1f%%", statsManager.practiceStats.overallAccuracy * 100)),
-                        ("Batons", "\(statsManager.practiceStats.totalBatonsThrown)")
+                        ("Accuracy", String(format: "%.1f%%", statsManager.modeSpecificStats.practiceStats.overallAccuracy * 100)),
+                        ("Batons", "\(statsManager.modeSpecificStats.practiceStats.totalBatonsThrown)")
                     ]
                 )
             }
@@ -191,8 +191,8 @@ struct TrainingOverviewSection: View {
                     color: AppTheme.inkastBlast,
                     stats: [
                         ("Sessions", "\(statsManager.inkastBlastSessions.count)"),
-                        ("Rounds", "\(statsManager.inkastBlastStats.totalRounds)"),
-                        ("Handicap", String(format: "%.1f", statsManager.inkastBlastStats.overallHandicap))
+                        ("Rounds", "\(statsManager.modeSpecificStats.inkastBlastStats.totalRounds)"),
+                        ("Handicap", String(format: "%.1f", statsManager.modeSpecificStats.inkastBlastStats.overallHandicap))
                     ]
                 )
             }
@@ -205,8 +205,8 @@ struct TrainingOverviewSection: View {
                     color: AppTheme.fullGameSim,
                     stats: [
                         ("Games", "\(statsManager.fullGameSimSessions.count)"),
-                        ("Rounds", "\(statsManager.fullGameSimStats.totalRounds)"),
-                        ("Accuracy", String(format: "%.1f%%", statsManager.fullGameSimStats.overallAccuracy * 100))
+                        ("Rounds", "\(statsManager.modeSpecificStats.fullGameSimStats.totalRounds)"),
+                        ("Accuracy", String(format: "%.1f%%", statsManager.modeSpecificStats.fullGameSimStats.overallAccuracy * 100))
                     ]
                 )
             }
@@ -219,8 +219,8 @@ struct TrainingOverviewSection: View {
                     color: AppTheme.baseballKubb,
                     stats: [
                         ("Games", "\(statsManager.baseballKubbSessions.count)"),
-                        ("Innings", "\(statsManager.baseballKubbStats.totalInnings)"),
-                        ("Avg Score", String(format: "%.1f", statsManager.baseballKubbStats.averageScore))
+                        ("Innings", "\(statsManager.modeSpecificStats.baseballKubbStats.totalInnings)"),
+                        ("Avg Score", String(format: "%.1f", statsManager.modeSpecificStats.baseballKubbStats.averageScore))
                     ]
                 )
             }
