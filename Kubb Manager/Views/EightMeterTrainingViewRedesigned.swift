@@ -19,7 +19,7 @@ struct EightMeterTrainingViewRedesigned: View {
         NavigationStack {
             // Root view is the overview (HomeView)
             EightMeterOverviewRoot()
-                .navigationTitle("8-Meter Practice")
+                .navigationTitle("8-Meter Practice [REDESIGNED]")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
