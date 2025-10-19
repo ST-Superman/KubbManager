@@ -194,6 +194,10 @@ struct GamePhaseCard: View {
 
 struct InkastBlastActiveSessionView: View {
     @ObservedObject var sessionManager: InkastBlastSessionManager
+    @StateObject private var skinManager = SkinManager.shared
+    @State private var showingInkastRecording = false
+    @State private var showingHitRecording = false
+    @State private var showingSessionSummary = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -227,7 +231,7 @@ struct InkastBlastActiveSessionView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("End") {
                     sessionManager.endSession()
-                    dismiss()
+                    showingSessionSummary = true
                 }
             }
 
@@ -238,6 +242,45 @@ struct InkastBlastActiveSessionView: View {
                     } else {
                         sessionManager.pauseSession()
                     }
+                }
+            }
+        }
+        .sheet(isPresented: $showingInkastRecording) {
+            InkastRecordingView(
+                totalKubbs: sessionManager.currentInkastKubbs,
+                skin: skinManager.selectedKubbSkin,
+                onComplete: { firstAttemptOut, secondAttemptOut, neighborCount in
+                    sessionManager.kubbsOutFirstAttempt = firstAttemptOut
+                    sessionManager.kubbsOutSecondAttempt = secondAttemptOut
+                    sessionManager.neighborKubbs = neighborCount
+                    sessionManager.roundPhase = .blasting
+                    showingInkastRecording = false
+                }
+            )
+        }
+        .sheet(isPresented: $showingHitRecording) {
+            if let round = sessionManager.currentRound {
+                VisualHitRecordingView(
+                    totalKubbs: round.inkastKubbs - round.penaltyKubbs,
+                    skin: skinManager.selectedKubbSkin,
+                    previouslyKnockedDownKubbs: sessionManager.knockedDownKubbs,
+                    onConfirm: { kubbsHit in
+                        sessionManager.addBatonThrow(isHit: true, kubbsHit: kubbsHit)
+                        showingHitRecording = false
+                    },
+                    onCancel: {
+                        showingHitRecording = false
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showingSessionSummary) {
+            if let session = sessionManager.currentSession {
+                InkastBlastSessionSummaryView(session: session) {
+                    showingSessionSummary = false
+                    sessionManager.currentSession = nil
+                    sessionManager.isSessionActive = false
+                    dismiss()
                 }
             }
         }
@@ -300,19 +343,184 @@ struct InkastBlastActiveSessionView: View {
 
     // MARK: - Round Phase Content
 
+    @ViewBuilder
     private var roundPhaseContent: some View {
-        VStack(spacing: Spacing.md) {
-            if let round = sessionManager.currentRound {
-                // Display basic round info
-                Text("Round \(round.roundNumber)")
-                    .font(.headline)
+        switch sessionManager.roundPhase {
+        case .inkast:
+            inkastPhaseView
+        case .blasting:
+            blastingPhaseView
+        case .roundComplete:
+            roundCompleteView
+        default:
+            // Other phases handled by session manager
+            EmptyView()
+        }
+    }
+
+    // MARK: - Inkast Phase View
+
+    private var inkastPhaseView: some View {
+        VStack(spacing: Spacing.lg) {
+            VStack(spacing: Spacing.sm) {
+                Image(systemName: "figure.throw")
+                    .font(.system(size: 40))
+                    .foregroundColor(AppTheme.inkastBlast)
+
+                Text("Inkast Phase")
+                    .font(.title2)
+                    .fontWeight(.bold)
                     .foregroundColor(AppTheme.textPrimary)
             }
+
+            Text("Throw \(sessionManager.currentInkastKubbs) kubbs past the midline")
+                .font(.body)
+                .foregroundColor(AppTheme.textSecondary)
+                .multilineTextAlignment(.center)
+
+            Button("Record Results") {
+                showingInkastRecording = true
+            }
+            .font(.headline)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.md)
+            .background(AppTheme.primary)
+            .cornerRadius(AppTheme.cornerRadiusMedium)
+            .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
         }
-        .frame(maxWidth: .infinity)
         .padding(Spacing.lg)
-        .background(AppTheme.surface)
+        .frame(maxWidth: .infinity)
+        .background(AppTheme.cardBackground)
         .cornerRadius(AppTheme.cornerRadiusMedium)
+        .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+    }
+
+    // MARK: - Blasting Phase View
+
+    private var blastingPhaseView: some View {
+        VStack(spacing: Spacing.lg) {
+            VStack(spacing: Spacing.sm) {
+                Text("Blasting Phase")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.textPrimary)
+
+                if let round = sessionManager.currentRound {
+                    Text("Clear the kubbs with as few batons as possible")
+                        .font(.body)
+                        .foregroundColor(AppTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+
+                    Text("Target: \(round.targetBatons) batons")
+                        .font(.headline)
+                        .foregroundColor(AppTheme.primary)
+
+                    // Baton visual
+                    BatonRow(
+                        skin: skinManager.selectedBatonSkin,
+                        currentBaton: round.batonsUsed + 1,
+                        totalBatons: 6
+                    )
+
+                    // Hit/Miss Buttons
+                    HStack(spacing: Spacing.xl) {
+                        // Miss Button
+                        Button(action: {
+                            sessionManager.addBatonThrow(isHit: false)
+                        }) {
+                            VStack(spacing: Spacing.md) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.white)
+
+                                Text("MISS")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                            }
+                            .frame(width: 140, height: 140)
+                            .background(AppTheme.error)
+                            .cornerRadius(AppTheme.cornerRadiusLarge)
+                            .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+                        }
+
+                        // Hit Button
+                        Button(action: {
+                            showingHitRecording = true
+                        }) {
+                            VStack(spacing: Spacing.md) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.white)
+
+                                Text("HIT")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                            }
+                            .frame(width: 140, height: 140)
+                            .background(AppTheme.success)
+                            .cornerRadius(AppTheme.cornerRadiusLarge)
+                            .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(Spacing.lg)
+        .frame(maxWidth: .infinity)
+        .background(AppTheme.cardBackground)
+        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+    }
+
+    // MARK: - Round Complete View
+
+    private var roundCompleteView: some View {
+        VStack(spacing: Spacing.lg) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(AppTheme.success)
+
+            Text("Round Complete!")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(AppTheme.success)
+
+            if let round = sessionManager.currentRound {
+                VStack(spacing: Spacing.sm) {
+                    Text("Used \(round.batonsUsed) batons")
+                        .font(.headline)
+
+                    if round.batonsUsed <= round.targetBatons {
+                        Text("Great job! You met your target!")
+                            .font(.body)
+                            .foregroundColor(AppTheme.success)
+                    } else {
+                        Text("Keep practicing to beat your target")
+                            .font(.body)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                }
+
+                Button("Next Round") {
+                    sessionManager.startNewRound()
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Spacing.md)
+                .background(AppTheme.primary)
+                .cornerRadius(AppTheme.cornerRadiusMedium)
+                .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+            }
+        }
+        .padding(Spacing.lg)
+        .frame(maxWidth: .infinity)
+        .background(AppTheme.cardBackground)
+        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
     }
 }
 
