@@ -95,17 +95,17 @@ struct BaseballKubbHeaderView: View {
     }
 }
 
-struct StatCard: View {
+struct BaseballStatCard: View {
     let title: String
     let value: String
-    
+
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
-            
+
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
