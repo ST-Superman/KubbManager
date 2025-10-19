@@ -492,28 +492,50 @@ struct InkastBlastActiveSessionView: View {
                 VStack(spacing: Spacing.sm) {
                     Text("Used \(round.batonsUsed) batons")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
 
-                    if round.batonsUsed <= round.targetBatons {
-                        Text("Great job! You met your target!")
+                    Text("Target was \(round.targetBatons) batons")
+                        .font(.body)
+                        .foregroundColor(AppTheme.textSecondary)
+
+                    if round.performanceVsTarget > 0 {
+                        Text("+\(round.performanceVsTarget) under target! 🎉")
                             .font(.body)
                             .foregroundColor(AppTheme.success)
-                    } else {
-                        Text("Keep practicing to beat your target")
+                    } else if round.performanceVsTarget < 0 {
+                        Text("\(round.performanceVsTarget) over target")
                             .font(.body)
-                            .foregroundColor(AppTheme.textSecondary)
+                            .foregroundColor(AppTheme.error)
+                    } else {
+                        Text("Exactly on target! 🎯")
+                            .font(.body)
+                            .foregroundColor(AppTheme.primary)
                     }
                 }
 
-                Button("Next Round") {
-                    sessionManager.startNewRound()
+                HStack(spacing: Spacing.md) {
+                    Button("Next Round") {
+                        sessionManager.startNextRound()
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Spacing.md)
+                    .background(AppTheme.primary)
+                    .cornerRadius(AppTheme.cornerRadiusMedium)
+                    .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+
+                    Button("End Session") {
+                        sessionManager.endSession()
+                        showingSessionSummary = true
+                    }
+                    .font(.headline)
+                    .foregroundColor(AppTheme.warning)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Spacing.md)
+                    .background(AppTheme.warning.opacity(0.1))
+                    .cornerRadius(AppTheme.cornerRadiusMedium)
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
-                .background(AppTheme.primary)
-                .cornerRadius(AppTheme.cornerRadiusMedium)
-                .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
             }
         }
         .padding(Spacing.lg)
