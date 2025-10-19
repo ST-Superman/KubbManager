@@ -63,17 +63,18 @@ struct LandingPageViewRedesigned: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 100, height: 100)
-                .shadow(color: AppTheme.shadow, radius: 8, y: 4)
+                .shadow(color: AppTheme.shadowMedium, radius: 8, y: 4)
 
             // Welcome Message
             VStack(spacing: Spacing.sm) {
                 Text("Welcome Back!")
-                    .apply(.headlineBold)
-                    .foregroundColor(AppTheme.primaryText)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.textPrimary)
 
                 Text("Track your training, analyze your progress, and improve your kubb game")
-                    .apply(.bodyRegular)
-                    .foregroundColor(AppTheme.secondaryText)
+                    .font(.body)
+                    .foregroundColor(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
             }
         }
@@ -90,7 +91,7 @@ struct LandingPageViewRedesigned: View {
                 // Total Sessions
                 StatCard(
                     title: "Sessions",
-                    value: "\(statsManager.totalSessions)",
+                    value: "\(statsManager.practiceSessions.count + statsManager.inkastBlastSessions.count + statsManager.baseballKubbSessions.count)",
                     icon: "target",
                     color: AppTheme.primary,
                     size: .small
@@ -99,7 +100,7 @@ struct LandingPageViewRedesigned: View {
                 // Best Accuracy
                 StatCard(
                     title: "Best Accuracy",
-                    value: String(format: "%.0f%%", statsManager.bestAccuracy * 100),
+                    value: String(format: "%.0f%%", statsManager.personalRecords.bestAccuracy * 100),
                     icon: "scope",
                     color: AppTheme.success,
                     size: .small
@@ -108,7 +109,7 @@ struct LandingPageViewRedesigned: View {
                 // Current Streak
                 StatCard(
                     title: "Streak",
-                    value: "\(statsManager.currentStreak)",
+                    value: "\(statsManager.personalRecords.longestStreak)",
                     icon: "flame.fill",
                     color: AppTheme.warning,
                     size: .small
@@ -153,7 +154,7 @@ struct LandingPageViewRedesigned: View {
                     title: "Statistics",
                     description: "Analyze your performance and progress over time",
                     icon: "chart.line.uptrend.xyaxis",
-                    color: AppTheme.info,
+                    color: AppTheme.primary,
                     isPrimary: false
                 ) {
                     selectedTab = 3
@@ -202,12 +203,12 @@ struct ActionCard: View {
                 // Content
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text(title)
-                        .apply(.headlineRegular)
-                        .foregroundColor(AppTheme.primaryText)
+                        .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
 
                     Text(description)
-                        .apply(.captionRegular)
-                        .foregroundColor(AppTheme.secondaryText)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
                         .lineLimit(2)
                 }
 
@@ -216,18 +217,18 @@ struct ActionCard: View {
                 // Arrow
                 Image(systemName: "chevron.right")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppTheme.tertiaryText)
+                    .foregroundColor(AppTheme.textTertiary)
             }
             .padding(Spacing.md)
             .background(
-                RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                RoundedRectangle(cornerRadius: AppTheme.cornerRadiusMedium)
                     .fill(isPrimary ? color.opacity(0.08) : AppTheme.cardBackground)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
-                    .stroke(isPrimary ? color.opacity(0.3) : AppTheme.border, lineWidth: isPrimary ? 2 : 1)
+                RoundedRectangle(cornerRadius: AppTheme.cornerRadiusMedium)
+                    .stroke(isPrimary ? color.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: isPrimary ? 2 : 1)
             )
-            .shadow(color: AppTheme.shadow, radius: isPrimary ? 8 : 4, y: isPrimary ? 4 : 2)
+            .shadow(color: AppTheme.shadowMedium, radius: isPrimary ? 8 : 4, y: isPrimary ? 4 : 2)
         }
         .buttonStyle(PlainButtonStyle())
     }
