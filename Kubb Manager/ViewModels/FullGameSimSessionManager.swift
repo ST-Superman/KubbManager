@@ -201,7 +201,7 @@ class FullGameSimSessionManager: ObservableObject {
     }
     
     private func generateInkastKubbs() {
-        guard var round = currentRound, var session = currentSession else { return }
+        guard var round = currentRound, let session = currentSession else { return }
         
         // For round 1, no inkast kubbs needed (only 8-meter phase)
         if currentRoundNumber == 1 {

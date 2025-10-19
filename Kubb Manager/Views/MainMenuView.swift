@@ -89,13 +89,13 @@ struct MainMenuView: View {
                 }
                 .padding()
             }
-            .toolbar {
+            .toolbar(content: {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Options") {
                         showingOptions = true
                     }
                 }
-            }
+            })
         }
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
             EightMeterTrainingViewRedesigned()
