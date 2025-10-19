@@ -44,16 +44,6 @@ struct SkinSelectionViewRedesigned: View {
                     // Current Selection Preview
                     CurrentSelectionCard()
 
-                    // Piece Type Segmented Control
-                    Picker("Piece Type", selection: $selectedPieceType) {
-                        ForEach(PieceType.allCases, id: \.self) { type in
-                            Label(type.rawValue, systemImage: type.icon)
-                                .tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal, Spacing.screenPadding)
-
                     // Skin Packages Section
                     VStack(alignment: .leading, spacing: Spacing.md) {
                         HStack {
@@ -89,6 +79,16 @@ struct SkinSelectionViewRedesigned: View {
                             .padding(.horizontal, Spacing.screenPadding)
                         }
                     }
+
+                    // Piece Type Segmented Control - moved below Skin Packages
+                    Picker("Piece Type", selection: $selectedPieceType) {
+                        ForEach(PieceType.allCases, id: \.self) { type in
+                            Label(type.rawValue, systemImage: type.icon)
+                                .tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, Spacing.screenPadding)
 
                     // Individual Skins Section
                     VStack(alignment: .leading, spacing: Spacing.md) {
