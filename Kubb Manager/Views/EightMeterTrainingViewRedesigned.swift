@@ -83,7 +83,7 @@ struct EightMeterOverviewRoot: View {
     @State private var navigateToPractice = false
 
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: Spacing.sectionSpacing) {
                 // Show appropriate card based on session state
                 if sessionManager.isSessionActive {

@@ -19,7 +19,7 @@ struct HomeViewRedesigned: View {
     @State private var isPersonalRecordsExpanded = false
 
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: Spacing.sectionSpacing) {
                 // 1. PRIMARY ACTION - Most Important Element
                 primaryActionSection
