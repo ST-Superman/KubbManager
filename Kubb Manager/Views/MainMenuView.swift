@@ -22,11 +22,11 @@ struct MainMenuView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView(.vertical) {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 32) {
                     // App Header
                     AppHeaderView()
-                    
+
                     // Training Mode Buttons
                     VStack(spacing: 20) {
                         ForEach(TrainingMode.allCases, id: \.self) { mode in
