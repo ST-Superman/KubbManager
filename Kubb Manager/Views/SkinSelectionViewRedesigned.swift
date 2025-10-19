@@ -297,60 +297,104 @@ struct SkinPackageCardRedesigned: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: Spacing.md) {
-                // Preview with gradient background
-                ZStack {
-                    RoundedRectangle(cornerRadius: AppTheme.cornerRadiusMedium)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    AppTheme.primary.opacity(0.15),
-                                    AppTheme.primary.opacity(0.05)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 140, height: 140)
+            VStack(spacing: Spacing.sm) {
+                // Package Name
+                Text(skin.name)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
 
-                    SkinPreview(skin: skin, size: 80)
+                // Three pieces horizontally
+                HStack(spacing: Spacing.md) {
+                    // Kubb
+                    VStack(spacing: Spacing.xs) {
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.primary.opacity(0.1))
+                                .frame(width: 50, height: 50)
+
+                            KubbPiecePreview(skin: skin, size: 38)
+                        }
+
+                        Text("Kubb")
+                            .font(.caption2)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+
+                    // King
+                    VStack(spacing: Spacing.xs) {
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.warning.opacity(0.1))
+                                .frame(width: 50, height: 50)
+
+                            KingPiecePreview(skin: skin, size: 38)
+                        }
+
+                        Text("King")
+                            .font(.caption2)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+
+                    // Baton
+                    VStack(spacing: Spacing.xs) {
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.accent.opacity(0.1))
+                                .frame(width: 50, height: 50)
+
+                            BatonPreview(skin: skin, size: 38)
+                        }
+
+                        Text("Baton")
+                            .font(.caption2)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
                 }
+                .padding(.vertical, Spacing.xs)
 
-                // Name & Description
-                VStack(spacing: Spacing.xs) {
-                    Text(skin.name)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .multilineTextAlignment(.center)
-
-                    Text(skin.description)
-                        .font(.caption2)
-                        .foregroundColor(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
-                .frame(width: 140)
+                // Description
+                Text(skin.description)
+                    .font(.caption2)
+                    .foregroundColor(AppTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(height: 28)
 
                 // Selected Badge
                 if isSelected {
                     HStack(spacing: Spacing.xs) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.caption)
-                        Text("Selected")
-                            .font(.caption)
+                            .font(.caption2)
+                        Text("Active")
+                            .font(.caption2)
                             .fontWeight(.medium)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
+                    .padding(.vertical, 4)
                     .background(AppTheme.success)
                     .cornerRadius(AppTheme.cornerRadiusSmall)
+                } else {
+                    // Spacer to maintain consistent height
+                    Color.clear
+                        .frame(height: 24)
                 }
             }
             .padding(Spacing.md)
-            .frame(width: 170)
-            .background(AppTheme.cardBackground)
+            .frame(width: 200)
+            .background(
+                LinearGradient(
+                    colors: [
+                        isSelected ? AppTheme.success.opacity(0.05) : AppTheme.cardBackground,
+                        AppTheme.cardBackground
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .cornerRadius(AppTheme.cornerRadiusMedium)
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.cornerRadiusMedium)
@@ -361,8 +405,8 @@ struct SkinPackageCardRedesigned: View {
             )
             .shadow(
                 color: isSelected ? AppTheme.success.opacity(0.3) : AppTheme.shadowLight,
-                radius: isSelected ? 8 : 2,
-                y: isSelected ? 4 : 1
+                radius: isSelected ? 8 : 3,
+                y: isSelected ? 4 : 2
             )
             .scaleEffect(isSelected ? 1.02 : 1.0)
         }
