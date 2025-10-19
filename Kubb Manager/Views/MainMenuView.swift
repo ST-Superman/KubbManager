@@ -22,7 +22,7 @@ struct MainMenuView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ScrollView(.vertical) {
                 VStack(spacing: 32) {
                     // App Header
                     AppHeaderView()
