@@ -449,8 +449,8 @@ struct PracticeSession: Identifiable, Codable, Equatable {
         let index = rounds.firstIndex { $0.id == currentRound.id }!
 
         // Subtract the current round's stats from the session totals
-        totalBatons -= currentRound.totalBatons
-        totalKubbs -= currentRound.totalKubbs
+        totalBatons -= currentRound.totalBatonThrows
+        totalKubbs -= currentRound.kubbsKnockedDown
 
         // Replace with a fresh round
         rounds[index] = Round(roundNumber: currentRound.roundNumber)
