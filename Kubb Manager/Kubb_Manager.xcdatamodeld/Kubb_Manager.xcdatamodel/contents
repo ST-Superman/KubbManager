@@ -64,6 +64,8 @@
         <attribute name="totalMisses" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="totalEightMeterHits" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="totalEightMeterBatons" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="team1BaselineKubbs" optional="NO" attributeType="Integer 16" defaultValueString="5" usesScalarValueType="YES"/>
+        <attribute name="team2BaselineKubbs" optional="NO" attributeType="Integer 16" defaultValueString="5" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="rounds" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="FullGameSimRound" inverseName="session" inverseEntity="FullGameSimRound"/>
@@ -71,6 +73,7 @@
     <entity name="FullGameSimRound" representedClassName="FullGameSimRound" syncable="YES" codeGenerationType="class">
         <attribute name="id" optional="NO" attributeType="String" defaultValueString="" usesScalarValueType="NO"/>
         <attribute name="roundNumber" optional="NO" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="baselineKubbsHit" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="isComplete" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FullGameSimSession" inverseName="rounds" inverseEntity="FullGameSimSession"/>
@@ -95,7 +98,7 @@
         <attribute name="misses" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="batonsUsed" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FullGameSimRound" inverseName="inkastData" inverseEntity="FullGameSimRound"/>
-        <relationship name="batonThrows" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="InkastBatonThrow" inverseName="round" inverseEntity="InkastBatonThrow"/>
+        <relationship name="batonThrows" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="InkastBatonThrowForFullGame" inverseName="round" inverseEntity="InkastBatonThrowForFullGame"/>
     </entity>
     <entity name="BlastRoundData" representedClassName="BlastRoundData" syncable="YES" codeGenerationType="class">
         <attribute name="kubbsClearedFirstThrow" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
@@ -120,6 +123,14 @@
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BlastRoundData" inverseName="batonThrows" inverseEntity="BlastRoundData"/>
     </entity>
+    <entity name="InkastBatonThrowForFullGame" representedClassName="InkastBatonThrowForFullGame" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String" defaultValueString="" usesScalarValueType="NO"/>
+        <attribute name="isHit" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="kubbsHit" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="throwNumber" optional="NO" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="round" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="InkastRoundData" inverseName="batonThrows" inverseEntity="InkastRoundData"/>
+    </entity>
     <elements>
         <element name="Item" positionX="-63" positionY="-18" width="128" height="44"/>
         <element name="InkastBlastSession" positionX="-63" positionY="18" width="128" height="119"/>
@@ -132,5 +143,6 @@
         <element name="BlastRoundData" positionX="351" positionY="360" width="128" height="59"/>
         <element name="EightMeterBatonThrow" positionX="558" positionY="162" width="128" height="59"/>
         <element name="BlastBatonThrow" positionX="558" positionY="360" width="128" height="59"/>
+        <element name="InkastBatonThrowForFullGame" positionX="558" positionY="246" width="128" height="59"/>
     </elements>
 </model>

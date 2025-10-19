@@ -548,7 +548,7 @@ struct StatsTabView: View {
                 if selectedStatsTab == 0 {
                     StatsViewRedesigned()
                 } else {
-                    HistoryView()
+                    HistoryViewRedesigned()
                 }
             }
             
