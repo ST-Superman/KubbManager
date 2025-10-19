@@ -106,7 +106,7 @@ struct StatsView: View {
                         // Content based on selected tab
                         switch selectedTab {
                     case .trainingOverview:
-                        TrainingOverviewStatsSection()
+                        SimplifiedTrainingOverview(selectedTab: $selectedTab)
                             .environmentObject(unifiedStatsManager)
                             .onAppear {
                                 Task {
@@ -172,8 +172,446 @@ struct StatsView: View {
     }
 }
 
-// MARK: - Training Overview Stats Section
-struct TrainingOverviewStatsSection: View {
+// MARK: - Simplified Training Overview (Session-Type Specific)
+struct SimplifiedTrainingOverview: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+    @Binding var selectedTab: StatsView.StatsTab
+
+    var body: some View {
+        VStack(spacing: 24) {
+            // Header
+            Text("Training Statistics by Session Type")
+                .font(.title3)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            // Standard 8-Meter Practice Section
+            SessionTypeSection(
+                title: "Standard 8-Meter Practice",
+                icon: "target",
+                iconColor: .blue,
+                selectedTab: $selectedTab,
+                targetTab: .practice
+            ) {
+                Standard8MeterOverviewCards()
+                    .environmentObject(statsManager)
+            }
+
+            // Inkast & Blast Section
+            SessionTypeSection(
+                title: "Inkast & Blast",
+                icon: "scope",
+                iconColor: .orange,
+                selectedTab: $selectedTab,
+                targetTab: .inkastBlast
+            ) {
+                InkastBlastOverviewCards()
+                    .environmentObject(statsManager)
+            }
+
+            // Full Game Sim Section
+            SessionTypeSection(
+                title: "Full Game Sim",
+                icon: "figure.2.and.child.holdinghands",
+                iconColor: .green,
+                selectedTab: $selectedTab,
+                targetTab: .fullGameSim
+            ) {
+                FullGameSimOverviewCards()
+                    .environmentObject(statsManager)
+            }
+
+            // Baseball Kubb Section
+            SessionTypeSection(
+                title: "Baseball Kubb",
+                icon: "baseball.fill",
+                iconColor: .red,
+                selectedTab: $selectedTab,
+                targetTab: .baseballKubb
+            ) {
+                BaseballKubbOverviewCards()
+                    .environmentObject(statsManager)
+            }
+        }
+        .padding(.vertical)
+    }
+}
+
+// MARK: - Session Type Section (Clickable Header + Cards)
+struct SessionTypeSection<Content: View>: View {
+    let title: String
+    let icon: String
+    let iconColor: Color
+    @Binding var selectedTab: StatsView.StatsTab
+    let targetTab: StatsView.StatsTab
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Clickable Header
+            Button(action: {
+                selectedTab = targetTab
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundColor(iconColor)
+
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            // Content Cards
+            content
+                .padding(.horizontal)
+        }
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - Standard 8-Meter Overview Cards
+struct Standard8MeterOverviewCards: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    private var practiceSessions: [PracticeSession] {
+        statsManager.practiceSessions.filter { $0.isComplete }
+    }
+
+    private var totalBatons: Int {
+        practiceSessions.reduce(0) { $0 + $1.totalBatons }
+    }
+
+    private var recentSessions: [PracticeSession] {
+        Array(practiceSessions.sorted { $0.startTime > $1.startTime }.prefix(5))
+    }
+
+    private var recentAccuracy: Double {
+        recentSessions.isEmpty ? 0.0 : recentSessions.reduce(0.0) { $0 + $1.accuracy } / Double(recentSessions.count)
+    }
+
+    private var lifetimeAccuracy: Double {
+        practiceSessions.isEmpty ? 0.0 : practiceSessions.reduce(0.0) { $0 + $1.accuracy } / Double(practiceSessions.count)
+    }
+
+    private var trend: String {
+        if abs(recentAccuracy - lifetimeAccuracy) < 0.02 {
+            return "→ Stable"
+        } else if recentAccuracy > lifetimeAccuracy {
+            return "↑ Improving"
+        } else {
+            return "↓ Declining"
+        }
+    }
+
+    private var trendColor: Color {
+        if abs(recentAccuracy - lifetimeAccuracy) < 0.02 {
+            return .orange
+        } else if recentAccuracy > lifetimeAccuracy {
+            return .green
+        } else {
+            return .red
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Total Batons Card
+            VStack(spacing: 8) {
+                Image(systemName: "bolt.fill")
+                    .font(.title2)
+                    .foregroundColor(.blue)
+
+                Text("\(totalBatons)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+
+                Text("Total Batons")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+
+            // Accuracy Card
+            VStack(spacing: 8) {
+                Image(systemName: "target")
+                    .font(.title2)
+                    .foregroundColor(.green)
+
+                VStack(spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text("Recent:")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "%.1f%%", recentAccuracy * 100))
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+
+                    HStack(spacing: 4) {
+                        Text("Lifetime:")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "%.1f%%", lifetimeAccuracy * 100))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+
+                    Text(trend)
+                        .font(.caption)
+                        .foregroundColor(trendColor)
+                        .fontWeight(.medium)
+                }
+
+                Text("Accuracy")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+        }
+    }
+}
+
+// MARK: - Inkast & Blast Overview Cards
+struct InkastBlastOverviewCards: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    private var sessions: [InkastBlastSessionData] {
+        statsManager.inkastBlastSessions.filter { $0.isComplete }
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            // Row 1: Overall and Early Game
+            HStack(spacing: 12) {
+                PhaseCard(
+                    title: "Overall",
+                    phase: .all,
+                    sessions: sessions,
+                    iconColor: .purple
+                )
+
+                PhaseCard(
+                    title: "Early Game",
+                    subtitle: "1-3 kubbs",
+                    phase: .early,
+                    sessions: sessions,
+                    iconColor: .green
+                )
+            }
+
+            // Row 2: Mid Game and End Game
+            HStack(spacing: 12) {
+                PhaseCard(
+                    title: "Mid Game",
+                    subtitle: "4-7 kubbs",
+                    phase: .mid,
+                    sessions: sessions,
+                    iconColor: .orange
+                )
+
+                PhaseCard(
+                    title: "End Game",
+                    subtitle: "8-10 kubbs",
+                    phase: .end,
+                    sessions: sessions,
+                    iconColor: .red
+                )
+            }
+        }
+    }
+}
+
+struct PhaseCard: View {
+    let title: String
+    var subtitle: String? = nil
+    let phase: GamePhase
+    let sessions: [InkastBlastSessionData]
+    let iconColor: Color
+
+    private var phaseRounds: [InkastBlastRoundData] {
+        sessions.flatMap { session in
+            session.rounds.filter { round in
+                let roundPhase = session.gamePhaseForRound(round)
+                return phase == .all || roundPhase == phase
+            }
+        }
+    }
+
+    private var totalRounds: Int {
+        phaseRounds.count
+    }
+
+    private var recentRounds: [InkastBlastRoundData] {
+        Array(phaseRounds.suffix(5))
+    }
+
+    private var recentHandicap: Double {
+        calculateHandicap(rounds: recentRounds)
+    }
+
+    private var lifetimeHandicap: Double {
+        calculateHandicap(rounds: phaseRounds)
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "scope")
+                .font(.title3)
+                .foregroundColor(iconColor)
+
+            Text(title)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+
+            Divider()
+
+            VStack(spacing: 2) {
+                Text("\(totalRounds)")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                Text("rounds")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+
+            Divider()
+
+            VStack(spacing: 2) {
+                Text("Handicap")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 4) {
+                    Text("Recent:")
+                        .font(.caption2)
+                    Text(String(format: "%+.1f", recentHandicap))
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+
+                HStack(spacing: 4) {
+                    Text("Lifetime:")
+                        .font(.caption2)
+                    Text(String(format: "%+.1f", lifetimeHandicap))
+                        .font(.caption)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+    }
+
+    func calculateHandicap(rounds: [InkastBlastRoundData]) -> Double {
+        guard !rounds.isEmpty else { return 0.0 }
+        let totalHandicap = rounds.reduce(0.0) { sum, round in
+            let target = round.targetBatons
+            let actual = round.batonsUsed
+            return sum + Double(actual - target)
+        }
+        return totalHandicap / Double(rounds.count)
+    }
+}
+
+// MARK: - Full Game Sim Overview Cards
+struct FullGameSimOverviewCards: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    private var totalSessions: Int {
+        statsManager.fullGameSimSessions.filter { $0.isComplete }.count
+    }
+
+    var body: some View {
+        HStack {
+            VStack(spacing: 8) {
+                Image(systemName: "figure.2.and.child.holdinghands")
+                    .font(.title2)
+                    .foregroundColor(.green)
+
+                Text("\(totalSessions)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+
+                Text("Total Sessions")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+        }
+    }
+}
+
+// MARK: - Baseball Kubb Overview Cards
+struct BaseballKubbOverviewCards: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    private var totalSessions: Int {
+        statsManager.baseballKubbSessions.filter { $0.isComplete }.count
+    }
+
+    var body: some View {
+        HStack {
+            VStack(spacing: 8) {
+                Image(systemName: "baseball.fill")
+                    .font(.title2)
+                    .foregroundColor(.red)
+
+                Text("\(totalSessions)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+
+                Text("Total Sessions")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+        }
+    }
+}
+
+// MARK: - Training Overview Stats Section (OLD - KEEP FOR REFERENCE)
+struct TrainingOverviewStatsSection_OLD: View {
     @EnvironmentObject private var statsManager: UnifiedStatisticsManager
     
     var body: some View {
@@ -618,8 +1056,59 @@ struct InkastBlastStatsSection: View {
                     color: .cyan,
                     description: "The percentage of inkast kubbs that land inbounds on the first attempt. Higher percentages indicate better inkast accuracy and control."
                 )
-                
+
+                TrainingStatCard(
+                    title: "Blast Efficiency",
+                    value: String(format: "%.2f", stats.blastEfficiency),
+                    icon: "bolt.fill",
+                    color: .yellow,
+                    description: "Average number of kubbs knocked down on the first throw of each round. Higher values indicate better blast efficiency."
+                )
             }
+
+            // Additional Metrics Row
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 16) {
+                // Calculate penalty rate from stats manager's data
+                let penaltyRate = statsManager.inkastBlastSessions.isEmpty ? 0.0 :
+                    Double(statsManager.inkastBlastSessions.reduce(0) { $0 + $1.totalPenaltyKubbs }) /
+                    Double(statsManager.inkastBlastSessions.reduce(0) { $0 + $1.totalInkastKubbs })
+
+                TrainingStatCard(
+                    title: "Penalty Rate",
+                    value: String(format: "%.1f%%", penaltyRate * 100),
+                    icon: "exclamationmark.triangle.fill",
+                    color: .red,
+                    description: "Percentage of inkast kubbs that go out of bounds on both attempts, resulting in penalty kubbs. Lower is better."
+                )
+
+                let neighborRate = statsManager.inkastBlastSessions.isEmpty ? 0.0 :
+                    Double(statsManager.inkastBlastSessions.reduce(0) { $0 + $1.totalNeighborKubbs }) /
+                    Double(statsManager.inkastBlastSessions.reduce(0) { $0 + $1.totalInkastKubbs })
+
+                TrainingStatCard(
+                    title: "Neighbor Rate",
+                    value: String(format: "%.1f%%", neighborRate * 100),
+                    icon: "person.2.fill",
+                    color: .purple,
+                    description: "Percentage of inkast kubbs that land on top of another kubb (neighbors). Strategic neighbors can be advantageous."
+                )
+
+                let kubbsPerBaton = statsManager.inkastBlastSessions.isEmpty ? 0.0 :
+                    Double(statsManager.inkastBlastSessions.reduce(0) { $0 + $1.totalKubbsKnockedDown }) /
+                    Double(statsManager.inkastBlastSessions.reduce(0) { $0 + $1.totalBatonsUsed })
+
+                TrainingStatCard(
+                    title: "Kubbs per Baton",
+                    value: String(format: "%.2f", kubbsPerBaton),
+                    icon: "chart.bar.fill",
+                    color: .green,
+                    description: "Average number of kubbs knocked down per baton thrown. Higher efficiency means better accuracy and multi-kubb hits."
+                )
+            }
+            .padding(.top, 8)
             
             // Phase-specific statistics
             VStack(alignment: .leading, spacing: 12) {
@@ -1622,6 +2111,470 @@ struct FullGameSimSessionRow: View {
             return .red    // Over target = bad
         } else {
             return .orange // Near target = ok
+        }
+    }
+}
+
+// MARK: - Personal Records Section
+
+struct PersonalRecordsSection: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Personal Records")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 16) {
+                RecordCard(
+                    title: "Best Accuracy",
+                    value: String(format: "%.1f%%", statsManager.personalRecords.bestAccuracyAllTime * 100),
+                    icon: "target",
+                    color: .green
+                )
+
+                RecordCard(
+                    title: "Best Single Round",
+                    value: String(format: "%.1f%%", statsManager.personalRecords.bestAccuracySingleRound * 100),
+                    icon: "star.fill",
+                    color: .yellow
+                )
+
+                RecordCard(
+                    title: "Longest Hit Streak",
+                    value: "\(statsManager.personalRecords.longestHitStreak)",
+                    icon: "flame.fill",
+                    color: .orange
+                )
+
+                RecordCard(
+                    title: "Most Baseline Clears",
+                    value: "\(statsManager.personalRecords.mostBaselineClears)",
+                    icon: "checkmark.circle.fill",
+                    color: .blue
+                )
+
+                RecordCard(
+                    title: "Perfect Rounds",
+                    value: "\(statsManager.personalRecords.perfectRoundsCount)",
+                    icon: "sparkles",
+                    color: .purple
+                )
+
+                RecordCard(
+                    title: "Best King Accuracy",
+                    value: String(format: "%.1f%%", statsManager.personalRecords.bestKingAccuracy * 100),
+                    icon: "crown.fill",
+                    color: .yellow
+                )
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+    }
+}
+
+struct RecordCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title)
+                .foregroundColor(color)
+
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Streaks Section
+
+struct StreaksSection: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Streaks")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            HStack(spacing: 16) {
+                // Current Streak
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "flame")
+                            .font(.title)
+                            .foregroundColor(.orange)
+                        Text("Current Streak")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+
+                    Text("\(statsManager.personalRecords.currentHitStreak)")
+                        .font(.system(size: 48, weight: .bold))
+                        .foregroundColor(.orange)
+
+                    Text("consecutive hits")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+
+                // Best Streak
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "flame.fill")
+                            .font(.title)
+                            .foregroundColor(.red)
+                        Text("Best Streak")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+
+                    Text("\(statsManager.personalRecords.longestHitStreak)")
+                        .font(.system(size: 48, weight: .bold))
+                        .foregroundColor(.red)
+
+                    Text("all-time best")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(12)
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - Recent Performance Section
+
+struct RecentPerformanceSection: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    var body: some View {
+        if let recentForm = statsManager.recentFormStats {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Recent Performance")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+
+                // Performance Summary Card
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Last 5 Sessions")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text(String(format: "%.1f%%", recentForm.recentAccuracy * 100))
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundColor(colorForZone(recentForm.performanceZone))
+                        }
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("vs Lifetime")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+
+                            HStack(spacing: 4) {
+                                Text(recentForm.trendDirection.rawValue)
+                                    .font(.title2)
+                                Text(String(format: "%.1f%%", abs(recentForm.improvementPercentage)))
+                                    .font(.headline)
+                            }
+                            .foregroundColor(colorForTrend(recentForm.trendDirection))
+                        }
+                    }
+
+                    Divider()
+
+                    // Performance Zone Badge
+                    HStack {
+                        Image(systemName: zoneIcon(recentForm.performanceZone))
+                            .foregroundColor(colorForZone(recentForm.performanceZone))
+                        Text(recentForm.performanceZone.rawValue)
+                            .font(.headline)
+                            .foregroundColor(colorForZone(recentForm.performanceZone))
+                        Spacer()
+                        Text(recentForm.performanceZone.description)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(colorForZone(recentForm.performanceZone).opacity(0.1))
+                    .cornerRadius(8)
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+
+                // Recent Sessions List
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recent Sessions")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+
+                    ForEach(Array(recentForm.recentSessions.enumerated()), id: \.element.id) { index, session in
+                        HStack {
+                            Text("\(index + 1).")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(width: 20)
+
+                            Text(session.date.formatted(date: .abbreviated, time: .omitted))
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+
+                            Spacer()
+
+                            Text(String(format: "%.1f%%", session.accuracy * 100))
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(session.accuracy >= recentForm.lifetimeAccuracy ? .green : .orange)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(16)
+        }
+    }
+
+    private func colorForZone(_ zone: RecentFormStatistics.PerformanceZone) -> Color {
+        switch zone {
+        case .excellent: return .green
+        case .good: return .blue
+        case .average: return .orange
+        case .needsWork: return .red
+        }
+    }
+
+    private func colorForTrend(_ trend: RecentFormStatistics.TrendDirection) -> Color {
+        switch trend {
+        case .improving: return .green
+        case .declining: return .red
+        case .stable: return .orange
+        }
+    }
+
+    private func zoneIcon(_ zone: RecentFormStatistics.PerformanceZone) -> String {
+        switch zone {
+        case .excellent: return "star.fill"
+        case .good: return "checkmark.circle.fill"
+        case .average: return "minus.circle.fill"
+        case .needsWork: return "exclamationmark.triangle.fill"
+        }
+    }
+}
+
+// MARK: - Clutch Performance Card
+
+struct ClutchPerformanceCard: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    var body: some View {
+        if let clutchMetrics = statsManager.clutchPerformanceMetrics {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "bolt.fill")
+                        .font(.title2)
+                        .foregroundColor(.yellow)
+                    Text("Clutch Performance")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                }
+
+                VStack(spacing: 12) {
+                    // Comparison bars
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Under Pressure")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(String(format: "%.1f%%", clutchMetrics.clutchAccuracy * 100))
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.orange)
+
+                            ProgressView(value: clutchMetrics.clutchAccuracy)
+                                .progressViewStyle(LinearProgressViewStyle(tint: .orange))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Normal")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(String(format: "%.1f%%", clutchMetrics.normalAccuracy * 100))
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+
+                            ProgressView(value: clutchMetrics.normalAccuracy)
+                                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Divider()
+
+                    // Performance assessment
+                    HStack {
+                        Image(systemName: clutchMetrics.performanceRatio > 1.0 ? "arrow.up.circle.fill" : clutchMetrics.performanceRatio < 0.95 ? "arrow.down.circle.fill" : "minus.circle.fill")
+                            .foregroundColor(clutchPerformanceColor(clutchMetrics.performanceRatio))
+                        Text(clutchMetrics.description)
+                            .font(.headline)
+                            .foregroundColor(clutchPerformanceColor(clutchMetrics.performanceRatio))
+                        Spacer()
+                        Text("\(clutchMetrics.clutchAttempts) attempts")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(clutchPerformanceColor(clutchMetrics.performanceRatio).opacity(0.1))
+                    .cornerRadius(8)
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(16)
+        }
+    }
+
+    private func clutchPerformanceColor(_ ratio: Double) -> Color {
+        if ratio > 1.05 {
+            return .green
+        } else if ratio > 0.95 {
+            return .blue
+        } else {
+            return .orange
+        }
+    }
+}
+
+// MARK: - Consistency Card
+
+struct ConsistencyCard: View {
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    var body: some View {
+        if let consistency = statsManager.consistencyMetrics {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "waveform.path.ecg")
+                        .font(.title2)
+                        .foregroundColor(colorForRating(consistency.rating))
+                    Text("Consistency")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                }
+
+                VStack(spacing: 12) {
+                    // Rating and description
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(consistency.rating.rawValue)
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(colorForRating(consistency.rating))
+                            Spacer()
+                            Text(String(format: "σ = %.3f", consistency.standardDeviation))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Text(consistency.rating.description)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(colorForRating(consistency.rating).opacity(0.1))
+                    .cornerRadius(8)
+
+                    Divider()
+
+                    // Statistics
+                    HStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Mean Accuracy")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(String(format: "%.1f%%", consistency.meanAccuracy * 100))
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                        }
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("Variance")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(String(format: "%.1f%%", consistency.variancePercentage))
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(16)
+        }
+    }
+
+    private func colorForRating(_ rating: ConsistencyMetrics.ConsistencyRating) -> Color {
+        switch rating {
+        case .veryStable: return .green
+        case .stable: return .blue
+        case .moderate: return .orange
+        case .variable: return .yellow
+        case .volatile: return .red
         }
     }
 }

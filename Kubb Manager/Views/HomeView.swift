@@ -49,7 +49,11 @@ struct HomeView: View {
                     )
                 }
                 
-                
+
+
+                // Personal Records Highlights
+                PersonalRecordsHighlightsView()
+
                 // Recent Activity
                 RecentActivityView()
             }
@@ -58,6 +62,105 @@ struct HomeView: View {
         .sheet(isPresented: $showingTargetSetting) {
             TargetSettingView()
         }
+    }
+}
+
+// MARK: - Personal Records Highlights View
+
+struct PersonalRecordsHighlightsView: View {
+    @StateObject private var statsManager = UnifiedStatisticsManager.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "trophy.fill")
+                    .font(.headline)
+                    .foregroundColor(.yellow)
+                Text("Personal Records")
+                    .font(.headline)
+                Spacer()
+            }
+
+            HStack(spacing: 12) {
+                // Best Accuracy Card
+                RecordHighlightCard(
+                    icon: "target",
+                    title: "Best Accuracy",
+                    value: String(format: "%.1f%%", statsManager.personalRecords.bestAccuracyAllTime * 100),
+                    color: .green
+                )
+
+                // Longest Streak Card
+                RecordHighlightCard(
+                    icon: "flame.fill",
+                    title: "Longest Streak",
+                    value: "\(statsManager.personalRecords.longestHitStreak)",
+                    color: .orange
+                )
+
+                // Perfect Rounds Card
+                RecordHighlightCard(
+                    icon: "sparkles",
+                    title: "Perfect Rounds",
+                    value: "\(statsManager.personalRecords.perfectRoundsCount)",
+                    color: .purple
+                )
+            }
+
+            // Current Streak Indicator
+            if statsManager.personalRecords.currentHitStreak > 0 {
+                HStack {
+                    Image(systemName: "flame")
+                        .foregroundColor(.orange)
+                    Text("Current streak: \(statsManager.personalRecords.currentHitStreak) hits")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+        .onAppear {
+            Task {
+                await statsManager.loadAllSessionsIfNeeded()
+            }
+        }
+    }
+}
+
+struct RecordHighlightCard: View {
+    let icon: String
+    let title: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+
+            Text(value)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
 }
 

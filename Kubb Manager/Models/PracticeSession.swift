@@ -248,7 +248,127 @@ struct PracticeSession: Identifiable, Codable, Equatable {
         guard totalKingThrowAttempts > 0 else { return 0.0 }
         return Double(totalKingHits) / Double(totalKingThrowAttempts)
     }
-    
+
+    // MARK: - Clutch Performance (Pressure Situations)
+
+    /// Throws made when 3-4 kubbs remain (pressure situations)
+    var clutchThrows: [(throw: BatonThrow, kubbsRemaining: Int)] {
+        var clutchThrowsList: [(throw: BatonThrow, kubbsRemaining: Int)] = []
+
+        for round in rounds {
+            var kubbsHitSoFar = 0
+
+            for batonThrow in round.batonThrows where batonThrow.throwType == .kubb {
+                let kubbsRemaining = 5 - kubbsHitSoFar
+
+                // Count throws when 3-4 kubbs remain (pressure)
+                if kubbsRemaining >= 3 && kubbsRemaining <= 4 {
+                    clutchThrowsList.append((throw: batonThrow, kubbsRemaining: kubbsRemaining))
+                }
+
+                if batonThrow.isHit {
+                    kubbsHitSoFar += 1
+                }
+            }
+        }
+
+        return clutchThrowsList
+    }
+
+    /// Accuracy in clutch situations (when 3-4 kubbs remain)
+    var clutchAccuracy: Double {
+        let clutchAttempts = clutchThrows
+        guard !clutchAttempts.isEmpty else { return 0.0 }
+
+        let clutchHits = clutchAttempts.filter { $0.throw.isHit }.count
+        return Double(clutchHits) / Double(clutchAttempts.count)
+    }
+
+    /// Accuracy in non-clutch situations (when 5, 2, or 1 kubbs remain)
+    var normalAccuracy: Double {
+        var normalThrowsCount = 0
+        var normalHitsCount = 0
+
+        for round in rounds {
+            var kubbsHitSoFar = 0
+
+            for batonThrow in round.batonThrows where batonThrow.throwType == .kubb {
+                let kubbsRemaining = 5 - kubbsHitSoFar
+
+                // Count throws when NOT in clutch situation
+                if kubbsRemaining < 3 || kubbsRemaining > 4 {
+                    normalThrowsCount += 1
+                    if batonThrow.isHit {
+                        normalHitsCount += 1
+                    }
+                }
+
+                if batonThrow.isHit {
+                    kubbsHitSoFar += 1
+                }
+            }
+        }
+
+        guard normalThrowsCount > 0 else { return 0.0 }
+        return Double(normalHitsCount) / Double(normalThrowsCount)
+    }
+
+    /// Ratio of clutch accuracy to normal accuracy (>1.0 means performs better under pressure)
+    var clutchPerformanceRatio: Double {
+        guard normalAccuracy > 0 else { return 1.0 }
+        return clutchAccuracy / normalAccuracy
+    }
+
+    // MARK: - Streak Tracking
+
+    /// Current hit streak in the session (consecutive successful throws)
+    var currentHitStreak: Int {
+        var streak = 0
+        var maxStreak = 0
+
+        for round in rounds.sorted(by: { $0.roundNumber < $1.roundNumber }) {
+            for batonThrow in round.batonThrows where batonThrow.throwType == .kubb {
+                if batonThrow.isHit {
+                    streak += 1
+                    maxStreak = max(maxStreak, streak)
+                } else {
+                    streak = 0
+                }
+            }
+        }
+
+        return streak // Return current active streak
+    }
+
+    /// Longest hit streak achieved in this session
+    var longestHitStreakInSession: Int {
+        var currentStreak = 0
+        var maxStreak = 0
+
+        for round in rounds.sorted(by: { $0.roundNumber < $1.roundNumber }) {
+            for batonThrow in round.batonThrows where batonThrow.throwType == .kubb {
+                if batonThrow.isHit {
+                    currentStreak += 1
+                    maxStreak = max(maxStreak, currentStreak)
+                } else {
+                    currentStreak = 0
+                }
+            }
+        }
+
+        return maxStreak
+    }
+
+    /// Number of perfect rounds (100% accuracy) in this session
+    var perfectRoundsCount: Int {
+        return rounds.filter { $0.accuracy == 1.0 && $0.isComplete }.count
+    }
+
+    /// Whether this session contains any perfect rounds
+    var hasPerfectRound: Bool {
+        return perfectRoundsCount > 0
+    }
+
     // MARK: - Session Management
     
     mutating func addBatonResult(isHit: Bool) {

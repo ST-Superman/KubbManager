@@ -36,6 +36,12 @@ class UnifiedStatisticsManager: ObservableObject {
         blastEfficiency: 0,
         fieldHandicap: 0
     )
+
+    // Enhanced Statistics
+    @Published var personalRecords: PersonalRecords = PersonalRecords()
+    @Published var recentFormStats: RecentFormStatistics?
+    @Published var consistencyMetrics: ConsistencyMetrics?
+    @Published var clutchPerformanceMetrics: ClutchPerformanceMetrics?
     @Published var gameLogStats: GameLogStatistics = GameLogStatistics(
         totalGames: 0,
         competitiveGames: 0,
@@ -173,6 +179,10 @@ class UnifiedStatisticsManager: ObservableObject {
         calculateTrainingStatistics()
         calculateGameLogStatistics()
         calculateModeSpecificStatistics()
+        calculatePersonalRecords()
+        calculateRecentFormStatistics()
+        calculateConsistencyMetrics()
+        calculateClutchPerformanceMetrics()
         
         // Update cache timestamp
         lastLoadTime = Date()
@@ -723,6 +733,195 @@ class UnifiedStatisticsManager: ObservableObject {
             totalRuns: totalRuns,
             totalBatons: totalBatons
         )
+    }
+
+    // MARK: - Personal Records Calculation
+
+    private func calculatePersonalRecords() {
+        // Start with saved records from local storage
+        var records = localStorage.loadPersonalRecords()
+
+        // Process all practice sessions
+        for session in practiceSessions where session.isComplete {
+            records.updateWithPracticeSession(session)
+        }
+
+        // Process all Inkast & Blast sessions
+        for session in inkastBlastSessions where session.isComplete {
+            records.updateWithInkastBlastSession(session)
+        }
+
+        // Calculate current hit streak across all sessions
+        let allSessions = practiceSessions
+            .filter { $0.isComplete }
+            .sorted { $0.startTime < $1.startTime }
+
+        var currentStreak = 0
+        var maxStreak = 0
+
+        for session in allSessions.reversed() {
+            let sessionStreak = session.currentHitStreak
+
+            if sessionStreak > 0 {
+                currentStreak += sessionStreak
+                maxStreak = max(maxStreak, currentStreak)
+            } else {
+                break // Streak broken
+            }
+        }
+
+        records.updateCurrentStreak(currentStreak)
+
+        // Save updated records to local storage
+        localStorage.savePersonalRecords(records)
+
+        DispatchQueue.main.async {
+            self.personalRecords = records
+        }
+    }
+
+    // MARK: - Recent Form Statistics Calculation
+
+    private func calculateRecentFormStatistics() {
+        let completedSessions = practiceSessions
+            .filter { $0.isComplete && $0.totalBatons > 0 }
+            .sorted { $0.startTime > $1.startTime }
+
+        guard !completedSessions.isEmpty else {
+            DispatchQueue.main.async {
+                self.recentFormStats = nil
+            }
+            return
+        }
+
+        // Get last 5 sessions
+        let recentCount = min(5, completedSessions.count)
+        let recentSessions = Array(completedSessions.prefix(recentCount))
+
+        // Convert to session summaries
+        let sessionSummaries = recentSessions.map { session in
+            RecentFormStatistics.SessionSummary(
+                id: session.id,
+                date: session.date,
+                accuracy: session.accuracy,
+                totalBatons: session.totalBatons,
+                totalKubbs: session.totalKubbs
+            )
+        }
+
+        // Calculate recent accuracy
+        let recentAccuracy = recentSessions.reduce(0.0) { $0 + $1.accuracy } / Double(recentSessions.count)
+
+        // Calculate lifetime accuracy
+        let lifetimeAccuracy = completedSessions.reduce(0.0) { $0 + $1.accuracy } / Double(completedSessions.count)
+
+        let stats = RecentFormStatistics(
+            recentSessions: sessionSummaries,
+            recentAccuracy: recentAccuracy,
+            lifetimeAccuracy: lifetimeAccuracy
+        )
+
+        DispatchQueue.main.async {
+            self.recentFormStats = stats
+        }
+    }
+
+    // MARK: - Consistency Metrics Calculation
+
+    private func calculateConsistencyMetrics() {
+        let completedSessions = practiceSessions
+            .filter { $0.isComplete && $0.totalBatons > 0 }
+
+        guard completedSessions.count >= 3 else {
+            // Need at least 3 sessions for meaningful consistency metrics
+            DispatchQueue.main.async {
+                self.consistencyMetrics = nil
+            }
+            return
+        }
+
+        let accuracies = completedSessions.map { $0.accuracy }
+        let metrics = ConsistencyMetrics(accuracies: accuracies)
+
+        DispatchQueue.main.async {
+            self.consistencyMetrics = metrics
+        }
+    }
+
+    // MARK: - Clutch Performance Calculation
+
+    private func calculateClutchPerformanceMetrics() {
+        let completedSessions = practiceSessions
+            .filter { $0.isComplete && $0.totalBatons > 0 }
+
+        guard !completedSessions.isEmpty else {
+            DispatchQueue.main.async {
+                self.clutchPerformanceMetrics = nil
+            }
+            return
+        }
+
+        var totalClutchThrows = 0
+        var totalClutchHits = 0
+        var totalNormalThrows = 0
+        var totalNormalHits = 0
+
+        for session in completedSessions {
+            let clutchThrows = session.clutchThrows
+            totalClutchThrows += clutchThrows.count
+            totalClutchHits += clutchThrows.filter { $0.throw.isHit }.count
+
+            // Calculate normal throws
+            let normalThrowsInSession = session.totalBatons - clutchThrows.count
+            let clutchHitsInSession = clutchThrows.filter { $0.throw.isHit }.count
+            let normalHitsInSession = session.totalKubbs - clutchHitsInSession
+
+            totalNormalThrows += normalThrowsInSession
+            totalNormalHits += normalHitsInSession
+        }
+
+        guard totalClutchThrows > 0 && totalNormalThrows > 0 else {
+            DispatchQueue.main.async {
+                self.clutchPerformanceMetrics = nil
+            }
+            return
+        }
+
+        let clutchAccuracy = Double(totalClutchHits) / Double(totalClutchThrows)
+        let normalAccuracy = Double(totalNormalHits) / Double(totalNormalThrows)
+        let performanceRatio = normalAccuracy > 0 ? clutchAccuracy / normalAccuracy : 1.0
+
+        let metrics = ClutchPerformanceMetrics(
+            clutchAccuracy: clutchAccuracy,
+            normalAccuracy: normalAccuracy,
+            clutchAttempts: totalClutchThrows,
+            performanceRatio: performanceRatio
+        )
+
+        DispatchQueue.main.async {
+            self.clutchPerformanceMetrics = metrics
+        }
+    }
+
+    // MARK: - Helper Methods for Recent Performance
+
+    /// Gets the most recent N practice sessions
+    func getRecentSessions(count: Int = 5) -> [PracticeSession] {
+        return practiceSessions
+            .filter { $0.isComplete && $0.totalBatons > 0 }
+            .sorted { $0.startTime > $1.startTime }
+            .prefix(count)
+            .map { $0 }
+    }
+
+    /// Determines if recent performance is improving, declining, or stable
+    func getPerformanceTrend() -> RecentFormStatistics.TrendDirection? {
+        return recentFormStats?.trendDirection
+    }
+
+    /// Gets the current performance zone classification
+    func getPerformanceZone() -> RecentFormStatistics.PerformanceZone? {
+        return recentFormStats?.performanceZone
     }
 }
 

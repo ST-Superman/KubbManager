@@ -12,17 +12,22 @@ struct SessionResultsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingShareSheet = false
     @State private var shareText = ""
-    
+    @StateObject private var statsManager = UnifiedStatisticsManager.shared
+
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
                     // Header
                     SessionHeaderView(session: session)
-                    
+
+                    // Personal Records Notifications
+                    PersonalRecordsNotificationView(session: session)
+                        .environmentObject(statsManager)
+
                     // Statistics Grid
                     StatisticsGridView(session: session)
-                    
+
                     // Round Details
                     RoundDetailsView(session: session)
                     
@@ -380,12 +385,173 @@ struct ShareButton: View {
 
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
-    
+
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
-    
+
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Personal Records Notification View
+
+struct PersonalRecordsNotificationView: View {
+    let session: PracticeSession
+    @EnvironmentObject private var statsManager: UnifiedStatisticsManager
+
+    var body: some View {
+        let records = checkForNewRecords()
+
+        if !records.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "trophy.fill")
+                        .font(.title2)
+                        .foregroundColor(.yellow)
+                    Text("New Records!")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                }
+
+                VStack(spacing: 8) {
+                    ForEach(records, id: \.title) { record in
+                        RecordNotificationRow(
+                            icon: record.icon,
+                            title: record.title,
+                            value: record.value,
+                            color: record.color
+                        )
+                    }
+                }
+            }
+            .padding()
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.yellow.opacity(0.2), Color.orange.opacity(0.1)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.yellow.opacity(0.5), lineWidth: 2)
+            )
+        }
+    }
+
+    struct RecordInfo {
+        let title: String
+        let value: String
+        let icon: String
+        let color: Color
+    }
+
+    private func checkForNewRecords() -> [RecordInfo] {
+        var newRecords: [RecordInfo] = []
+        let personalRecords = statsManager.personalRecords
+
+        // Check if this session has best accuracy
+        if session.accuracy >= personalRecords.bestAccuracyAllTime && session.accuracy > 0 {
+            if personalRecords.sessionIdForBestAccuracy == session.id {
+                newRecords.append(RecordInfo(
+                    title: "Best Accuracy Ever!",
+                    value: String(format: "%.1f%%", session.accuracy * 100),
+                    icon: "target",
+                    color: .green
+                ))
+            }
+        }
+
+        // Check for perfect round
+        if session.hasPerfectRound {
+            newRecords.append(RecordInfo(
+                title: "Perfect Round Achieved!",
+                value: "\(session.perfectRoundsCount) this session",
+                icon: "sparkles",
+                color: .purple
+            ))
+        }
+
+        // Check for longest hit streak
+        if session.longestHitStreakInSession >= personalRecords.longestHitStreak && session.longestHitStreakInSession > 0 {
+            if personalRecords.sessionIdForLongestStreak == session.id {
+                newRecords.append(RecordInfo(
+                    title: "Longest Hit Streak!",
+                    value: "\(session.longestHitStreakInSession) consecutive hits",
+                    icon: "flame.fill",
+                    color: .orange
+                ))
+            }
+        }
+
+        // Check for most baseline clears
+        if session.totalBaselineClears >= personalRecords.mostBaselineClears && session.totalBaselineClears > 0 {
+            if personalRecords.sessionIdForMostClears == session.id {
+                newRecords.append(RecordInfo(
+                    title: "Most Baseline Clears!",
+                    value: "\(session.totalBaselineClears) clears",
+                    icon: "checkmark.circle.fill",
+                    color: .blue
+                ))
+            }
+        }
+
+        // Check for best king accuracy
+        if session.totalKingThrowAttempts > 0 && session.kingAccuracy >= personalRecords.bestKingAccuracy {
+            if personalRecords.sessionIdForBestKingAccuracy == session.id {
+                newRecords.append(RecordInfo(
+                    title: "Best King Accuracy!",
+                    value: String(format: "%.1f%%", session.kingAccuracy * 100),
+                    icon: "crown.fill",
+                    color: .yellow
+                ))
+            }
+        }
+
+        // Check for clutch performance
+        if session.clutchAccuracy > 0 && session.clutchPerformanceRatio > 1.1 {
+            newRecords.append(RecordInfo(
+                title: "Clutch Performance!",
+                value: "Better under pressure",
+                icon: "bolt.fill",
+                color: .yellow
+            ))
+        }
+
+        return newRecords
+    }
+}
+
+struct RecordNotificationRow: View {
+    let icon: String
+    let title: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(color)
+                .frame(width: 30)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                Text(value)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+    }
 }
 
 #Preview {

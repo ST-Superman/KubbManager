@@ -179,18 +179,19 @@ class CloudKitManager: ObservableObject {
     }
     
     func clearAllCloudKitData() async {
-        guard isSignedIn else { 
+        guard isSignedIn else {
             print("Not signed in to iCloud, cannot clear CloudKit data")
-            return 
+            return
         }
-        
+
         print("Clearing all CloudKit data and local data...")
-        
+
         // Clear each record type separately
         await clearPracticeSessionDataLegacy()
         await clearInkastBlastSessionData()
         await clearBaseballKubbSessionData()
-        
+        await clearFullGameSimSessionData()
+
         // Always clear local data regardless of CloudKit status
         localStorage.clearAllData()
         print("Local data cleared successfully")
@@ -229,6 +230,10 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("Error clearing Baseball Kubb Session CloudKit data: \(error)")
         }
+
+        // Also clear local Baseball Kubb data
+        localStorage.saveBaseballKubbSessionsBulk([])
+        print("Baseball Kubb Session local data cleared successfully")
     }
     
     // MARK: - Individual Record Type Clear Methods
@@ -267,9 +272,9 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("Error clearing InkastBlast_Session CloudKit data: \(error)")
         }
-        
-        // Also clear local data
-        localStorage.clearAllData()
+
+        // Also clear local InkastBlast data
+        localStorage.saveInkastBlastSessions([])
         print("InkastBlast_Session local data cleared successfully")
     }
     
@@ -304,12 +309,9 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("Error clearing FullGameSim_Session CloudKit data: \(error)")
         }
-        
-        // Also clear local data
-        let allSessions = localStorage.loadFullGameSimSessions()
-        for session in allSessions {
-            localStorage.deleteFullGameSimSession(session)
-        }
+
+        // Also clear local FullGameSim data
+        localStorage.saveFullGameSimSessions([])
         print("FullGameSim_Session local data cleared successfully")
     }
     

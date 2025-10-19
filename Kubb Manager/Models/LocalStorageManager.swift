@@ -129,14 +129,58 @@ class LocalStorageManager: ObservableObject {
     }
     
     // MARK: - Data Management
-    
+
     func clearAllData() {
         userDefaults.removeObject(forKey: sessionsKey)
+        userDefaults.removeObject(forKey: "PersonalRecords")
+        userDefaults.removeObject(forKey: "InkastBlastSessions")
+        userDefaults.removeObject(forKey: "BaseballKubbSessions")
+        userDefaults.removeObject(forKey: "FullGameSimSessions")
+        print("🗑️ All local data cleared (Practice, InkastBlast, BaseballKubb, FullGameSim, PersonalRecords)")
     }
-    
+
     func exportData() -> Data? {
         let sessions = loadSessions()
         return try? JSONEncoder().encode(sessions)
+    }
+
+    // MARK: - Personal Records Storage
+
+    private let personalRecordsKey = "PersonalRecords"
+
+    /// Saves personal records to local storage
+    func savePersonalRecords(_ records: PersonalRecords) {
+        do {
+            let data = try JSONEncoder().encode(records)
+            userDefaults.set(data, forKey: personalRecordsKey)
+            print("💾 Personal records saved to local storage")
+        } catch {
+            print("❌ Error saving personal records to local storage: \(error)")
+        }
+    }
+
+    /// Loads personal records from local storage
+    /// Returns default PersonalRecords if none exist
+    func loadPersonalRecords() -> PersonalRecords {
+        guard let data = userDefaults.data(forKey: personalRecordsKey) else {
+            print("ℹ️ No personal records found in local storage, returning defaults")
+            return PersonalRecords()
+        }
+
+        do {
+            let records = try JSONDecoder().decode(PersonalRecords.self, from: data)
+            print("✅ Loaded personal records from local storage")
+            return records
+        } catch {
+            print("❌ Error loading personal records from local storage: \(error)")
+            return PersonalRecords()
+        }
+    }
+
+    /// Clears personal records from storage
+    func clearPersonalRecords() {
+        userDefaults.removeObject(forKey: personalRecordsKey)
+        print("🗑️ Personal records cleared from local storage")
     }
     
     // MARK: - Baseball Kubb Sessions
