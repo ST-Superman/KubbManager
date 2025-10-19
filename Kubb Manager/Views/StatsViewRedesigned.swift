@@ -201,7 +201,7 @@ struct TrainingOverviewSection: View {
             if statsManager.fullGameSimSessions.count > 0 {
                 let totalRounds = statsManager.fullGameSimSessions.reduce(0) { $0 + $1.rounds.count }
                 let totalKubbs = statsManager.fullGameSimSessions.reduce(0) { $0 + $1.totalKubbsKnockedDown }
-                let totalBatons = statsManager.fullGameSimSessions.reduce(0) { $0 + $1.totalBatons }
+                let totalBatons = statsManager.fullGameSimSessions.reduce(0) { $0 + $1.totalBatonsUsed }
                 let accuracy = totalBatons > 0 ? Double(totalKubbs) / Double(totalBatons) : 0.0
 
                 TrainingModeCard(
