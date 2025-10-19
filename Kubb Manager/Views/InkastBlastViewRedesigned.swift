@@ -140,6 +140,7 @@ struct GamePhaseCard: View {
         case .early: return AppTheme.phaseEarly
         case .mid: return AppTheme.phaseMid
         case .end: return AppTheme.phaseEnd
+        case .all: return AppTheme.primary
         }
     }
 
@@ -302,15 +303,10 @@ struct InkastBlastActiveSessionView: View {
     private var roundPhaseContent: some View {
         VStack(spacing: Spacing.md) {
             if let round = sessionManager.currentRound {
-                if round.inkastPhaseComplete {
-                    // Blast Phase
-                    Text("Blast Phase - Clear the kubbs!")
-                        .font(.headline)
-                } else {
-                    // Inkast Phase
-                    Text("Inkast Phase - Throw the kubbs")
-                        .font(.headline)
-                }
+                // Display basic round info
+                Text("Round \(round.roundNumber)")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -348,6 +344,7 @@ extension GamePhase {
         case .early: return "1-3"
         case .mid: return "4-7"
         case .end: return "8-10"
+        case .all: return "All"
         }
     }
 }
