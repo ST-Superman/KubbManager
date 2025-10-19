@@ -98,7 +98,8 @@ struct MainMenuView: View {
             }
         }
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
-            EightMeterTrainingView()
+            EightMeterTrainingViewRedesigned()
+                .environmentObject(SessionManager.shared)
         }
         .fullScreenCover(isPresented: $showingInkastBlast) {
             InkastBlastView(
