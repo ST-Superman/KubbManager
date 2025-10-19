@@ -399,7 +399,7 @@ struct IncompleteSessionBanner: View {
 // MARK: - Recent Session Row
 
 struct RecentSessionRow: View {
-    let session: Session
+    let session: PracticeSession
 
     var body: some View {
         HStack(spacing: Spacing.md) {
