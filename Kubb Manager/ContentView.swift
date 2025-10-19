@@ -377,7 +377,8 @@ struct TrainingTabView: View {
             
         }
         .fullScreenCover(isPresented: $showingEightMeterTraining) {
-            EightMeterTrainingView()
+            EightMeterTrainingViewRedesigned()
+                .environmentObject(SessionManager())
         }
         .fullScreenCover(isPresented: $showingInkastBlast) {
             InkastBlastView(
