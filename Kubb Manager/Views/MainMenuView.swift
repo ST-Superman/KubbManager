@@ -98,7 +98,7 @@ struct MainMenuView: View {
                 .environmentObject(SessionManager())
         }
         .fullScreenCover(isPresented: $showingInkastBlast) {
-            InkastBlastView(
+            InkastBlastViewRedesigned(
                 persistenceController: PersistenceController.shared,
                 cloudKitManager: CloudKitManager.shared
             )
