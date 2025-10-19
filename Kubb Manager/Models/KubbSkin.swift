@@ -468,9 +468,8 @@ struct SkinPreview: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            // Kubb preview
-            let skinManager = SkinManager.shared
-            if let kubbImageName = skinManager.getRandomKubbImageName(for: 0) {
+            // Kubb preview - use image from the skin parameter directly
+            if let kubbImageName = skin.kubbImageName ?? skin.kubbImageNames.first {
                 // Image-based kubb
                 Image(kubbImageName)
                     .resizable()
@@ -487,9 +486,9 @@ struct SkinPreview: View {
                             .stroke(skin.kubbAccentColor?.color ?? Color.white, lineWidth: 1)
                     )
             }
-            
-            // King preview
-            if let kingImageName = skinManager.getRandomKingImageName() {
+
+            // King preview - use image from the skin parameter directly
+            if let kingImageName = skin.kingImageName ?? skin.kingImageNames.first {
                 // Image-based king
                 Image(kingImageName)
                     .resizable()
@@ -526,8 +525,8 @@ struct KubbPiecePreview: View {
     }
     
     var body: some View {
-        let skinManager = SkinManager.shared
-        if let kubbImageName = skinManager.getRandomKubbImageName(for: 0) {
+        // Try to get image name from the skin directly
+        if let kubbImageName = skin.kubbImageName ?? skin.kubbImageNames.first {
             // Image-based kubb
             Image(kubbImageName)
                 .resizable()

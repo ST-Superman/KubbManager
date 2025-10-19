@@ -13,9 +13,8 @@ struct BatonPreview: View {
     
     var body: some View {
         ZStack {
-            // Baton body
-            let skinManager = SkinManager.shared
-            if let batonImageName = skinManager.getRandomBatonImageName(for: 0) {
+            // Baton body - use image from the skin parameter directly
+            if let batonImageName = skin.batonImageName ?? skin.batonImageNames.first {
                 Image(batonImageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -30,7 +29,7 @@ struct BatonPreview: View {
                             .stroke(batonAccentColor, lineWidth: 1)
                     )
             }
-            
+
             // Highlight effect
             RoundedRectangle(cornerRadius: 2)
                 .stroke(highlightColor, lineWidth: 2)
