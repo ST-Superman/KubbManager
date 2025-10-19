@@ -82,6 +82,7 @@
 		4CF1B74D2E96CF2700BEF17F /* Kubb Manager Watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kubb Manager Watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CF1B7592E96CF2900BEF17F /* Kubb Manager Watch Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb Manager Watch Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CF1B7632E96CF2900BEF17F /* Kubb Manager Watch Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Kubb Manager Watch Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CF3B9222EA47906002DB416 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -265,6 +266,11 @@
 			sourceTree = "<group>";
 		};
 		4CF1296F2E8DC44100694719 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4CF3B9272EA47906002DB416 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -464,6 +470,10 @@
 				{
 					ProductGroup = 4C5FD0B42E871A7E0079A805 /* Products */;
 					ProjectRef = 4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */;
+				},
+				{
+					ProductGroup = 4CF3B9272EA47906002DB416 /* Products */;
+					ProjectRef = 4CF3B9222EA47906002DB416 /* Kubb Manager.xcodeproj */;
 				},
 				{
 					ProductGroup = 4CBCD3962E8A450E0022C75E /* Products */;
