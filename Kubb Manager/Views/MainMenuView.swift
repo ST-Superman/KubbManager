@@ -110,7 +110,7 @@ struct MainMenuView: View {
             )
         }
         .sheet(isPresented: $showingOptions) {
-            OptionsView()
+            SettingsViewRedesigned()
                 .environmentObject(settingsManager)
         }
     }

@@ -117,7 +117,7 @@ struct LandingPageView: View {
             }
         }
         .sheet(isPresented: $showingOptions) {
-            OptionsView()
+            SettingsViewRedesigned()
                 .environmentObject(settingsManager)
         }
     }
@@ -324,7 +324,7 @@ struct MainMenuTabView: View {
             }
         }
         .sheet(isPresented: $showingOptions) {
-            OptionsView()
+            SettingsViewRedesigned()
                 .environmentObject(settingsManager)
         }
     }
