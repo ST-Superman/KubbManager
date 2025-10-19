@@ -437,7 +437,7 @@ struct TrainingTabView: View {
             )
         }
         .fullScreenCover(isPresented: $showingFullGameSim) {
-            FullGameSimView(
+            FullGameSimViewRedesigned(
                 persistenceController: PersistenceController.shared,
                 cloudKitManager: CloudKitManager.shared
             )
