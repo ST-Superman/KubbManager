@@ -22,8 +22,8 @@ struct ContentView: View {
             // Show the main tabbed interface when user has navigated past landing page
             MainTabView(selectedTab: $selectedTab)
         } else {
-            // Show the landing page with app introduction and navigation options
-            LandingPageView(showingMainApp: $showingMainApp, selectedTab: $selectedTab)
+            // Show the redesigned landing page with app introduction and navigation options
+            LandingPageViewRedesigned(showingMainApp: $showingMainApp, selectedTab: $selectedTab)
         }
     }
 }
