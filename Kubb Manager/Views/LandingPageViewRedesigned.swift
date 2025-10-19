@@ -100,7 +100,7 @@ struct LandingPageViewRedesigned: View {
                 // Best Accuracy
                 StatCard(
                     title: "Best Accuracy",
-                    value: String(format: "%.0f%%", statsManager.personalRecords.bestAccuracy * 100),
+                    value: String(format: "%.0f%%", statsManager.personalRecords.bestAccuracyAllTime * 100),
                     icon: "scope",
                     color: AppTheme.success,
                     size: .small
@@ -109,7 +109,7 @@ struct LandingPageViewRedesigned: View {
                 // Current Streak
                 StatCard(
                     title: "Streak",
-                    value: "\(statsManager.personalRecords.longestStreak)",
+                    value: "\(statsManager.personalRecords.longestHitStreak)",
                     icon: "flame.fill",
                     color: AppTheme.warning,
                     size: .small
