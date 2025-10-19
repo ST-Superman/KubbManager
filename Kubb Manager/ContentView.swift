@@ -502,7 +502,7 @@ struct GameLogsTabView: View {
             }   
         }
         .fullScreenCover(isPresented: $showingBaseballKubb) {
-            BaseballKubbView()
+            BaseballKubbViewRedesigned()
         }
         .fullScreenCover(isPresented: $showingTraditionalKubb) {
             TraditionalKubbComingSoonView()
