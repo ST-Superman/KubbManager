@@ -199,14 +199,19 @@ struct TrainingOverviewSection: View {
 
             // Full Game Sim Card
             if statsManager.fullGameSimSessions.count > 0 {
+                let totalRounds = statsManager.fullGameSimSessions.reduce(0) { $0 + $1.rounds.count }
+                let totalKubbs = statsManager.fullGameSimSessions.reduce(0) { $0 + $1.totalKubbsKnockedDown }
+                let totalBatons = statsManager.fullGameSimSessions.reduce(0) { $0 + $1.totalBatons }
+                let accuracy = totalBatons > 0 ? Double(totalKubbs) / Double(totalBatons) : 0.0
+
                 TrainingModeCard(
                     title: "Full Game Sim",
                     icon: "crown.fill",
                     color: AppTheme.fullGameSim,
                     stats: [
                         ("Games", "\(statsManager.fullGameSimSessions.count)"),
-                        ("Rounds", "\(statsManager.modeSpecificStats.fullGameSimStats.totalRounds)"),
-                        ("Accuracy", String(format: "%.1f%%", statsManager.modeSpecificStats.fullGameSimStats.overallAccuracy * 100))
+                        ("Rounds", "\(totalRounds)"),
+                        ("Accuracy", String(format: "%.1f%%", accuracy * 100))
                     ]
                 )
             }
