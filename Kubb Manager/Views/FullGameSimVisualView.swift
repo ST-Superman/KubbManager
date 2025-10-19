@@ -183,9 +183,9 @@ struct EightMeterVisualView: View {
             
             // Stats
             HStack(spacing: 30) {
-                StatItem(title: "Hits", value: "\(roundData.hits)", color: .green)
-                StatItem(title: "Misses", value: "\(roundData.misses)", color: .red)
-                StatItem(title: "Accuracy", value: "\(Int(roundData.accuracy * 100))%", color: .blue)
+                FullGameStatItem(title: "Hits", value: "\(roundData.hits)", color: .green)
+                FullGameStatItem(title: "Misses", value: "\(roundData.misses)", color: .red)
+                FullGameStatItem(title: "Accuracy", value: "\(Int(roundData.accuracy * 100))%", color: .blue)
             }
         }
     }
@@ -230,12 +230,12 @@ struct InkastVisualView: View {
             // Stats
             VStack(spacing: 12) {
                 HStack(spacing: 20) {
-                    StatItem(title: "First Attempt", value: "\(roundData.kubbsOutFirstAttempt)", color: .green)
-                    StatItem(title: "Second Attempt", value: "\(roundData.kubbsOutSecondAttempt)", color: .yellow)
+                    FullGameStatItem(title: "First Attempt", value: "\(roundData.kubbsOutFirstAttempt)", color: .green)
+                    FullGameStatItem(title: "Second Attempt", value: "\(roundData.kubbsOutSecondAttempt)", color: .yellow)
                 }
                 HStack(spacing: 20) {
-                    StatItem(title: "Penalties", value: "\(roundData.penaltyKubbs)", color: .red)
-                    StatItem(title: "Neighbors", value: "\(roundData.neighborKubbs)", color: .purple)
+                    FullGameStatItem(title: "Penalties", value: "\(roundData.penaltyKubbs)", color: .red)
+                    FullGameStatItem(title: "Neighbors", value: "\(roundData.neighborKubbs)", color: .purple)
                 }
             }
         }
@@ -278,9 +278,9 @@ struct BlastVisualView: View {
             
             // Stats
             HStack(spacing: 20) {
-                StatItem(title: "Cleared", value: "\(roundData.kubbsClearedFirstThrow)/5", color: .green)
-                StatItem(title: "Hits", value: "\(roundData.hits)", color: .blue)
-                StatItem(title: "Misses", value: "\(roundData.misses)", color: .red)
+                FullGameStatItem(title: "Cleared", value: "\(roundData.kubbsClearedFirstThrow)/5", color: .green)
+                FullGameStatItem(title: "Hits", value: "\(roundData.hits)", color: .blue)
+                FullGameStatItem(title: "Misses", value: "\(roundData.misses)", color: .red)
             }
         }
     }
@@ -446,11 +446,11 @@ struct BlastKubbView: View {
 
 // MARK: - Stat Item
 
-struct StatItem: View {
+struct FullGameStatItem: View {
     let title: String
     let value: String
     let color: Color
-    
+
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
