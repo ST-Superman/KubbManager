@@ -253,86 +253,136 @@ struct MainMenuTabView: View {
     @Binding var selectedTab: Int
     @State private var showingOptions = false
     @StateObject private var settingsManager = SettingsManager.shared
-    
+    @StateObject private var statsManager = UnifiedStatisticsManager.shared
+
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 40) {
-                    // App Header
-                    LandingAppHeaderView()
-                    
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(spacing: Spacing.sectionSpacing) {
+                    // Hero Section
+                    heroSection
+
+                    // Quick Stats Overview
+                    quickStatsSection
+
                     // Main Action Buttons
-                    VStack(spacing: 24) {
+                    VStack(spacing: Spacing.md) {
                         // Training Button
-                        MainActionButton(
+                        ActionCard(
                             title: "Training",
                             description: "Practice your kubb skills with various training modes",
-                            icon: "figure.strengthtraining.traditional.circle.fill",
-                            color: .blue
+                            icon: "figure.strengthtraining.traditional",
+                            color: AppTheme.primary,
+                            isPrimary: true
                         ) {
                             selectedTab = 1
                         }
                         
                         // Game Logs Button
-                        MainActionButton(
+                        ActionCard(
                             title: "Game Logs",
                             description: "Track your game sessions and match results",
-                            icon: "play.circle.fill",
-                            color: .green
+                            icon: "play.circle",
+                            color: AppTheme.success,
+                            isPrimary: false
                         ) {
                             selectedTab = 2
                         }
-                        
+
                         // Stats Button
-                        MainActionButton(
+                        ActionCard(
                             title: "Statistics",
                             description: "View your progress and performance analytics",
-                            icon: "chart.line.text.clipboard",
-                            color: .orange
+                            icon: "chart.line.uptrend.xyaxis",
+                            color: AppTheme.primary,
+                            isPrimary: false
                         ) {
                             selectedTab = 3
                         }
                     }
-                    
-                    // Coming Soon Notice
-                    ComingSoonNoticeView()
-                    
+
                     // Debug Section (conditional)
                     if settingsManager.showDebugTools {
-                        DebugSectionView()
-                            .environmentObject(CloudKitManager.shared)
-                    } else {
-                        // Debug info to help troubleshoot
-                        VStack {
-                            Text("Debug Tools Status: OFF")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                            Text("Go to Options → Debug Options → Enable 'Include Debug Tools'")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
+                        VStack(alignment: .leading, spacing: Spacing.md) {
+                            SectionHeader.simple("Debug Tools")
+                            DebugSectionView()
+                                .environmentObject(CloudKitManager.shared)
                         }
-                        .padding()
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
                     }
-                    
                 }
-                .padding()
+                .padding(Spacing.screenPadding)
             }
-            .navigationTitle("Kubb Manager")
+            .navigationTitle("Main Menu")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Options") {
-                        showingOptions = true
-                    }
+            .navigationBarItems(trailing: Button("Options") {
+                showingOptions = true
+            })
+            .onAppear {
+                Task {
+                    await statsManager.loadAllSessionsIfNeeded()
                 }
             }
         }
         .sheet(isPresented: $showingOptions) {
             OptionsView()
                 .environmentObject(settingsManager)
+        }
+    }
+
+    // MARK: - Hero Section
+    private var heroSection: some View {
+        VStack(spacing: Spacing.lg) {
+            Image("kubb1024")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 100, height: 100)
+                .shadow(color: AppTheme.shadowMedium, radius: 8, y: 4)
+
+            VStack(spacing: Spacing.sm) {
+                Text("Welcome Back!")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.textPrimary)
+
+                Text("Track your training, analyze your progress, and improve your kubb game")
+                    .font(.body)
+                    .foregroundColor(AppTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(.top, Spacing.lg)
+    }
+
+    // MARK: - Quick Stats Section
+    private var quickStatsSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            SectionHeader.simple("Your Progress")
+
+            HStack(spacing: Spacing.md) {
+                StatCard(
+                    title: "Sessions",
+                    value: "\(statsManager.practiceSessions.count + statsManager.inkastBlastSessions.count + statsManager.baseballKubbSessions.count)",
+                    icon: "target",
+                    color: AppTheme.primary,
+                    size: .small
+                )
+
+                StatCard(
+                    title: "Best Accuracy",
+                    value: String(format: "%.0f%%", statsManager.personalRecords.bestAccuracyAllTime * 100),
+                    icon: "scope",
+                    color: AppTheme.success,
+                    size: .small
+                )
+
+                StatCard(
+                    title: "Streak",
+                    value: "\(statsManager.personalRecords.longestHitStreak)",
+                    icon: "flame.fill",
+                    color: AppTheme.warning,
+                    size: .small
+                )
+            }
         }
     }
 }
