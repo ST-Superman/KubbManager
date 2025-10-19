@@ -447,6 +447,15 @@ struct PracticeSession: Identifiable, Codable, Equatable {
     mutating func resetCurrentRound() {
         guard let currentRound = currentRound else { return }
         let index = rounds.firstIndex { $0.id == currentRound.id }!
+
+        // Subtract the current round's stats from the session totals
+        totalBatons -= currentRound.totalBatons
+        totalKubbs -= currentRound.totalKubbs
+
+        // Replace with a fresh round
         rounds[index] = Round(roundNumber: currentRound.roundNumber)
+
+        // Update modification time
+        modifiedAt = Date()
     }
 }
