@@ -284,7 +284,7 @@ struct WatchInfoSheet: View {
                     
                     // How it works
                     VStack(alignment: .leading, spacing: 16) {
-                        SectionHeader(title: "How It Works")
+                        WatchSectionHeader(title: "How It Works")
                         
                         InfoRow(
                             number: 1,
@@ -319,7 +319,7 @@ struct WatchInfoSheet: View {
                     
                     // Benefits
                     VStack(alignment: .leading, spacing: 16) {
-                        SectionHeader(title: "Benefits")
+                        WatchSectionHeader(title: "Benefits")
                         
                         BenefitRow(
                             icon: "hand.raised.fill",
@@ -342,7 +342,7 @@ struct WatchInfoSheet: View {
                     
                     // Requirements
                     VStack(alignment: .leading, spacing: 12) {
-                        SectionHeader(title: "Requirements")
+                        WatchSectionHeader(title: "Requirements")
                         
                         RequirementRow(
                             icon: "checkmark.circle.fill",
@@ -377,9 +377,9 @@ struct WatchInfoSheet: View {
 
 // MARK: - Supporting Views
 
-struct SectionHeader: View {
+struct WatchSectionHeader: View {
     let title: String
-    
+
     var body: some View {
         Text(title)
             .font(.headline)
