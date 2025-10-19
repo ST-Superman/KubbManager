@@ -210,7 +210,8 @@ extension StatCard {
     static func accuracy(
         value: Double,
         subtitle: String? = nil,
-        trend: TrendIndicator? = nil
+        trend: TrendIndicator? = nil,
+        size: CardSize = .medium
     ) -> StatCard {
         StatCard(
             title: "Accuracy",
@@ -218,55 +219,63 @@ extension StatCard {
             icon: "target",
             color: AppTheme.accuracy,
             subtitle: subtitle,
-            trend: trend
+            trend: trend,
+            size: size
         )
     }
 
     /// Create a streak stat card
     static func streak(
         value: Int,
-        subtitle: String? = nil
+        subtitle: String? = nil,
+        size: CardSize = .medium
     ) -> StatCard {
         StatCard(
             title: "Streak",
             value: "\(value)",
             icon: "flame.fill",
             color: AppTheme.streak,
-            subtitle: subtitle
+            subtitle: subtitle,
+            size: size
         )
     }
 
     /// Create a perfect rounds stat card
     static func perfectRounds(
-        value: Int
+        value: Int,
+        size: CardSize = .medium
     ) -> StatCard {
         StatCard(
             title: "Perfect Rounds",
             value: "\(value)",
             icon: "sparkles",
             color: AppTheme.accent,
-            subtitle: nil
+            subtitle: nil,
+            size: size
         )
     }
 
     /// Create a total batons stat card
     static func totalBatons(
         value: Int,
-        subtitle: String? = nil
+        subtitle: String? = nil,
+        size: CardSize = .medium
     ) -> StatCard {
         StatCard(
             title: "Total Batons",
             value: "\(value)",
             icon: "figure.walk",
             color: AppTheme.primary,
-            subtitle: subtitle
+            subtitle: subtitle,
+            size: size
         )
     }
 
     /// Create a handicap stat card
     static func handicap(
         value: Double,
-        subtitle: String? = nil
+        subtitle: String? = nil,
+        size: CardSize = .medium
     ) -> StatCard {
         let color: Color = value < 0 ? AppTheme.success : value > 0 ? AppTheme.warning : AppTheme.textSecondary
         return StatCard(
@@ -274,21 +283,24 @@ extension StatCard {
             value: String(format: "%+.1f", value),
             icon: "chart.line.uptrend.xyaxis",
             color: color,
-            subtitle: subtitle
+            subtitle: subtitle,
+            size: size
         )
     }
 
     /// Create a sessions count stat card
     static func sessionsCount(
         value: Int,
-        sessionType: String
+        sessionType: String,
+        size: CardSize = .medium
     ) -> StatCard {
         StatCard(
             title: sessionType,
             value: "\(value)",
             icon: "calendar",
             color: AppTheme.primary,
-            subtitle: value == 1 ? "session" : "sessions"
+            subtitle: value == 1 ? "session" : "sessions",
+            size: size
         )
     }
 }
