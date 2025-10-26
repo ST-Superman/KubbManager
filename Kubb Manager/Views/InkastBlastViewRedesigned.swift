@@ -591,9 +591,9 @@ struct InkastBlastActiveSessionView: View {
             isActive: true,
             currentRound: sessionManager.currentRoundNumber,
             totalRounds: nil,
-            currentPhase: sessionManager.currentPhase.rawValue,
+            currentPhase: sessionManager.roundPhase.rawValue,
             isWatchMode: false,
-            targetBatons: sessionManager.targetBatons,
+            targetBatons: nil,
             currentBatons: nil,
             hasALine: nil,
             currentAttackingTeam: nil
