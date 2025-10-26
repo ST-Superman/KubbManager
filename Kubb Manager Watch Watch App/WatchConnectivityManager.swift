@@ -514,13 +514,27 @@ extension WatchConnectivityManager: WCSessionDelegate {
     func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
         log("Received message from phone (with reply handler)")
         handleIncomingMessage(message)
-        
+
         // Send acknowledgment reply
         replyHandler([
             "messageType": WatchMessage.acknowledgment.rawValue
         ])
     }
-    
+
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+        log("Received application context from phone")
+        DispatchQueue.main.async {
+            // Try to parse as session state
+            if let state = WatchSessionState.fromDictionary(applicationContext) {
+                self.currentSessionState = state
+                self.isWatchMode = state.isWatchMode
+                self.log("✅ Session state received via application context: \(state.sessionType)")
+            } else {
+                self.log("⚠️ Received application context but couldn't parse as session state")
+            }
+        }
+    }
+
     // MARK: - Helper Methods
     
     private func updatePhoneState() {
