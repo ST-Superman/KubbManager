@@ -585,13 +585,26 @@ struct InkastBlastActiveSessionView: View {
     }
 
     private func handleSendToWatch() {
+        // Convert round phase to string
+        let phaseString: String
+        switch sessionManager.roundPhase {
+        case .inkast:
+            phaseString = "Inkast"
+        case .firstAttemptResults, .secondAttempt, .secondAttemptResults, .neighborCheck:
+            phaseString = "Inkast Setup"
+        case .blasting:
+            phaseString = "Blasting"
+        case .roundComplete:
+            phaseString = "Round Complete"
+        }
+
         // Create session state
         let sessionState = WatchSessionState(
             sessionType: "Inkast & Blast",
             isActive: true,
             currentRound: sessionManager.currentRoundNumber,
             totalRounds: nil,
-            currentPhase: sessionManager.roundPhase.rawValue,
+            currentPhase: phaseString,
             isWatchMode: false,
             targetBatons: nil,
             currentBatons: nil,
