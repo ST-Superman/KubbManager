@@ -576,7 +576,7 @@ struct BaseballKubbActiveGameView: View {
             targetBatons: nil,
             currentBatons: nil,
             hasALine: nil,
-            currentAttackingTeam: session.isTop ? session.awayTeam : session.homeTeam
+            currentAttackingTeam: session.isTop ? 1 : 2  // 1 for away team (top), 2 for home team (bottom)
         )
 
         // Send to watch
