@@ -217,6 +217,7 @@ struct FullGameSimActiveSessionView: View {
     @State private var showingSessionSummary = false
     @State private var showingHitRecording = false
     @State private var showingInkastRecording = false
+    @State private var showingSendToWatchSheet = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -235,17 +236,6 @@ struct FullGameSimActiveSessionView: View {
 
                         // Throw Controls
                         throwControlsCard
-
-                        // Watch Control Panel
-                        WatchSessionControlPanel(
-                            sessionType: "Full Game Sim",
-                            onStartWatchInput: {
-                                sessionManager.requestWatchInput()
-                            },
-                            onSendSessionState: {
-                                sessionManager.sendSessionStateToWatch()
-                            }
-                        )
                     }
                     .padding(Spacing.screenPadding)
                 }
@@ -261,16 +251,21 @@ struct FullGameSimActiveSessionView: View {
                 }
                 dismiss()
             },
-            trailing: Menu {
-                Button(sessionManager.isPaused ? "Resume" : "Pause") {
-                    if sessionManager.isPaused {
-                        sessionManager.resumeSession()
-                    } else {
-                        sessionManager.pauseSession()
-                    }
+            trailing: HStack(spacing: 12) {
+                WatchIconButton {
+                    showingSendToWatchSheet = true
                 }
 
-                Button("End Session") {
+                Menu {
+                    Button(sessionManager.isPaused ? "Resume" : "Pause") {
+                        if sessionManager.isPaused {
+                            sessionManager.resumeSession()
+                        } else {
+                            sessionManager.pauseSession()
+                        }
+                    }
+
+                    Button("End Session") {
                     sessionManager.endSession()
                     showingSessionSummary = true
                 }
@@ -287,6 +282,15 @@ struct FullGameSimActiveSessionView: View {
                     dismiss()
                 }
             }
+        }
+        .sheet(isPresented: $showingSendToWatchSheet) {
+            SendToWatchSheet(
+                isPresented: $showingSendToWatchSheet,
+                sessionType: "Full Game Sim",
+                onSendToWatch: {
+                    handleSendToWatch()
+                }
+            )
         }
         .onAppear {
             if sessionManager.isSessionActive {
@@ -658,6 +662,28 @@ struct FullGameSimActiveSessionView: View {
                 .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
             }
         }
+    }
+
+    private func handleSendToWatch() {
+        // Create session state
+        let sessionState = WatchSessionState(
+            sessionType: "Full Game Sim",
+            isActive: true,
+            currentRound: sessionManager.currentRoundNumber,
+            totalRounds: 3, // Full Game Sim is 3 rounds
+            currentPhase: sessionManager.currentPhase.rawValue,
+            isWatchMode: false,
+            targetBatons: nil,
+            currentBatons: nil,
+            hasALine: sessionManager.hasALine,
+            currentAttackingTeam: sessionManager.currentRoundIsUserAttacking ? "User" : "Opponent"
+        )
+
+        // Send to watch
+        WatchConnectivityManager.shared.sendSessionToWatch(
+            sessionType: "Full Game Sim",
+            sessionState: sessionState
+        )
     }
 }
 

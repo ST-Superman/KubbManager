@@ -202,6 +202,7 @@ struct InkastBlastActiveSessionView: View {
     @State private var showingInkastRecording = false
     @State private var showingHitRecording = false
     @State private var showingSessionSummary = false
+    @State private var showingSendToWatchSheet = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -219,17 +220,6 @@ struct InkastBlastActiveSessionView: View {
                     VStack(spacing: Spacing.sectionSpacing) {
                         // Round Phase Content
                         roundPhaseContent
-
-                        // Watch Control Panel
-                        WatchSessionControlPanel(
-                            sessionType: "Inkast & Blast",
-                            onStartWatchInput: {
-                                sessionManager.requestWatchInput()
-                            },
-                            onSendSessionState: {
-                                sessionManager.sendSessionStateToWatch()
-                            }
-                        )
                     }
                     .padding(Spacing.screenPadding)
                 }
@@ -247,14 +237,29 @@ struct InkastBlastActiveSessionView: View {
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(sessionManager.isPaused ? "Resume" : "Pause") {
-                    if sessionManager.isPaused {
-                        sessionManager.resumeSession()
-                    } else {
-                        sessionManager.pauseSession()
+                HStack(spacing: 16) {
+                    WatchIconButton {
+                        showingSendToWatchSheet = true
+                    }
+
+                    Button(sessionManager.isPaused ? "Resume" : "Pause") {
+                        if sessionManager.isPaused {
+                            sessionManager.resumeSession()
+                        } else {
+                            sessionManager.pauseSession()
+                        }
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showingSendToWatchSheet) {
+            SendToWatchSheet(
+                isPresented: $showingSendToWatchSheet,
+                sessionType: "Inkast & Blast",
+                onSendToWatch: {
+                    handleSendToWatch()
+                }
+            )
         }
         .sheet(isPresented: $showingInkastRecording) {
             InkastRecordingView(
@@ -577,6 +582,28 @@ struct InkastBlastActiveSessionView: View {
         .background(AppTheme.cardBackground)
         .cornerRadius(AppTheme.cornerRadiusMedium)
         .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+    }
+
+    private func handleSendToWatch() {
+        // Create session state
+        let sessionState = WatchSessionState(
+            sessionType: "Inkast & Blast",
+            isActive: true,
+            currentRound: sessionManager.currentRoundNumber,
+            totalRounds: nil,
+            currentPhase: sessionManager.currentPhase.rawValue,
+            isWatchMode: false,
+            targetBatons: sessionManager.targetBatons,
+            currentBatons: nil,
+            hasALine: nil,
+            currentAttackingTeam: nil
+        )
+
+        // Send to watch
+        WatchConnectivityManager.shared.sendSessionToWatch(
+            sessionType: "Inkast & Blast",
+            sessionState: sessionState
+        )
     }
 }
 

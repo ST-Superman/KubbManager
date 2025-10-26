@@ -372,6 +372,7 @@ struct BaseballKubbActiveGameView: View {
     @State private var showingHitModal = false
     @State private var showingHalfSummary = false
     @State private var showingMenu = false
+    @State private var showingSendToWatchSheet = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -397,8 +398,14 @@ struct BaseballKubbActiveGameView: View {
             leading: Button("Back") {
                 dismiss()
             },
-            trailing: Button("Menu") {
-                showingMenu = true
+            trailing: HStack(spacing: 16) {
+                WatchIconButton {
+                    showingSendToWatchSheet = true
+                }
+
+                Button("Menu") {
+                    showingMenu = true
+                }
             }
         )
         .sheet(isPresented: $showingHitModal) {
@@ -412,6 +419,15 @@ struct BaseballKubbActiveGameView: View {
             BaseballKubbMenuView(
                 sessionManager: sessionManager,
                 showingMenu: $showingMenu
+            )
+        }
+        .sheet(isPresented: $showingSendToWatchSheet) {
+            SendToWatchSheet(
+                isPresented: $showingSendToWatchSheet,
+                sessionType: "Baseball Kubb",
+                onSendToWatch: {
+                    handleSendToWatch()
+                }
             )
         }
     }
@@ -449,17 +465,6 @@ struct BaseballKubbActiveGameView: View {
                             sessionManager: sessionManager,
                             showingHitModal: $showingHitModal,
                             showingHalfSummary: $showingHalfSummary
-                        )
-
-                        // Watch Control Panel
-                        WatchSessionControlPanel(
-                            sessionType: "Baseball Kubb",
-                            onStartWatchInput: {
-                                sessionManager.requestWatchBatonInput()
-                            },
-                            onSendSessionState: {
-                                sessionManager.sendSessionStateToWatch()
-                            }
                         )
                     }
                     .padding(Spacing.screenPadding)
@@ -555,6 +560,30 @@ struct BaseballKubbActiveGameView: View {
             }
             .padding(Spacing.screenPadding)
         }
+    }
+
+    private func handleSendToWatch() {
+        guard let session = sessionManager.currentSession else { return }
+
+        // Create session state
+        let sessionState = WatchSessionState(
+            sessionType: "Baseball Kubb",
+            isActive: true,
+            currentRound: session.currentInning,
+            totalRounds: 9, // Baseball Kubb is 9 innings
+            currentPhase: session.isTop ? "Top" : "Bottom",
+            isWatchMode: false,
+            targetBatons: nil,
+            currentBatons: nil,
+            hasALine: nil,
+            currentAttackingTeam: session.isTop ? session.awayTeam : session.homeTeam
+        )
+
+        // Send to watch
+        WatchConnectivityManager.shared.sendSessionToWatch(
+            sessionType: "Baseball Kubb",
+            sessionState: sessionState
+        )
     }
 }
 
