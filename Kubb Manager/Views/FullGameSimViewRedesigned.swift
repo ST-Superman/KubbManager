@@ -666,6 +666,9 @@ struct FullGameSimActiveSessionView: View {
     }
 
     private func handleSendToWatch() {
+        // Enable Watch Mode so watch can drive the session
+        WatchConnectivityManager.shared.enableWatchMode()
+
         // Create session state
         let sessionState = WatchSessionState(
             sessionType: "Full Game Sim",
@@ -673,7 +676,7 @@ struct FullGameSimActiveSessionView: View {
             currentRound: sessionManager.currentRoundNumber,
             totalRounds: 3, // Full Game Sim is 3 rounds
             currentPhase: sessionManager.currentPhase.rawValue,
-            isWatchMode: false,
+            isWatchMode: true,  // Enable watch mode
             targetBatons: nil,
             currentBatons: nil,
             hasALine: nil,

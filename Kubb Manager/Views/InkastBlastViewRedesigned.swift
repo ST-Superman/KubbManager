@@ -585,6 +585,9 @@ struct InkastBlastActiveSessionView: View {
     }
 
     private func handleSendToWatch() {
+        // Enable Watch Mode so watch can drive the session
+        WatchConnectivityManager.shared.enableWatchMode()
+
         // Convert round phase to string
         let phaseString: String
         switch sessionManager.roundPhase {
@@ -605,7 +608,7 @@ struct InkastBlastActiveSessionView: View {
             currentRound: sessionManager.currentRoundNumber,
             totalRounds: nil,
             currentPhase: phaseString,
-            isWatchMode: false,
+            isWatchMode: true,  // Enable watch mode
             targetBatons: nil,
             currentBatons: nil,
             hasALine: nil,

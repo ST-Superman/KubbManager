@@ -282,6 +282,9 @@ struct PracticeViewRedesigned: View {
     }
 
     private func handleSendToWatch() {
+        // Enable Watch Mode so watch can drive the session
+        WatchConnectivityManager.shared.enableWatchMode()
+
         // Create session state
         let sessionState = WatchSessionState(
             sessionType: "8M Training",
@@ -289,7 +292,7 @@ struct PracticeViewRedesigned: View {
             currentRound: sessionManager.currentRound?.roundNumber ?? 1,
             totalRounds: nil,
             currentPhase: nil,
-            isWatchMode: false,
+            isWatchMode: true,  // Enable watch mode
             targetBatons: sessionManager.target,
             currentBatons: sessionManager.totalBatons,
             hasALine: nil,

@@ -565,6 +565,9 @@ struct BaseballKubbActiveGameView: View {
     private func handleSendToWatch() {
         guard let session = sessionManager.currentSession else { return }
 
+        // Enable Watch Mode so watch can drive the session
+        WatchConnectivityManager.shared.enableWatchMode()
+
         // Create session state
         let sessionState = WatchSessionState(
             sessionType: "Baseball Kubb",
@@ -572,7 +575,7 @@ struct BaseballKubbActiveGameView: View {
             currentRound: session.currentInning,
             totalRounds: 9, // Baseball Kubb is 9 innings
             currentPhase: session.isTop ? "Top" : "Bottom",
-            isWatchMode: false,
+            isWatchMode: true,  // Enable watch mode
             targetBatons: nil,
             currentBatons: nil,
             hasALine: nil,
