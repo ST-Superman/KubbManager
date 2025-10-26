@@ -266,11 +266,12 @@ struct FullGameSimActiveSessionView: View {
                     }
 
                     Button("End Session") {
-                    sessionManager.endSession()
-                    showingSessionSummary = true
+                        sessionManager.endSession()
+                        showingSessionSummary = true
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
-            } label: {
-                Image(systemName: "ellipsis.circle")
             }
         )
         .sheet(isPresented: $showingSessionSummary) {
@@ -675,8 +676,8 @@ struct FullGameSimActiveSessionView: View {
             isWatchMode: false,
             targetBatons: nil,
             currentBatons: nil,
-            hasALine: sessionManager.hasALine,
-            currentAttackingTeam: sessionManager.currentRoundIsUserAttacking ? "User" : "Opponent"
+            hasALine: nil,
+            currentAttackingTeam: nil
         )
 
         // Send to watch

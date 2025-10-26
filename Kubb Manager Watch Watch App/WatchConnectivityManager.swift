@@ -8,7 +8,9 @@
 
 import Foundation
 import WatchConnectivity
+#if canImport(WatchKit)
 import WatchKit
+#endif
 
 /// Manages communication between Apple Watch and iPhone with robust error handling
 class WatchConnectivityManager: NSObject, ObservableObject {
@@ -60,11 +62,23 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     }
     
     // MARK: - Logging
-    
+
     private func log(_ message: String) {
         print("⌚️ [Watch] \(message)")
     }
-    
+
+    // MARK: - Haptic Feedback
+
+    #if canImport(WatchKit)
+    private func playHaptic(_ type: WKHapticType) {
+        WKInterfaceDevice.current().play(type)
+    }
+    #else
+    private func playHaptic(_ type: Int) {
+        // Haptics not available
+    }
+    #endif
+
     // MARK: - Session State
     
     var isSessionActive: Bool {
@@ -150,7 +164,9 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         pendingInkastContext = nil
         
         // Provide haptic feedback
-        WKInterfaceDevice.current().play(.success)
+        #if canImport(WatchKit)
+        playHaptic(.success)
+        #endif
         
         log("✅ Result sent and cleared")
         
@@ -173,7 +189,9 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             pendingResultMessage = nil
             
             // Show error to user
-            WKInterfaceDevice.current().play(.failure)
+            #if canImport(WatchKit)
+            playHaptic(.failure)
+            #endif
             
             // Clear the pending contexts so user can try again manually
             // Don't clear them - let user see what they entered
@@ -326,7 +344,9 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             log("Session started: \(state.sessionType), watch mode: \(state.isWatchMode)")
             
             // Haptic feedback
-            WKInterfaceDevice.current().play(.start)
+            #if canImport(WatchKit)
+            playHaptic(.start)
+            #endif
         }
     }
     
@@ -340,7 +360,9 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         log("Session ended")
         
         // Haptic feedback
-        WKInterfaceDevice.current().play(.stop)
+        #if canImport(WatchKit)
+        playHaptic(.stop)
+        #endif
     }
     
     private func handleInputRequest(_ message: [String: Any]) {
@@ -381,8 +403,10 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         pendingInkastContext = nil
         
         // Haptic notification
-        WKInterfaceDevice.current().play(.notification)
-        
+        #if canImport(WatchKit)
+        playHaptic(.notification)
+        #endif
+
         log("Received baton throw request: \(promptText)")
     }
     
@@ -405,8 +429,10 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         pendingBatonContext = nil
         
         // Haptic notification
-        WKInterfaceDevice.current().play(.notification)
-        
+        #if canImport(WatchKit)
+        playHaptic(.notification)
+        #endif
+
         log("Received inkast request: \(promptText)")
     }
     
@@ -421,7 +447,9 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     private func handleEnableWatchMode() {
         isWatchMode = true
         log("Watch Mode enabled - watch will drive session flow")
-        WKInterfaceDevice.current().play(.success)
+        #if canImport(WatchKit)
+        playHaptic(.success)
+        #endif
     }
     
     private func handleDisableWatchMode() {
