@@ -253,20 +253,31 @@ class SessionManager: ObservableObject {
     
     func resetCurrentRound() async {
         guard var session = currentSession else { return }
-        
+
         session.resetCurrentRound()
         currentSession = session
-        
+
         // Save round reset
         await saveSession()
     }
-    
+
+    /// Undoes the last baton throw in the current round
+    func undoLastBatonThrow() async {
+        guard var session = currentSession else { return }
+
+        session.undoLastBatonThrow()
+        currentSession = session
+
+        // Save the undo action
+        await saveSession()
+    }
+
     func startNextRound() async {
         guard var session = currentSession else { return }
-        
+
         session.startNextRound()
         currentSession = session
-        
+
         // Save the new round
         await saveSession()
     }

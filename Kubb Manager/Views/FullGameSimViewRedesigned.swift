@@ -220,26 +220,36 @@ struct FullGameSimActiveSessionView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(spacing: Spacing.sectionSpacing) {
-                // Session Header
-                sessionHeaderView
+        ZStack(alignment: .top) {
+            AppTheme.surface.ignoresSafeArea()
 
-                // Phase Content
-                phaseContentView
+            VStack(spacing: 0) {
+                // Sticky Header
+                stickyHeaderView
 
-                // Watch Control Panel
-                WatchSessionControlPanel(
-                    sessionType: "Full Game Sim",
-                    onStartWatchInput: {
-                        sessionManager.requestWatchInput()
-                    },
-                    onSendSessionState: {
-                        sessionManager.sendSessionStateToWatch()
+                // Scrollable Content
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: Spacing.sectionSpacing) {
+                        // Phase Content
+                        phaseContentView
+
+                        // Throw Controls
+                        throwControlsCard
+
+                        // Watch Control Panel
+                        WatchSessionControlPanel(
+                            sessionType: "Full Game Sim",
+                            onStartWatchInput: {
+                                sessionManager.requestWatchInput()
+                            },
+                            onSendSessionState: {
+                                sessionManager.sendSessionStateToWatch()
+                            }
+                        )
                     }
-                )
+                    .padding(Spacing.screenPadding)
+                }
             }
-            .padding(Spacing.screenPadding)
         }
         .navigationTitle("Round \(sessionManager.currentRoundNumber)")
         .navigationBarTitleDisplayMode(.inline)
@@ -286,9 +296,9 @@ struct FullGameSimActiveSessionView: View {
         }
     }
 
-    // MARK: - Session Header
+    // MARK: - Sticky Header
 
-    private var sessionHeaderView: some View {
+    private var stickyHeaderView: some View {
         VStack(spacing: Spacing.md) {
             // Round Info
             HStack {
@@ -512,53 +522,6 @@ struct FullGameSimActiveSessionView: View {
                 currentBaton: getCurrentBatonForAttackingPhase(round),
                 totalBatons: getBatonLimitForRound(round.roundNumber)
             )
-
-            // Hit/Miss Buttons
-            HStack(spacing: Spacing.xl) {
-                // Miss Button
-                Button(action: {
-                    if hasFieldKubbsRemaining(round) {
-                        sessionManager.addBlastBatonThrow(isHit: false)
-                    } else {
-                        sessionManager.addEightMeterBatonThrow(isHit: false)
-                    }
-                }) {
-                    VStack(spacing: Spacing.md) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white)
-
-                        Text("MISS")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                    }
-                    .frame(width: 140, height: 140)
-                    .background(AppTheme.error)
-                    .cornerRadius(AppTheme.cornerRadiusLarge)
-                    .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
-                }
-
-                // Hit Button
-                Button(action: {
-                    showingHitRecording = true
-                }) {
-                    VStack(spacing: Spacing.md) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white)
-
-                        Text("HIT")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                    }
-                    .frame(width: 140, height: 140)
-                    .background(AppTheme.success)
-                    .cornerRadius(AppTheme.cornerRadiusLarge)
-                    .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
-                }
-            }
         }
         .padding(Spacing.md)
         .background(AppTheme.cardBackground)
@@ -606,6 +569,95 @@ struct FullGameSimActiveSessionView: View {
 
     private func hasFieldKubbsRemaining(_ round: FullGameSimRoundStruct) -> Bool {
         return round.inkastData.totalKubbsInBounds - round.blastData.kubbsClearedFirstThrow > 0
+    }
+
+    // MARK: - Throw Controls Card
+
+    private var throwControlsCard: some View {
+        Group {
+            if sessionManager.currentPhase == .attacking, let round = sessionManager.currentRound {
+                VStack(spacing: Spacing.md) {
+                    Text("Baton \(getCurrentBatonForAttackingPhase(round))")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.textPrimary)
+
+                    // Hit/Miss Buttons
+                    HStack(spacing: Spacing.md) {
+                        // Miss Button
+                        Button(action: {
+                            if hasFieldKubbsRemaining(round) {
+                                sessionManager.addBlastBatonThrow(isHit: false)
+                            } else {
+                                sessionManager.addEightMeterBatonThrow(isHit: false)
+                            }
+                        }) {
+                            HStack(spacing: Spacing.sm) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white)
+
+                                Text("MISS")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 70)
+                            .background(AppTheme.error)
+                            .cornerRadius(AppTheme.cornerRadiusMedium)
+                            .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+                        }
+
+                        // Hit Button
+                        Button(action: {
+                            showingHitRecording = true
+                        }) {
+                            HStack(spacing: Spacing.sm) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white)
+
+                                Text("HIT")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 70)
+                            .background(AppTheme.success)
+                            .cornerRadius(AppTheme.cornerRadiusMedium)
+                            .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+                        }
+                    }
+
+                    // Undo Button
+                    if !round.blastData.batonThrows.isEmpty || !round.eightMeterData.batonThrows.isEmpty {
+                        Button(action: {
+                            sessionManager.undoLastThrow()
+                        }) {
+                            HStack(spacing: Spacing.sm) {
+                                Image(systemName: "arrow.uturn.backward.circle.fill")
+                                    .font(.system(size: 20))
+
+                                Text("Undo Last Throw")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(AppTheme.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(AppTheme.primary.opacity(0.1))
+                            .cornerRadius(AppTheme.cornerRadiusSmall)
+                        }
+                    }
+                }
+                .padding(Spacing.md)
+                .background(AppTheme.cardBackground)
+                .cornerRadius(AppTheme.cornerRadiusMedium)
+                .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+            }
+        }
     }
 }
 

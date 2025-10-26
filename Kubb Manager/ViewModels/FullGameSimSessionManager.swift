@@ -464,7 +464,34 @@ class FullGameSimSessionManager: ObservableObject {
         
         updateSessionStats()
     }
-    
+
+    // MARK: - Undo Function
+
+    func undoLastThrow() {
+        guard var round = currentRound else { return }
+
+        // Check which phase we're in and undo the appropriate throw
+        if currentPhase == .attacking {
+            // First try to undo 8-meter throw
+            if !round.eightMeterData.batonThrows.isEmpty {
+                round.eightMeterData.batonThrows.removeLast()
+                round.eightMeterData.batonsUsed -= 1
+                currentRound = round
+                updateSessionStats()
+                return
+            }
+
+            // Then try to undo blast throw
+            if !round.blastData.batonThrows.isEmpty {
+                round.blastData.batonThrows.removeLast()
+                round.blastData.batonsUsed -= 1
+                currentRound = round
+                updateSessionStats()
+                return
+            }
+        }
+    }
+
     // MARK: - Round Completion Helper Functions
     
     private func getBatonLimitForRound(_ roundNumber: Int) -> Int {

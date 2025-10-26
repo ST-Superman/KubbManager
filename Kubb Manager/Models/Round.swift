@@ -105,7 +105,21 @@ struct Round: Identifiable, Codable, Equatable {
         batonThrows = []
         isComplete = false
     }
-    
+
+    /// Removes the last baton throw from the round
+    /// Returns the removed throw, or nil if there were no throws to undo
+    @discardableResult
+    mutating func undoLastThrow() -> BatonThrow? {
+        guard !batonThrows.isEmpty else { return nil }
+
+        let removedThrow = batonThrows.removeLast()
+
+        // Update completion status - round is no longer complete if we undid a throw
+        isComplete = isRoundComplete
+
+        return removedThrow
+    }
+
     // MARK: - Kubb State Helpers (for backward compatibility)
     
     func kubbState(at index: Int) -> Bool {

@@ -37,7 +37,7 @@ struct EightMeterTrainingView: View {
                 
                 // Practice Tab
                 if sessionManager.isSessionActive {
-                    PracticeView()
+                    PracticeViewRedesigned()
                         .tabItem {
                             Image(systemName: "target")
                             Text("Practice")

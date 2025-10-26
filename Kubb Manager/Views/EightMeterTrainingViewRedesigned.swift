@@ -132,7 +132,7 @@ struct PracticeNavigationDestination: View {
     var body: some View {
         Group {
             if sessionManager.isSessionActive {
-                PracticeView()
+                PracticeViewRedesigned()
                     .navigationTitle("Practice")
                     .navigationBarTitleDisplayMode(.inline)
             } else if sessionManager.hasIncompleteSession() {
@@ -169,7 +169,7 @@ struct TodayStatsOverview: View {
 
                 StatCard(
                     title: "Current Accuracy",
-                    value: String(format: "%.1f%%", sessionManager.accuracy * 100),
+                    value: String(format: "%.1f%%", todaysAccuracy * 100),
                     icon: "target",
                     color: AppTheme.accuracy,
                     size: .medium
@@ -182,6 +182,11 @@ struct TodayStatsOverview: View {
                     color: AppTheme.primary,
                     size: .medium
                 )
+            }
+        }
+        .onAppear {
+            Task {
+                await historyManager.refreshSessions()
             }
         }
     }
@@ -198,6 +203,20 @@ struct TodayStatsOverview: View {
         return historyManager.sessions
             .filter { Calendar.current.isDate($0.date, inSameDayAs: today) }
             .count
+    }
+
+    private var todaysAccuracy: Double {
+        let today = Calendar.current.startOfDay(for: Date())
+        let todaysSessions = historyManager.sessions
+            .filter { Calendar.current.isDate($0.date, inSameDayAs: today) }
+
+        guard !todaysSessions.isEmpty else { return 0.0 }
+
+        let totalHits = todaysSessions.reduce(0) { $0 + $1.totalKubbs }
+        let totalThrows = todaysSessions.reduce(0) { $0 + $1.totalBatons }
+
+        guard totalThrows > 0 else { return 0.0 }
+        return Double(totalHits) / Double(totalThrows)
     }
 }
 
@@ -250,6 +269,11 @@ struct PersonalRecordsCompact: View {
                         color: AppTheme.accent,
                         size: .small
                     )
+                }
+            }
+            .onAppear {
+                Task {
+                    await statsManager.refreshAllSessions()
                 }
             }
         }

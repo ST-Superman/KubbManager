@@ -476,12 +476,12 @@ struct GameLogsTabView: View {
                     VStack(spacing: 16) {
                     // Game Mode Buttons
                     VStack(spacing: 20) {
-                        // Baseball Kubb
+                        // Baseball Kubb (Temporarily Disabled)
                         GameModeButton(
                             title: "Baseball Kubb",
-                            description: "Baseball-style Kubb game with innings and scoring",
+                            description: "Baseball-style Kubb game with innings and scoring (Coming Soon)",
                             icon: "baseball_kubb",
-                            isAvailable: true
+                            isAvailable: false
                         ) {
                             showingBaseballKubb = true
                         }

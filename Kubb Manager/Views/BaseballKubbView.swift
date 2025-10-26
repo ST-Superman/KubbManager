@@ -124,7 +124,7 @@ struct BaseballKubbStartView: View {
     @Binding var showingHalfSummary: Bool
     @State private var awayTeam = ""
     @State private var homeTeam = ""
-    @State private var selectedUserTeam: UserTeam = .away
+    @State private var selectedUserTeam: UserTeam? = nil
     @State private var showingAbandonConfirmation = false
     @State private var showingTutorial = false
     
@@ -261,7 +261,7 @@ struct BaseballKubbStartView: View {
                 }
                 
                 Button(action: {
-                    print("🎮 Starting game with teams: \(awayTeam) vs \(homeTeam), User team: \(selectedUserTeam)")
+                    print("🎮 Starting game with teams: \(awayTeam) vs \(homeTeam), User team: \(selectedUserTeam?.rawValue ?? "none")")
                     startGame()
                 }) {
                     HStack(spacing: 12) {
@@ -301,11 +301,12 @@ struct BaseballKubbStartView: View {
     }
     
     private var canStartGame: Bool {
-        !awayTeam.isEmpty && !homeTeam.isEmpty && awayTeam != homeTeam
+        !awayTeam.isEmpty && !homeTeam.isEmpty && awayTeam != homeTeam && selectedUserTeam != nil
     }
     
     private func startGame() {
-        sessionManager.startNewGame(awayTeam: awayTeam, homeTeam: homeTeam, userTeam: selectedUserTeam)
+        guard let userTeam = selectedUserTeam else { return }
+        sessionManager.startNewGame(awayTeam: awayTeam, homeTeam: homeTeam, userTeam: userTeam)
     }
 }
 

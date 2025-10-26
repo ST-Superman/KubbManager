@@ -173,23 +173,60 @@ class InkastBlastSessionManager: ObservableObject {
     
     func addBatonThrowWithKubbs(isHit: Bool, newlyKnockedDownKubbs: Set<Int>) {
         guard var round = currentRound else { return }
-        
+
         // Update the knocked down kubbs set
         if isHit {
             knockedDownKubbs.formUnion(newlyKnockedDownKubbs)
         }
-        
+
         // Add the baton throw with the count of newly knocked down kubbs
         round.addBatonThrow(isHit: isHit, kubbsHit: newlyKnockedDownKubbs.count)
         currentRound = round
-        
+
         // Check if round is complete
         if round.isComplete {
             completeCurrentRound()
         }
     }
-    
-    
+
+    /// Undoes the last baton throw in the current round
+    func undoLastBatonThrow() {
+        guard var round = currentRound else { return }
+        guard !round.batonThrows.isEmpty else { return }
+
+        // Get the last throw before removing it
+        let lastThrow = round.batonThrows.last!
+
+        // Remove the baton throw from the round
+        round.batonThrows.removeLast()
+        round.batonsUsed -= 1
+
+        // Update knocked down kubbs if it was a hit
+        if lastThrow.isHit && lastThrow.kubbsHit > 0 {
+            // Remove the kubbs that were knocked down by this throw
+            let startIndex = max(0, knockedDownKubbs.count - lastThrow.kubbsHit)
+
+            for i in startIndex..<knockedDownKubbs.count {
+                knockedDownKubbs.remove(i)
+            }
+        }
+
+        // Recalculate misses
+        round.misses = round.batonThrows.filter { !$0.isHit }.count
+
+        // Update round completion status
+        round.isComplete = false
+
+        // Update the current round
+        currentRound = round
+
+        // Reset round phase if it was complete
+        if roundPhase == .roundComplete {
+            roundPhase = .blasting
+        }
+    }
+
+
     func completeCurrentRound() {
         guard var session = currentSession,
               var round = currentRound else { return }

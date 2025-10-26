@@ -137,10 +137,14 @@ struct GamePhaseCard: View {
 
     private var phaseColor: Color {
         switch phase {
-        case .early: return AppTheme.phaseEarly
-        case .mid: return AppTheme.phaseMid
-        case .end: return AppTheme.phaseEnd
-        case .all: return AppTheme.primary
+        case .early:
+            return AppTheme.phaseEarly
+        case .mid:
+            return AppTheme.phaseMid
+        case .end:
+            return AppTheme.phaseEnd
+        case .all:
+            return AppTheme.primary
         }
     }
 
@@ -201,28 +205,35 @@ struct InkastBlastActiveSessionView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(spacing: Spacing.sectionSpacing) {
-                // Session Header with Round Info
+        ZStack(alignment: .top) {
+            AppTheme.surface.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Sticky Header
                 if let round = sessionManager.currentRound {
-                    sessionHeaderCard(round: round)
+                    stickyHeaderCard(round: round)
                 }
 
-                // Round Phase Content
-                roundPhaseContent
+                // Scrollable Content
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: Spacing.sectionSpacing) {
+                        // Round Phase Content
+                        roundPhaseContent
 
-                // Watch Control Panel
-                WatchSessionControlPanel(
-                    sessionType: "Inkast & Blast",
-                    onStartWatchInput: {
-                        sessionManager.requestWatchInput()
-                    },
-                    onSendSessionState: {
-                        sessionManager.sendSessionStateToWatch()
+                        // Watch Control Panel
+                        WatchSessionControlPanel(
+                            sessionType: "Inkast & Blast",
+                            onStartWatchInput: {
+                                sessionManager.requestWatchInput()
+                            },
+                            onSendSessionState: {
+                                sessionManager.sendSessionStateToWatch()
+                            }
+                        )
                     }
-                )
+                    .padding(Spacing.screenPadding)
+                }
             }
-            .padding(Spacing.screenPadding)
         }
         .navigationTitle("Round \(sessionManager.currentRoundNumber)")
         .navigationBarTitleDisplayMode(.inline)
@@ -292,53 +303,64 @@ struct InkastBlastActiveSessionView: View {
         }
     }
 
-    // MARK: - Session Header Card
+    // MARK: - Sticky Header Card
 
-    private func sessionHeaderCard(round: InkastBlastRoundData) -> some View {
-        VStack(spacing: Spacing.md) {
-            HStack {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
+    private func stickyHeaderCard(round: InkastBlastRoundData) -> some View {
+        VStack(spacing: Spacing.sm) {
+            HStack(spacing: Spacing.md) {
+                // Round and Phase Info
+                VStack(alignment: .leading, spacing: 2) {
                     Text("Round \(sessionManager.currentRoundNumber)")
-                        .font(.title2)
+                        .font(.headline)
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.textPrimary)
 
-                    Text(sessionManager.currentSession?.gamePhase.rawValue ?? "")
+                    Text(phaseDisplayName)
                         .font(.caption)
                         .foregroundColor(AppTheme.textSecondary)
                 }
 
                 Spacer()
 
-                if sessionManager.isPaused {
-                    HStack(spacing: Spacing.xs) {
-                        Image(systemName: "pause.circle.fill")
-                            .foregroundColor(AppTheme.warning)
-                        Text("Paused")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(AppTheme.warning)
-                    }
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
-                    .background(AppTheme.warning.opacity(0.1))
-                    .cornerRadius(AppTheme.cornerRadiusSmall)
+                // Stats Compact
+                HStack(spacing: Spacing.md) {
+                    StatItemCompact(label: "Kubbs", value: "\(round.inkastKubbs)", color: AppTheme.inkastBlast)
+                    StatItemCompact(label: "Target", value: "\(round.targetBatons)", color: AppTheme.primary)
+                    StatItemCompact(label: "Used", value: "\(round.batonsUsed)", color: round.batonsUsed <= round.targetBatons ? AppTheme.success : AppTheme.error)
                 }
             }
 
-            Divider()
-
-            // Round Stats
-            HStack(spacing: Spacing.lg) {
-                StatItem(label: "Inkast", value: "\(round.inkastKubbs)")
-                StatItem(label: "Target", value: "\(round.targetBatons)")
-                StatItem(label: "Used", value: "\(round.batonsUsed)")
+            // Phase indicator bar
+            if sessionManager.roundPhase == .blasting {
+                ProgressView(value: Double(round.batonsUsed), total: Double(max(round.targetBatons, round.batonsUsed)))
+                    .tint(round.batonsUsed <= round.targetBatons ? AppTheme.success : AppTheme.error)
+                    .frame(height: 4)
             }
         }
         .padding(Spacing.md)
-        .background(AppTheme.cardBackground)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
-        .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+        .background(
+            AppTheme.cardBackground
+                .shadow(color: AppTheme.shadowStrong, radius: 8, y: 4)
+        )
+    }
+
+    private var phaseDisplayName: String {
+        switch sessionManager.roundPhase {
+        case .inkast:
+            return "Inkast Phase"
+        case .blasting:
+            return "Blasting Phase"
+        case .roundComplete:
+            return "Complete"
+        case .firstAttemptResults:
+            return "First Attempt"
+        case .secondAttempt:
+            return "Second Attempt"
+        case .secondAttemptResults:
+            return "Second Attempt"
+        case .neighborCheck:
+            return "Neighbor Check"
+        }
     }
 
     // MARK: - Round Phase Content
@@ -352,7 +374,7 @@ struct InkastBlastActiveSessionView: View {
             blastingPhaseView
         case .roundComplete:
             roundCompleteView
-        default:
+        case .firstAttemptResults, .secondAttempt, .secondAttemptResults, .neighborCheck:
             // Other phases handled by session manager
             EmptyView()
         }
@@ -400,48 +422,38 @@ struct InkastBlastActiveSessionView: View {
 
     private var blastingPhaseView: some View {
         VStack(spacing: Spacing.lg) {
-            VStack(spacing: Spacing.sm) {
-                Text("Blasting Phase")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppTheme.textPrimary)
+            if let round = sessionManager.currentRound {
+                // Throw History Card
+                InkastThrowHistoryCard(batonThrows: round.batonThrows)
 
-                if let round = sessionManager.currentRound {
-                    Text("Clear the kubbs with as few batons as possible")
-                        .font(.body)
-                        .foregroundColor(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
+                // Baton Visual
+                BatonRow(
+                    skin: skinManager.selectedBatonSkin,
+                    currentBaton: round.batonsUsed + 1,
+                    totalBatons: 6
+                )
 
-                    Text("Target: \(round.targetBatons) batons")
-                        .font(.headline)
-                        .foregroundColor(AppTheme.primary)
-
-                    // Baton visual
-                    BatonRow(
-                        skin: skinManager.selectedBatonSkin,
-                        currentBaton: round.batonsUsed + 1,
-                        totalBatons: 6
-                    )
-
-                    // Hit/Miss Buttons
-                    HStack(spacing: Spacing.xl) {
+                // Hit/Miss Buttons
+                VStack(spacing: Spacing.md) {
+                    HStack(spacing: Spacing.md) {
                         // Miss Button
                         Button(action: {
                             sessionManager.addBatonThrow(isHit: false)
                         }) {
-                            VStack(spacing: Spacing.md) {
+                            HStack(spacing: Spacing.sm) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 60))
+                                    .font(.system(size: 32))
                                     .foregroundColor(.white)
 
                                 Text("MISS")
-                                    .font(.headline)
+                                    .font(.title2)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
                             }
-                            .frame(width: 140, height: 140)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 70)
                             .background(AppTheme.error)
-                            .cornerRadius(AppTheme.cornerRadiusLarge)
+                            .cornerRadius(AppTheme.cornerRadiusMedium)
                             .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
                         }
 
@@ -449,26 +461,48 @@ struct InkastBlastActiveSessionView: View {
                         Button(action: {
                             showingHitRecording = true
                         }) {
-                            VStack(spacing: Spacing.md) {
+                            HStack(spacing: Spacing.sm) {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 60))
+                                    .font(.system(size: 32))
                                     .foregroundColor(.white)
 
                                 Text("HIT")
-                                    .font(.headline)
+                                    .font(.title2)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
                             }
-                            .frame(width: 140, height: 140)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 70)
                             .background(AppTheme.success)
-                            .cornerRadius(AppTheme.cornerRadiusLarge)
+                            .cornerRadius(AppTheme.cornerRadiusMedium)
                             .shadow(color: AppTheme.shadowMedium, radius: 4, y: 2)
+                        }
+                    }
+
+                    // Undo Button
+                    if !round.batonThrows.isEmpty {
+                        Button(action: {
+                            sessionManager.undoLastBatonThrow()
+                        }) {
+                            HStack(spacing: Spacing.sm) {
+                                Image(systemName: "arrow.uturn.backward.circle.fill")
+                                    .font(.system(size: 20))
+
+                                Text("Undo Last Throw")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(AppTheme.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(AppTheme.primary.opacity(0.1))
+                            .cornerRadius(AppTheme.cornerRadiusMedium)
                         }
                     }
                 }
             }
         }
-        .padding(Spacing.lg)
+        .padding(Spacing.md)
         .frame(maxWidth: .infinity)
         .background(AppTheme.cardBackground)
         .cornerRadius(AppTheme.cornerRadiusMedium)
@@ -563,6 +597,87 @@ struct StatItem: View {
                 .font(.caption)
                 .foregroundColor(AppTheme.textSecondary)
         }
+    }
+}
+
+struct StatItemCompact: View {
+    let label: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(color)
+
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundColor(AppTheme.textSecondary)
+        }
+    }
+}
+
+private struct InkastThrowHistoryCard: View {
+    let batonThrows: [InkastBatonThrowData]
+
+    var recentThrows: [(isHit: Bool, kubbsHit: Int)] {
+        batonThrows.map { (isHit: $0.isHit, kubbsHit: $0.kubbsHit) }
+    }
+
+    var body: some View {
+        VStack(spacing: Spacing.sm) {
+            HStack {
+                Text("This Round")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(AppTheme.textSecondary)
+
+                Spacer()
+
+                if !recentThrows.isEmpty {
+                    Text("\(recentThrows.filter { $0.isHit }.count)/\(recentThrows.count)")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+            }
+
+            HStack(spacing: Spacing.xs) {
+                ForEach(0..<6, id: \.self) { index in
+                    if index < recentThrows.count {
+                        let throwData = recentThrows[index]
+                        ZStack {
+                            Circle()
+                                .fill(throwData.isHit ? AppTheme.success : AppTheme.error)
+                                .frame(width: 32, height: 32)
+
+                            if throwData.isHit && throwData.kubbsHit > 1 {
+                                ZStack {
+                                    Circle()
+                                        .fill(.white)
+                                        .frame(width: 18, height: 18)
+
+                                    Text("\(throwData.kubbsHit)")
+                                        .font(.system(size: 11, weight: .black))
+                                        .foregroundColor(AppTheme.success)
+                                }
+                            } else {
+                                Image(systemName: throwData.isHit ? "checkmark" : "xmark")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    } else {
+                        Circle()
+                            .fill(AppTheme.textSecondary.opacity(0.15))
+                            .frame(width: 32, height: 32)
+                    }
+                }
+            }
+        }
+        .padding(Spacing.md)
+        .background(AppTheme.cardBackground.opacity(0.5))
+        .cornerRadius(AppTheme.cornerRadiusMedium)
     }
 }
 

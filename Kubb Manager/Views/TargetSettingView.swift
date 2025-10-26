@@ -122,7 +122,7 @@ struct TargetSettingView: View {
         }
         .sheet(isPresented: $showingSession) {
             if sessionManager.isSessionActive {
-                PracticeView()
+                PracticeViewRedesigned()
             }
         }
         .alert("Error", isPresented: $showingError) {

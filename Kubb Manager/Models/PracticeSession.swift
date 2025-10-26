@@ -458,4 +458,28 @@ struct PracticeSession: Identifiable, Codable, Equatable {
         // Update modification time
         modifiedAt = Date()
     }
+
+    /// Removes the last baton throw from the current round
+    /// Updates session totals accordingly
+    mutating func undoLastBatonThrow() {
+        guard let currentRound = currentRound else { return }
+        guard let index = rounds.firstIndex(where: { $0.id == currentRound.id }) else { return }
+
+        var updatedRound = rounds[index]
+
+        // Remove the last throw from the round
+        guard let removedThrow = updatedRound.undoLastThrow() else { return }
+
+        // Update session totals
+        totalBatons -= 1
+        if removedThrow.isHit {
+            totalKubbs -= 1
+        }
+
+        // Update the round in the array
+        rounds[index] = updatedRound
+
+        // Update modification time
+        modifiedAt = Date()
+    }
 }
