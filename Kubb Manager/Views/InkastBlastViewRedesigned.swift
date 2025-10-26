@@ -617,6 +617,9 @@ struct InkastBlastActiveSessionView: View {
             sessionType: "Inkast & Blast",
             sessionState: sessionState
         )
+
+        // Immediately request input on watch so user can start recording
+        sessionManager.requestWatchInput()
     }
 }
 

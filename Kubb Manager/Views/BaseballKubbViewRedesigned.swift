@@ -584,6 +584,9 @@ struct BaseballKubbActiveGameView: View {
             sessionType: "Baseball Kubb",
             sessionState: sessionState
         )
+
+        // Immediately request input on watch so user can start recording
+        sessionManager.requestWatchBatonInput()
     }
 }
 

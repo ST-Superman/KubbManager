@@ -301,6 +301,9 @@ struct PracticeViewRedesigned: View {
             sessionType: "8M Training",
             sessionState: sessionState
         )
+
+        // Immediately request input on watch so user can start recording
+        sessionManager.requestWatchBatonInput()
     }
 }
 

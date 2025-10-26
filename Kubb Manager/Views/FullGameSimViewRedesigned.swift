@@ -685,6 +685,9 @@ struct FullGameSimActiveSessionView: View {
             sessionType: "Full Game Sim",
             sessionState: sessionState
         )
+
+        // Immediately request input on watch so user can start recording
+        sessionManager.requestWatchInput()
     }
 }
 
