@@ -488,6 +488,212 @@ struct CompactWatchButton: View {
     }
 }
 
+// MARK: - Watch Icon Button (for Navigation Bar)
+
+/// Compact watch icon button for navigation bar - shows connection state
+struct WatchIconButton: View {
+    @ObservedObject var watchManager = WatchConnectivityManager.shared
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "applewatch")
+                    .font(.title3)
+                    .foregroundColor(iconColor)
+
+                // Connection status indicator dot
+                if watchManager.isWatchPaired && watchManager.isWatchAppInstalled {
+                    Circle()
+                        .fill(watchManager.isWatchReachable ? Color.green : Color.orange)
+                        .frame(width: 8, height: 8)
+                        .offset(x: 4, y: -4)
+                }
+            }
+        }
+    }
+
+    private var iconColor: Color {
+        if !watchManager.isWatchPaired || !watchManager.isWatchAppInstalled {
+            return .gray
+        }
+        return watchManager.isWatchReachable ? AppTheme.primary : .orange
+    }
+}
+
+// MARK: - Send to Watch Sheet
+
+/// Sheet that appears when user taps watch icon to send session to watch
+struct SendToWatchSheet: View {
+    @ObservedObject var watchManager = WatchConnectivityManager.shared
+    @Binding var isPresented: Bool
+
+    let sessionType: String
+    let onSendToWatch: () -> Void
+
+    @State private var hasSent = false
+    @State private var isRequestingPermission = false
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: Spacing.lg) {
+                // Watch icon with status
+                ZStack {
+                    Circle()
+                        .fill(statusColor.opacity(0.1))
+                        .frame(width: 100, height: 100)
+
+                    Image(systemName: "applewatch")
+                        .font(.system(size: 50))
+                        .foregroundColor(statusColor)
+                }
+                .padding(.top, Spacing.xl)
+
+                // Status text
+                VStack(spacing: Spacing.sm) {
+                    Text(statusTitle)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppTheme.textPrimary)
+
+                    Text(statusMessage)
+                        .font(.body)
+                        .foregroundColor(AppTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Spacing.lg)
+                }
+
+                Spacer()
+
+                // Action buttons
+                VStack(spacing: Spacing.md) {
+                    if !hasSent {
+                        // Send button
+                        if canSendToWatch {
+                            ActionButton.primary("Send Session to Watch", icon: "applewatch") {
+                                handleSendToWatch()
+                            }
+                            .disabled(isRequestingPermission)
+                        } else {
+                            // Show why they can't send
+                            VStack(spacing: Spacing.sm) {
+                                Text(connectionIssue)
+                                    .font(.subheadline)
+                                    .foregroundColor(AppTheme.error)
+                                    .multilineTextAlignment(.center)
+                                    .padding()
+                                    .background(AppTheme.error.opacity(0.1))
+                                    .cornerRadius(AppTheme.cornerRadiusSmall)
+                            }
+                        }
+                    } else {
+                        // Already sent - show success
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(AppTheme.success)
+                            Text("Session sent successfully!")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(AppTheme.success)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(AppTheme.success.opacity(0.1))
+                        .cornerRadius(AppTheme.cornerRadiusSmall)
+                    }
+
+                    // Cancel/Done button
+                    ActionButton.secondary(hasSent ? "Done" : "Cancel", icon: nil) {
+                        isPresented = false
+                    }
+                }
+                .padding(.horizontal, Spacing.screenPadding)
+                .padding(.bottom, Spacing.screenPadding)
+            }
+            .background(AppTheme.surface)
+            .navigationTitle("Send to Watch")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        isPresented = false
+                    }
+                }
+            }
+        }
+    }
+
+    private var canSendToWatch: Bool {
+        return watchManager.isWatchPaired && watchManager.isWatchAppInstalled
+    }
+
+    private var statusColor: Color {
+        if !watchManager.isWatchPaired || !watchManager.isWatchAppInstalled {
+            return .gray
+        }
+        return watchManager.isWatchReachable ? AppTheme.success : .orange
+    }
+
+    private var statusTitle: String {
+        if hasSent {
+            return "Session Ready!"
+        } else if !watchManager.isWatchPaired {
+            return "No Watch Paired"
+        } else if !watchManager.isWatchAppInstalled {
+            return "App Not Installed"
+        } else if watchManager.isWatchReachable {
+            return "Watch Connected"
+        } else {
+            return "Watch Not Reachable"
+        }
+    }
+
+    private var statusMessage: String {
+        if hasSent {
+            return "Check your Apple Watch for a notification. Tap it to open the session in Kubb Manager."
+        } else if !watchManager.isWatchPaired {
+            return "Please pair your Apple Watch with your iPhone to use this feature."
+        } else if !watchManager.isWatchAppInstalled {
+            return "Please install the Kubb Manager app on your Apple Watch."
+        } else if watchManager.isWatchReachable {
+            return "Your watch is connected and ready. Tap 'Send Session to Watch' to start."
+        } else {
+            return "Your watch is paired but not currently reachable. Make sure it's unlocked and nearby, then try again."
+        }
+    }
+
+    private var connectionIssue: String {
+        if !watchManager.isWatchPaired {
+            return "Please pair your Apple Watch in the Watch app"
+        } else if !watchManager.isWatchAppInstalled {
+            return "Please install Kubb Manager on your Apple Watch"
+        } else {
+            return "Ensure your watch is unlocked and nearby"
+        }
+    }
+
+    private func handleSendToWatch() {
+        // Request notification permission first
+        isRequestingPermission = true
+
+        watchManager.requestNotificationPermission { granted in
+            DispatchQueue.main.async {
+                isRequestingPermission = false
+
+                if granted {
+                    // Permission granted, send to watch
+                    onSendToWatch()
+                    hasSent = true
+                } else {
+                    // Permission denied - still send but without notification
+                    onSendToWatch()
+                    hasSent = true
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Preview
 
 #Preview {

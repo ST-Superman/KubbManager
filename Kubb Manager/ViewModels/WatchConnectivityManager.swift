@@ -8,6 +8,7 @@
 
 import Foundation
 import WatchConnectivity
+import UserNotifications
 
 /// Manages communication between iPhone and Apple Watch with robust error handling and retry logic
 class WatchConnectivityManager: NSObject, ObservableObject {
@@ -139,7 +140,82 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         queueMessage(message, priority: .high, requiresReply: false)
         log("Watch Mode disabled - phone controls session flow")
     }
-    
+
+    // MARK: - Send Session to Watch
+
+    /// Sends session to watch using application context and triggers notification
+    func sendSessionToWatch(sessionType: String, sessionState: WatchSessionState) {
+        // Send application context so data is ready when user opens watch app
+        updateApplicationContext(sessionState)
+
+        // Send notification to prompt user to open watch app
+        sendWatchNotification(sessionType: sessionType)
+
+        log("Session sent to watch: \(sessionType)")
+    }
+
+    /// Updates application context with session state
+    private func updateApplicationContext(_ state: WatchSessionState) {
+        guard let session = session else {
+            log("❌ No session available for application context update")
+            return
+        }
+
+        let context = state.toDictionary()
+
+        do {
+            try session.updateApplicationContext(context)
+            log("✅ Application context updated successfully")
+        } catch {
+            log("❌ Failed to update application context: \(error.localizedDescription)")
+            lastError = "Failed to send session to watch: \(error.localizedDescription)"
+        }
+    }
+
+    /// Sends a local notification to the watch to prompt user to open the app
+    private func sendWatchNotification(sessionType: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "Kubb Manager"
+        content.body = "Your \(sessionType) session is ready. Tap to start."
+        content.sound = .default
+        content.categoryIdentifier = "WATCH_SESSION_START"
+
+        // Add user info to help watch app know what to do
+        content.userInfo = [
+            "action": "openSession",
+            "sessionType": sessionType
+        ]
+
+        // Deliver immediately
+        let request = UNNotificationRequest(
+            identifier: "watch-session-\(UUID().uuidString)",
+            content: content,
+            trigger: nil // nil trigger = deliver immediately
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                self.log("❌ Failed to send notification: \(error.localizedDescription)")
+            } else {
+                self.log("✅ Notification sent to watch")
+            }
+        }
+    }
+
+    /// Requests notification permissions if needed
+    func requestNotificationPermission(completion: @escaping (Bool) -> Void) {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                self.log("❌ Notification permission error: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+
+            self.log(granted ? "✅ Notification permission granted" : "❌ Notification permission denied")
+            completion(granted)
+        }
+    }
+
     // MARK: - Request Input from Watch
     
     /// Requests a baton throw input from the watch

@@ -19,6 +19,7 @@ struct PracticeViewRedesigned: View {
     @State private var showingResetRoundAlert = false
     @State private var showingRoundCompleteModal = false
     @State private var showingTargetReachedModal = false
+    @State private var showingSendToWatchSheet = false
 
     // Tracking state
     @State private var lastCompletedRound: Round?
@@ -46,6 +47,15 @@ struct PracticeViewRedesigned: View {
                 resetRoundAlertButtons
             } message: {
                 resetRoundAlertMessage
+            }
+            .sheet(isPresented: $showingSendToWatchSheet) {
+                SendToWatchSheet(
+                    isPresented: $showingSendToWatchSheet,
+                    sessionType: "8M Training",
+                    onSendToWatch: {
+                        handleSendToWatch()
+                    }
+                )
             }
             .onChange(of: sessionManager.isTargetReached) { _, isReached in
                 handleTargetReached(isReached)
@@ -168,10 +178,16 @@ struct PracticeViewRedesigned: View {
         }
 
         ToolbarItem(placement: .navigationBarTrailing) {
-            Button("End") {
-                showingEndSessionAlert = true
+            HStack(spacing: 16) {
+                WatchIconButton {
+                    showingSendToWatchSheet = true
+                }
+
+                Button("End") {
+                    showingEndSessionAlert = true
+                }
+                .foregroundColor(AppTheme.error)
             }
-            .foregroundColor(AppTheme.error)
         }
     }
 
@@ -263,6 +279,28 @@ struct PracticeViewRedesigned: View {
         Task {
             await sessionManager.undoLastBatonThrow()
         }
+    }
+
+    private func handleSendToWatch() {
+        // Create session state
+        let sessionState = WatchSessionState(
+            sessionType: "8M Training",
+            isActive: true,
+            currentRound: sessionManager.currentRound?.roundNumber ?? 1,
+            totalRounds: nil,
+            currentPhase: nil,
+            isWatchMode: false,
+            targetBatons: sessionManager.target,
+            currentBatons: sessionManager.totalBatons,
+            hasALine: nil,
+            currentAttackingTeam: nil
+        )
+
+        // Send to watch
+        WatchConnectivityManager.shared.sendSessionToWatch(
+            sessionType: "8M Training",
+            sessionState: sessionState
+        )
     }
 }
 
