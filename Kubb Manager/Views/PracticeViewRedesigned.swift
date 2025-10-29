@@ -255,6 +255,12 @@ struct PracticeViewRedesigned: View {
             lastCompletedRound = lastRound
             showingRoundCompleteModal = true
         }
+
+        // Dismiss round complete modal if a new round has started
+        // (e.g., watch initiated next round)
+        if let newRound = newCurrentRound, !newRound.isComplete {
+            showingRoundCompleteModal = false
+        }
     }
 
     // MARK: - Helper Methods
@@ -282,6 +288,9 @@ struct PracticeViewRedesigned: View {
     }
 
     private func handleSendToWatch() {
+        // Setup delegate connection so SessionManager can receive watch input
+        sessionManager.setupWatchConnectivity()
+
         // Enable Watch Mode so watch can drive the session
         WatchConnectivityManager.shared.enableWatchMode()
 

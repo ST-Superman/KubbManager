@@ -45,7 +45,9 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     
     private override init() {
         super.init()
-        
+
+        log("🚀 WatchConnectivityManager initializing...")
+
         if WCSession.isSupported() {
             session = WCSession.default
             session?.delegate = self
@@ -54,7 +56,7 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         } else {
             log("❌ WCSession not supported")
         }
-        
+
         // Request session state when app launches
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             self?.requestSessionState()
@@ -370,13 +372,7 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             log("❌ Invalid input request: missing inputType")
             return
         }
-        
-        // Don't accept new input if we're still sending a result
-        if isSendingResult {
-            log("⚠️ Ignoring input request while sending result")
-            return
-        }
-        
+
         if inputType == "batonThrow" {
             handleBatonThrowRequest(message)
         } else if inputType == "inkast" {
@@ -390,22 +386,38 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             log("❌ Invalid baton throw request")
             return
         }
-        
+
+        let batonNumber = message["batonNumber"] as? Int
+
+        // Check if this is a duplicate request (same baton number already pending)
+        if let existingContext = pendingBatonContext,
+           existingContext.batonNumber == batonNumber,
+           existingContext.promptText == promptText {
+            log("⏭️ Skipping duplicate baton throw request for baton \(batonNumber ?? 0)")
+            return
+        }
+
         let context = BatonThrowContext(
             promptText: promptText,
             allowKubbCount: allowKubbCount,
             maxKubbs: message["maxKubbs"] as? Int,
-            batonNumber: message["batonNumber"] as? Int,
+            batonNumber: batonNumber,
             totalBatons: message["totalBatons"] as? Int
         )
-        
-        pendingBatonContext = context
+
+        // Clear existing context first to ensure onChange triggers
+        pendingBatonContext = nil
         pendingInkastContext = nil
-        
-        // Haptic notification
-        #if canImport(WatchKit)
-        playHaptic(.notification)
-        #endif
+
+        // Set new context after a tiny delay to ensure UI update
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.pendingBatonContext = context
+
+            // Haptic notification
+            #if canImport(WatchKit)
+            self.playHaptic(.notification)
+            #endif
+        }
 
         log("Received baton throw request: \(promptText)")
     }
@@ -418,20 +430,34 @@ class WatchConnectivityManager: NSObject, ObservableObject {
             log("❌ Invalid inkast request")
             return
         }
-        
+
+        // Check if this is a duplicate request
+        if let existingContext = pendingInkastContext,
+           existingContext.promptText == promptText,
+           existingContext.maxCount == maxCount {
+            log("⏭️ Skipping duplicate inkast request")
+            return
+        }
+
         let context = InkastContext(
             promptText: promptText,
             maxCount: maxCount,
             inkastType: inkastType
         )
-        
-        pendingInkastContext = context
+
+        // Clear existing context first to ensure onChange triggers
+        pendingInkastContext = nil
         pendingBatonContext = nil
-        
-        // Haptic notification
-        #if canImport(WatchKit)
-        playHaptic(.notification)
-        #endif
+
+        // Set new context after a tiny delay to ensure UI update
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.pendingInkastContext = context
+
+            // Haptic notification
+            #if canImport(WatchKit)
+            self.playHaptic(.notification)
+            #endif
+        }
 
         log("Received inkast request: \(promptText)")
     }
@@ -529,8 +555,38 @@ extension WatchConnectivityManager: WCSessionDelegate {
                 self.currentSessionState = state
                 self.isWatchMode = state.isWatchMode
                 self.log("✅ Session state received via application context: \(state.sessionType)")
+
+                // Haptic feedback to notify user
+                #if canImport(WatchKit)
+                self.playHaptic(.notification)
+                #endif
             } else {
                 self.log("⚠️ Received application context but couldn't parse as session state")
+            }
+        }
+    }
+
+    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
+        log("📦 Received user info transfer from phone (background delivery)")
+        log("📦 UserInfo keys: \(userInfo.keys.joined(separator: ", "))")
+
+        DispatchQueue.main.async {
+            // Try to parse as session state
+            if let state = WatchSessionState.fromDictionary(userInfo) {
+                self.currentSessionState = state
+                self.isWatchMode = state.isWatchMode
+                self.log("✅ Session state received via user info transfer: \(state.sessionType)")
+
+                // Strong haptic feedback to alert user of new session
+                #if canImport(WatchKit)
+                self.playHaptic(.notification)
+                #endif
+
+                // If watch was not running, this will have woken it up
+                // User should now see the session available
+            } else {
+                self.log("⚠️ Received user info but couldn't parse as session state")
+                self.log("⚠️ UserInfo contents: \(userInfo)")
             }
         }
     }

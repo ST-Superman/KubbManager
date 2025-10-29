@@ -44,16 +44,34 @@ struct ContentView: View {
             RoundCompleteView()
                 .environmentObject(connectivityManager)
         }
-        .onChange(of: connectivityManager.hasPendingInput) { _, hasPending in
-            if hasPending {
-                // Dismiss round complete view if new input is requested
+        .onChange(of: connectivityManager.pendingBatonContext) { oldContext, newContext in
+            // In Watch Mode, automatically show input sheet when baton context arrives
+            if connectivityManager.isWatchMode && newContext != nil {
+                // Always show input, even if context appears similar
+                // (dismiss first to ensure sheet reopens)
+                showingBatonInput = false
                 showingRoundComplete = false
-                
-                if connectivityManager.pendingBatonContext != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     showingBatonInput = true
-                } else if connectivityManager.pendingInkastContext != nil {
+                }
+            } else if newContext == nil {
+                // Clear the sheet when context is cleared
+                showingBatonInput = false
+            }
+        }
+        .onChange(of: connectivityManager.pendingInkastContext) { oldContext, newContext in
+            // In Watch Mode, automatically show input sheet when inkast context arrives
+            if connectivityManager.isWatchMode && newContext != nil {
+                // Always show input, even if context appears similar
+                // (dismiss first to ensure sheet reopens)
+                showingInkastInput = false
+                showingRoundComplete = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     showingInkastInput = true
                 }
+            } else if newContext == nil {
+                // Clear the sheet when context is cleared
+                showingInkastInput = false
             }
         }
         .onChange(of: connectivityManager.currentSessionState) { _, newState in
@@ -130,8 +148,11 @@ struct ContentView: View {
             
             // Current Phase Action
             if let phase = state.currentPhase {
-                actionButton(for: phase, state: state)
-                    .padding(.horizontal, 12)
+                // In Watch Mode, hide the manual button since input auto-shows
+                if !connectivityManager.isWatchMode || !connectivityManager.hasPendingInput {
+                    actionButton(for: phase, state: state)
+                        .padding(.horizontal, 12)
+                }
             }
             
             Spacer()

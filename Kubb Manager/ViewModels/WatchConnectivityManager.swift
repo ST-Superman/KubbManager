@@ -143,13 +143,14 @@ class WatchConnectivityManager: NSObject, ObservableObject {
 
     // MARK: - Send Session to Watch
 
-    /// Sends session to watch using application context and triggers notification
+    /// Sends session to watch using application context and transfer user info for background delivery
     func sendSessionToWatch(sessionType: String, sessionState: WatchSessionState) {
-        // Send application context so data is ready when user opens watch app
+        // First, send via application context for persistent state
         updateApplicationContext(sessionState)
 
-        // Send notification to prompt user to open watch app
-        sendWatchNotification(sessionType: sessionType)
+        // Also send via transferUserInfo for immediate background delivery
+        // This will wake up the watch app even if it's not running
+        transferUserInfo(sessionState)
 
         log("Session sent to watch: \(sessionType)")
     }
@@ -172,48 +173,19 @@ class WatchConnectivityManager: NSObject, ObservableObject {
         }
     }
 
-    /// Sends a local notification to the watch to prompt user to open the app
-    private func sendWatchNotification(sessionType: String) {
-        let content = UNMutableNotificationContent()
-        content.title = "Kubb Manager"
-        content.body = "Your \(sessionType) session is ready. Tap to start."
-        content.sound = .default
-        content.categoryIdentifier = "WATCH_SESSION_START"
-
-        // Add user info to help watch app know what to do
-        content.userInfo = [
-            "action": "openSession",
-            "sessionType": sessionType
-        ]
-
-        // Deliver immediately
-        let request = UNNotificationRequest(
-            identifier: "watch-session-\(UUID().uuidString)",
-            content: content,
-            trigger: nil // nil trigger = deliver immediately
-        )
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                self.log("❌ Failed to send notification: \(error.localizedDescription)")
-            } else {
-                self.log("✅ Notification sent to watch")
-            }
+    /// Transfers user info to wake up watch app in background
+    private func transferUserInfo(_ state: WatchSessionState) {
+        guard let session = session else {
+            log("❌ No session available for user info transfer")
+            return
         }
-    }
 
-    /// Requests notification permissions if needed
-    func requestNotificationPermission(completion: @escaping (Bool) -> Void) {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
-            if let error = error {
-                self.log("❌ Notification permission error: \(error.localizedDescription)")
-                completion(false)
-                return
-            }
+        var userInfo = state.toDictionary()
+        userInfo["messageType"] = WatchMessage.sessionStateUpdate.rawValue
+        userInfo["transferTimestamp"] = Date().timeIntervalSince1970
 
-            self.log(granted ? "✅ Notification permission granted" : "❌ Notification permission denied")
-            completion(granted)
-        }
+        session.transferUserInfo(userInfo)
+        log("✅ User info transferred for background delivery")
     }
 
     // MARK: - Request Input from Watch
@@ -574,7 +546,18 @@ extension WatchConnectivityManager: WCSessionDelegate {
         log("Received message from watch (with reply handler)")
         handleIncomingMessage(message, replyHandler: replyHandler)
     }
-    
+
+    func session(_ session: WCSession, didFinish userInfoTransfer: WCSessionUserInfoTransfer, error: Error?) {
+        if let error = error {
+            log("❌ User info transfer failed: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.lastError = "Failed to send to watch: \(error.localizedDescription)"
+            }
+        } else {
+            log("✅ User info transfer completed successfully")
+        }
+    }
+
     // MARK: - Helper Methods
     
     private func updateWatchState() {

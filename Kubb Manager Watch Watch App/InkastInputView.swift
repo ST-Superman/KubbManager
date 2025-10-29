@@ -396,36 +396,18 @@ struct InkastInputView: View {
             }
             
             Spacer()
-            
-            // Continue button (only show after result is sent)
-            if resultSent && !connectivityManager.isSendingResult {
-                Button(action: {
-                    WKInterfaceDevice.current().play(.click)
-                    dismiss()
-                }) {
-                    HStack(spacing: 6) {
-                        Text("Done")
-                            .font(.system(size: 14, weight: .semibold))
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.blue)
-                    )
-                }
-                .buttonStyle(.plain)
-                .padding(.bottom, 8)
-            }
         }
         .onAppear {
-            // Watch for result to be sent
+            // Watch for result to be sent, then auto-dismiss in Watch Mode
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if !connectivityManager.isSendingResult {
                     resultSent = true
+                    // Auto-dismiss after brief delay in Watch Mode
+                    if connectivityManager.isWatchMode {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            dismiss()
+                        }
+                    }
                 } else {
                     // Check again in a moment
                     checkIfSent()
@@ -433,11 +415,17 @@ struct InkastInputView: View {
             }
         }
     }
-    
+
     private func checkIfSent() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             if !connectivityManager.isSendingResult {
                 resultSent = true
+                // Auto-dismiss after brief delay in Watch Mode
+                if connectivityManager.isWatchMode {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        dismiss()
+                    }
+                }
             } else {
                 // Keep checking
                 checkIfSent()

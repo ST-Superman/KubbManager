@@ -585,6 +585,9 @@ struct InkastBlastActiveSessionView: View {
     }
 
     private func handleSendToWatch() {
+        // Setup delegate connection so SessionManager can receive watch input
+        sessionManager.setupWatchConnectivity()
+
         // Enable Watch Mode so watch can drive the session
         WatchConnectivityManager.shared.enableWatchMode()
 

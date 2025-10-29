@@ -18,7 +18,7 @@ enum WatchInputType: Codable {
 // MARK: - Baton Throw Context
 
 /// Context information for a baton throw input request
-struct BatonThrowContext: Codable {
+struct BatonThrowContext: Codable, Equatable {
     /// Text to display to user (e.g., "Baton 1 of 6", "Throw at field kubbs")
     let promptText: String
     
@@ -50,7 +50,7 @@ struct BatonThrowContext: Codable {
 // MARK: - Inkast Context
 
 /// Context information for an inkast input request
-struct InkastContext: Codable {
+struct InkastContext: Codable, Equatable {
     /// Text to display to user (e.g., "Out of bounds (1st)?", "Neighbors?")
     let promptText: String
     

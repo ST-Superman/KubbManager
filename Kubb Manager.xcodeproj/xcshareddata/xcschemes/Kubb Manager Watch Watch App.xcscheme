@@ -15,9 +15,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "4CCE1B942E82DEF80045735D"
-               BuildableName = "Kubb Manager.app"
-               BlueprintName = "Kubb Manager"
+               BlueprintIdentifier = "4CF1B74C2E96CF2700BEF17F"
+               BuildableName = "Kubb Manager Watch Watch App.app"
+               BlueprintName = "Kubb Manager Watch Watch App"
                ReferencedContainer = "container:Kubb Manager.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -29,9 +29,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "4CF1B74C2E96CF2700BEF17F"
-               BuildableName = "Kubb Manager Watch Watch App.app"
-               BlueprintName = "Kubb Manager Watch Watch App"
+               BlueprintIdentifier = "4CCE1B942E82DEF80045735D"
+               BuildableName = "Kubb Manager.app"
+               BlueprintName = "Kubb Manager"
                ReferencedContainer = "container:Kubb Manager.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -49,9 +49,9 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "4CCE1BA82E82DEFA0045735D"
-               BuildableName = "Kubb ManagerTests.xctest"
-               BlueprintName = "Kubb ManagerTests"
+               BlueprintIdentifier = "4CF1B7582E96CF2900BEF17F"
+               BuildableName = "Kubb Manager Watch Watch AppTests.xctest"
+               BlueprintName = "Kubb Manager Watch Watch AppTests"
                ReferencedContainer = "container:Kubb Manager.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -60,9 +60,9 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "4CCE1BB22E82DEFA0045735D"
-               BuildableName = "Kubb ManagerUITests.xctest"
-               BlueprintName = "Kubb ManagerUITests"
+               BlueprintIdentifier = "4CF1B7622E96CF2900BEF17F"
+               BuildableName = "Kubb Manager Watch Watch AppUITests.xctest"
+               BlueprintName = "Kubb Manager Watch Watch AppUITests"
                ReferencedContainer = "container:Kubb Manager.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -82,9 +82,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4CCE1B942E82DEF80045735D"
-            BuildableName = "Kubb Manager.app"
-            BlueprintName = "Kubb Manager"
+            BlueprintIdentifier = "4CF1B74C2E96CF2700BEF17F"
+            BuildableName = "Kubb Manager Watch Watch App.app"
+            BlueprintName = "Kubb Manager Watch Watch App"
             ReferencedContainer = "container:Kubb Manager.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -99,9 +99,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4CCE1B942E82DEF80045735D"
-            BuildableName = "Kubb Manager.app"
-            BlueprintName = "Kubb Manager"
+            BlueprintIdentifier = "4CF1B74C2E96CF2700BEF17F"
+            BuildableName = "Kubb Manager Watch Watch App.app"
+            BlueprintName = "Kubb Manager Watch Watch App"
             ReferencedContainer = "container:Kubb Manager.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

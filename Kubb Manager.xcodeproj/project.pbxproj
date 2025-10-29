@@ -69,6 +69,7 @@
 		4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C27FD5F2E95F4F70013A26A /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C27FDCC2E96B64F0013A26A /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
+		4C501B0A2EADDF0D002C977B /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C5FD0B32E871A7E0079A805 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C89FAA92E946BF20009D357 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
 		4C9898CF2E8733C80053F2A8 /* Kubb Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Kubb Manager.xcodeproj"; sourceTree = "<group>"; };
@@ -207,6 +208,11 @@
 				4C27FDCC2E96B64F0013A26A /* WatchConnectivity.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		4C501B0F2EADDF0D002C977B /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
 			sourceTree = "<group>";
 		};
 		4C5FD0B42E871A7E0079A805 /* Products */ = {
@@ -482,8 +488,8 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 4CEC0DE32EA4ACC9003693A9 /* Products */;
-					ProjectRef = 4CEC0DDE2EA4ACC9003693A9 /* Kubb Manager.xcodeproj */;
+					ProductGroup = 4C1E98B22E89BE61007F9A57 /* Products */;
+					ProjectRef = 4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */;
 				},
 				{
 					ProductGroup = 4C89FAAE2E946BF20009D357 /* Products */;
@@ -514,6 +520,10 @@
 					ProjectRef = 4CC2B51A2E8B1CB2008A8234 /* Kubb Manager.xcodeproj */;
 				},
 				{
+					ProductGroup = 4C501B0F2EADDF0D002C977B /* Products */;
+					ProjectRef = 4C501B0A2EADDF0D002C977B /* Kubb Manager.xcodeproj */;
+				},
+				{
 					ProductGroup = 4C0B90682E87349800D30FC1 /* Products */;
 					ProjectRef = 4C0B90632E87349800D30FC1 /* Kubb Manager.xcodeproj */;
 				},
@@ -538,8 +548,8 @@
 					ProjectRef = 4C09ED582E99B8C500348033 /* Kubb Manager.xcodeproj */;
 				},
 				{
-					ProductGroup = 4C1E98B22E89BE61007F9A57 /* Products */;
-					ProjectRef = 4C1E98AD2E89BE61007F9A57 /* Kubb Manager.xcodeproj */;
+					ProductGroup = 4CEC0DE32EA4ACC9003693A9 /* Products */;
+					ProjectRef = 4CEC0DDE2EA4ACC9003693A9 /* Kubb Manager.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -944,6 +954,7 @@
 				DEVELOPMENT_TEAM = KU56QJD48N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kubb-Manager-Watch-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Kubb Manager Watch";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "ST-Superman.Kubb-Manager";
@@ -973,6 +984,7 @@
 				DEVELOPMENT_TEAM = KU56QJD48N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kubb-Manager-Watch-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Kubb Manager Watch";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "ST-Superman.Kubb-Manager";

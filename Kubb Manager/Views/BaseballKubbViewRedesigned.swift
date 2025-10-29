@@ -565,6 +565,9 @@ struct BaseballKubbActiveGameView: View {
     private func handleSendToWatch() {
         guard let session = sessionManager.currentSession else { return }
 
+        // Setup delegate connection so SessionManager can receive watch input
+        sessionManager.setupWatchConnectivity()
+
         // Enable Watch Mode so watch can drive the session
         WatchConnectivityManager.shared.enableWatchMode()
 

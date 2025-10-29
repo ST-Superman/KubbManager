@@ -288,18 +288,18 @@ struct BatonThrowInputView: View {
     }
     
     // MARK: - Confirmation View
-    
+
     private var confirmationView: some View {
         VStack(spacing: 0) {
             Spacer()
-            
+
             // Success icon
             VStack(spacing: 12) {
                 if connectivityManager.isSendingResult {
                     ProgressView()
                         .scaleEffect(1.5)
                         .tint(.blue)
-                    
+
                     Text("Sending...")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
@@ -308,12 +308,12 @@ struct BatonThrowInputView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 50, weight: .medium))
                         .foregroundColor(.green)
-                    
+
                     Text("Result Sent!")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.primary)
                         .padding(.top, 8)
-                    
+
                     if isHit {
                         Text("Hit \(kubbsHit) kubb\(kubbsHit != 1 ? "s" : "")")
                             .font(.system(size: 13, weight: .medium))
@@ -325,38 +325,20 @@ struct BatonThrowInputView: View {
                     }
                 }
             }
-            
+
             Spacer()
-            
-            // Continue button (only show after result is sent)
-            if resultSent && !connectivityManager.isSendingResult {
-                Button(action: {
-                    WKInterfaceDevice.current().play(.click)
-                    dismiss()
-                }) {
-                    HStack(spacing: 6) {
-                        Text("Done")
-                            .font(.system(size: 14, weight: .semibold))
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.blue)
-                    )
-                }
-                .buttonStyle(.plain)
-                .padding(.bottom, 8)
-            }
         }
         .onAppear {
-            // Watch for result to be sent
+            // Watch for result to be sent, then auto-dismiss in Watch Mode
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if !connectivityManager.isSendingResult {
                     resultSent = true
+                    // Auto-dismiss after brief delay in Watch Mode
+                    if connectivityManager.isWatchMode {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            dismiss()
+                        }
+                    }
                 } else {
                     // Check again in a moment
                     checkIfSent()
@@ -364,11 +346,17 @@ struct BatonThrowInputView: View {
             }
         }
     }
-    
+
     private func checkIfSent() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             if !connectivityManager.isSendingResult {
                 resultSent = true
+                // Auto-dismiss after brief delay in Watch Mode
+                if connectivityManager.isWatchMode {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        dismiss()
+                    }
+                }
             } else {
                 // Keep checking
                 checkIfSent()

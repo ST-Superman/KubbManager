@@ -505,7 +505,7 @@ struct WatchIconButton: View {
                 // Connection status indicator dot
                 if watchManager.isWatchPaired && watchManager.isWatchAppInstalled {
                     Circle()
-                        .fill(watchManager.isWatchReachable ? Color.green : Color.orange)
+                        .fill(Color.green)
                         .frame(width: 8, height: 8)
                         .offset(x: 4, y: -4)
                 }
@@ -517,7 +517,8 @@ struct WatchIconButton: View {
         if !watchManager.isWatchPaired || !watchManager.isWatchAppInstalled {
             return .gray
         }
-        return watchManager.isWatchReachable ? AppTheme.primary : .orange
+        // Show green if paired and installed (application context works in background)
+        return AppTheme.success
     }
 }
 
@@ -532,7 +533,6 @@ struct SendToWatchSheet: View {
     let onSendToWatch: () -> Void
 
     @State private var hasSent = false
-    @State private var isRequestingPermission = false
 
     var body: some View {
         NavigationView {
@@ -573,7 +573,6 @@ struct SendToWatchSheet: View {
                             ActionButton.primary("Send Session to Watch", icon: "applewatch") {
                                 handleSendToWatch()
                             }
-                            .disabled(isRequestingPermission)
                         } else {
                             // Show why they can't send
                             VStack(spacing: Spacing.sm) {
@@ -631,7 +630,7 @@ struct SendToWatchSheet: View {
         if !watchManager.isWatchPaired || !watchManager.isWatchAppInstalled {
             return .gray
         }
-        return watchManager.isWatchReachable ? AppTheme.success : .orange
+        return AppTheme.success
     }
 
     private var statusTitle: String {
@@ -641,10 +640,8 @@ struct SendToWatchSheet: View {
             return "No Watch Paired"
         } else if !watchManager.isWatchAppInstalled {
             return "App Not Installed"
-        } else if watchManager.isWatchReachable {
-            return "Watch Connected"
         } else {
-            return "Watch Not Reachable"
+            return "Watch Ready"
         }
     }
 
@@ -655,10 +652,8 @@ struct SendToWatchSheet: View {
             return "Please pair your Apple Watch with your iPhone to use this feature."
         } else if !watchManager.isWatchAppInstalled {
             return "Please install the Kubb Manager app on your Apple Watch."
-        } else if watchManager.isWatchReachable {
-            return "Your watch is connected and ready. Tap 'Send Session to Watch' to start."
         } else {
-            return "Your watch is paired but not currently reachable. Make sure it's unlocked and nearby, then try again."
+            return "Your watch is ready. Tap 'Send Session to Watch' to send a notification to your watch. The session data will be available when you open the watch app."
         }
     }
 
@@ -673,24 +668,10 @@ struct SendToWatchSheet: View {
     }
 
     private func handleSendToWatch() {
-        // Request notification permission first
-        isRequestingPermission = true
-
-        watchManager.requestNotificationPermission { granted in
-            DispatchQueue.main.async {
-                isRequestingPermission = false
-
-                if granted {
-                    // Permission granted, send to watch
-                    onSendToWatch()
-                    hasSent = true
-                } else {
-                    // Permission denied - still send but without notification
-                    onSendToWatch()
-                    hasSent = true
-                }
-            }
-        }
+        // Send to watch using WatchConnectivity background delivery
+        // No need for notification permissions - WatchConnectivity handles background delivery
+        onSendToWatch()
+        hasSent = true
     }
 }
 
